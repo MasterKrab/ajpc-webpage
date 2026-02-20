@@ -26,5 +26,10 @@ export const GET: APIRoute = async ({ cookies, request }) => {
     maxAge: 60 * 10, // 10 minutes
   })
 
-  return Response.redirect(url.toString())
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: url.toString(),
+    },
+  })
 }

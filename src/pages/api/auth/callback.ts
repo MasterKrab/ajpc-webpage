@@ -66,9 +66,15 @@ export const GET: APIRoute = async ({ url, cookies }) => {
       const isRegistrationEnabled = registrationSetting?.value !== 'false' // Default to true if not set
 
       if (!isRegistrationEnabled && !inviteValid) {
-        return Response.redirect(
-          new URL('/login?error=registration_disabled', url.origin).toString(),
-        )
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: new URL(
+              '/login?error=registration_disabled',
+              url.origin,
+            ).toString(),
+          },
+        })
       }
 
       userId = generateId()
@@ -91,12 +97,20 @@ export const GET: APIRoute = async ({ url, cookies }) => {
     createSession(cookies, userId)
 
     if (role == 'admin' || role == 'docente') {
-      return Response.redirect(
-        new URL('/dashboard/cuenta', url.origin).toString(),
-      )
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: new URL('/dashboard/cuenta', url.origin).toString(),
+        },
+      })
     }
 
-    return Response.redirect(new URL('/dashboard', url.origin).toString())
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: new URL('/dashboard', url.origin).toString(),
+      },
+    })
   } catch (error) {
     console.error('Discord OAuth callback error:', error)
     return new Response('Authentication failed', { status: 500 })
