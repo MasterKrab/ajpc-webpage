@@ -4,7 +4,7 @@ import { createDiscordClient } from '@lib/discord'
 
 export const GET: APIRoute = async ({ cookies, request }) => {
   let state = generateState()
-  const inviteCode = new URL(request.url).searchParams.get('code')
+  const inviteCode = new URL(request.url).searchParams.get('invite')
 
   if (inviteCode) {
     state = `${state}:${inviteCode}`
