@@ -1,14 +1,13 @@
 ---
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import StudentEnrollmentModal from '@components/dashboard/StudentEnrollmentModal.svelte'
-import { isSudo, isAdmin } from '@lib/auth'
+import { isAdmin } from '@lib/auth'
 import { db } from '@db/index'
 import { enrollments, courses } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
 const user = Astro.locals.user!
 const admin = isAdmin(user)
-const sudo = isSudo(user)
 
 const userEnrollments = await db
   .select({
@@ -16,6 +15,7 @@ const userEnrollments = await db
     fullName: enrollments.fullName,
     email: enrollments.email,
     age: enrollments.age,
+    gender: enrollments.gender,
     schoolYear: enrollments.schoolYear,
     schoolName: enrollments.schoolName,
     region: enrollments.region,
@@ -24,7 +24,6 @@ const userEnrollments = await db
     motivation: enrollments.motivation,
     status: enrollments.status,
     feedback: enrollments.feedback,
-    createdAt: enrollments.createdAt,
     courseName: courses.name,
     courseLevel: courses.level,
     enrollmentEndDate: courses.enrollmentEndDate,

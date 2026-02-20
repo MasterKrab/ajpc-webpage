@@ -3,10 +3,21 @@
   import type { Enrollment } from '@db/schema'
 
   interface Props {
-    enrollment: Enrollment & {
+    enrollment: Partial<Enrollment> & {
       courseName: string
       courseLevel: string
       feedback?: string | null
+      status: string
+      fullName: string
+      email: string
+      age: number
+      gender: string
+      schoolYear: string
+      schoolName: string | null
+      region: string | null
+      commune: string | null
+      previousExperience: string | null
+      motivation: string | null
     }
   }
 

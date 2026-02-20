@@ -43,7 +43,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
 
   if (!parsed.success) {
     return Response.json(
-      { error: 'Datos inválidos', details: parsed.error.flatten() },
+      { error: 'Datos inválidos', details: parsed.error.format() },
       { status: 400 },
     )
   }
@@ -118,13 +118,19 @@ export const POST: APIRoute = async ({ locals, request }) => {
     .from(emailTemplates)
     .where(eq(emailTemplates.id, 'received'))
 
-  const emailBody = (template?.body || `<p>Hola <strong>{{name}}</strong>,</p><p>Hemos recibido tu inscripción al curso <strong>{{courseName}}</strong>.</p>`)
+  const emailBody = (
+    template?.body ||
+    `<p>Hola <strong>{{name}}</strong>,</p><p>Hemos recibido tu inscripción al curso <strong>{{courseName}}</strong>.</p>`
+  )
     .replace(/{{name}}/g, user.name)
     .replace(/{{courseName}}/g, course.name)
 
   await sendEmail({
     to: user.email,
-    subject: (template?.subject || '¡Inscripción recibida! — AJPC').replace(/{{courseName}}/g, course.name),
+    subject: (template?.subject || '¡Inscripción recibida! — AJPC').replace(
+      /{{courseName}}/g,
+      course.name,
+    ),
     html: wrapTemplate(emailBody, template?.signature || 'AJPC'),
   })
 

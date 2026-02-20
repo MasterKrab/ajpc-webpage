@@ -18,9 +18,8 @@ const courseSchema = z.object({
 
 export const GET: APIRoute = async ({ locals }) => {
   const user = locals.user!
-  if (!isAdmin(user)) 
+  if (!isAdmin(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
-  
 
   const result = await db.select().from(courses)
   return Response.json(result)
@@ -28,15 +27,14 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ locals, request }) => {
   const user = locals.user!
-  if (!isAdmin(user)) 
+  if (!isAdmin(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
-  
 
   const body = await request.json()
   const parsed = courseSchema.safeParse(body)
   if (!parsed.success) {
     return Response.json(
-      { error: 'Datos inválidos', details: parsed.error.flatten() },
+      { error: 'Datos inválidos', details: parsed.error.format() },
       { status: 400 },
     )
   }
@@ -62,9 +60,8 @@ const updateCourseSchema = courseSchema.partial()
 
 export const PATCH: APIRoute = async ({ locals, request, url }) => {
   const user = locals.user!
-  if (!isAdmin(user)) 
+  if (!isAdmin(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
-  
 
   const courseId = url.searchParams.get('id')
   if (!courseId) {
@@ -73,7 +70,6 @@ export const PATCH: APIRoute = async ({ locals, request, url }) => {
 
   const body = await request.json()
   const parsed = updateCourseSchema.safeParse(body)
-
 
   if (!parsed.success) {
     return Response.json({ error: 'Datos inválidos' }, { status: 400 })
@@ -111,9 +107,8 @@ export const PATCH: APIRoute = async ({ locals, request, url }) => {
 
 export const DELETE: APIRoute = async ({ locals, url }) => {
   const user = locals.user!
-  if (!isAdmin(user)) 
+  if (!isAdmin(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
-  
 
   const courseId = url.searchParams.get('id')
   if (!courseId) {

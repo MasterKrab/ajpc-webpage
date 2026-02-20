@@ -8,10 +8,7 @@ import { isAdmin } from '@lib/auth'
 
 const user = Astro.locals.user!
 
-const [fullUser] = await db
-  .select()
-  .from(users)
-  .where(eq(users.id, user.id))
+const [fullUser] = await db.select().from(users).where(eq(users.id, user.id))
 
 const isStaffUser = isAdmin(user)
 ---
@@ -26,7 +23,7 @@ const isStaffUser = isAdmin(user)
     <a
       class="settings__back"
       href="/inscripciones"
-      onclick="event.preventDefault(); history.back()"
+      onclick="(event) => { event.preventDefault(); history.back() }"
     >
       ← Volver
     </a>
@@ -66,12 +63,6 @@ const isStaffUser = isAdmin(user)
             >
           </p>
           <p class="settings__field">
-            <span class="settings__label">Email</span>
-            <span class="settings__value"
-              >{fullUser.email || 'No proporcionado'}</span
-            >
-          </p>
-          <p class="settings__field">
             <span class="settings__label">Rol</span>
             <span class="settings__value settings__value--role"
               >{fullUser.role}</span
@@ -80,8 +71,8 @@ const isStaffUser = isAdmin(user)
         </div>
       </div>
       <p class="settings__hint">
-        Tu perfil se sincroniza automáticamente con tu cuenta de Discord cada vez
-        que inicias sesión.
+        Tu perfil se sincroniza automáticamente con tu cuenta de Discord cada
+        vez que inicias sesión.
       </p>
     </section>
 
