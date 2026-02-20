@@ -40,11 +40,11 @@ const enrollmentData = await db
 >
   <div class="admin-container">
     <a href="/admin" class="back-link">← Volver al panel general</a>
-    
-    <CourseDashboard 
-      client:load 
-      course={course} 
-      initialEnrollments={enrollmentData} 
+
+    <CourseDashboard
+      client:only
+      course={course}
+      initialEnrollments={enrollmentData}
       isSudo={user.role === 'sudo'}
     />
   </div>
@@ -64,7 +64,7 @@ const enrollmentData = await db
     text-decoration: none;
     font-weight: 500;
   }
-  
+
   .back-link:hover {
     color: var(--brand-primary);
     text-decoration: underline;
