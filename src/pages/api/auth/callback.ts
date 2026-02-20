@@ -1,11 +1,11 @@
 import type { APIRoute } from 'astro'
-import { discord, getDiscordUser } from '@lib/discord'
+import { createDiscordClient, getDiscordUser } from '@lib/discord'
 import { createSession, generateId } from '@lib/auth'
 import { db } from '@db/index'
 import { users, inviteCodes, settings } from '@db/schema'
 import { eq, sql } from 'drizzle-orm'
 
-export const GET: APIRoute = async ({ url, cookies }) => {
+export const GET: APIRoute = async ({ url, cookies, request }) => {
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const storedState = cookies.get('discord_oauth_state')?.value
@@ -17,6 +17,8 @@ export const GET: APIRoute = async ({ url, cookies }) => {
   cookies.delete('discord_oauth_state', { path: '/' })
 
   try {
+    const redirectUri = new URL('/api/auth/callback', request.url).toString()
+    const discord = createDiscordClient(redirectUri)
     const tokens = await discord.validateAuthorizationCode(code, null)
     const discordUser = await getDiscordUser(tokens.accessToken())
 

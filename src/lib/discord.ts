@@ -1,5 +1,13 @@
 import { Discord } from 'arctic'
 
+export const createDiscordClient = (redirectUri: string) => {
+  return new Discord(
+    import.meta.env.DISCORD_CLIENT_ID,
+    import.meta.env.DISCORD_CLIENT_SECRET,
+    redirectUri,
+  )
+}
+
 export const discord = new Discord(
   import.meta.env.DISCORD_CLIENT_ID,
   import.meta.env.DISCORD_CLIENT_SECRET,
