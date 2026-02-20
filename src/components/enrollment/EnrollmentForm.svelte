@@ -105,9 +105,7 @@
       Tu inscripción al curso <strong>{courseName}</strong> ha sido recibida.
     </p>
     <p>Te notificaremos por correo cuando sea revisada.</p>
-    <a href="/inscripciones" class="form-success__link"
-      >Volver a inscripciones</a
-    >
+    <a href="/dashboard" class="form-success__link">Volver a inscripciones</a>
   </div>
 {:else}
   <form

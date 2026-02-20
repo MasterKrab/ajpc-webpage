@@ -134,6 +134,11 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       })
     }
     console.error('Discord OAuth callback error:', error)
-    return new Response('Authentication failed', { status: 500 })
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: new URL('/login?error=auth_failed', url.origin).toString(),
+      },
+    })
   }
 }
