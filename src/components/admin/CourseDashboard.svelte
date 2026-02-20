@@ -622,16 +622,15 @@
     border: none;
     font-weight: 600;
     cursor: pointer;
+    color: var(--text-color-primary);
   }
 
   .button-primary {
     background: var(--brand-primary);
-    color: white;
   }
 
   .button-danger {
     background: #dc3545;
-    color: white;
   }
 
   .danger-zone {

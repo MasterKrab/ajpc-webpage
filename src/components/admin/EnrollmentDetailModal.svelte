@@ -270,23 +270,31 @@
   .notes-area {
     width: 100%;
     padding: 0.75rem;
-    width: 100%;
-    padding: 0.75rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     font-family: inherit;
+    font-size: 0.9375rem;
     resize: vertical;
+    background-color: var(--foreground-color);
+    color: var(--text-color-primary);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .notes-area:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(17, 107, 177, 0.1);
   }
 
   .actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    justify-content: space-between;
-    align-items: center;
     border-top: 1px solid var(--border-color);
     padding-top: 1.25rem;
-    padding-top: 1.25rem;
+    margin-top: 1rem;
   }
 
   .right-actions {
@@ -297,10 +305,23 @@
   .button {
     padding: 0.625rem 1.25rem;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     font-weight: 600;
+    font-size: 0.9375rem;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition:
+      opacity 0.2s,
+      transform 0.1s;
+    font-family: inherit;
+  }
+
+  .button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+
+  .button:active:not(:disabled) {
+    transform: translateY(0);
   }
 
   .button:disabled {
@@ -317,7 +338,11 @@
     color: white;
   }
   .button--pending {
-    background-color: var(--color-warning);
-    color: #212529;
+    background-color: var(--border-color-light);
+    color: var(--text-color-secondary);
+    border: 1px solid var(--border-color);
+  }
+  .button--pending:hover:not(:disabled) {
+    background-color: var(--border-color);
   }
 </style>
