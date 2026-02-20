@@ -45,6 +45,20 @@ const showRegistrationWarning = !isRegistrationEnabled && !hasInvokeCode
       </p>
 
       {
+        Astro.url.searchParams.get('error') === 'rate_limited' && (
+          <div class="login__error" role="alert">
+            <p>
+              ⏳ <strong>Demasiados intentos</strong>
+            </p>
+            <p>
+              Discord ha limitado temporalmente tus intentos de inicio de
+              sesión. Por favor, espera unos minutos y vuelve a intentarlo.
+            </p>
+          </div>
+        )
+      }
+
+      {
         showRegistrationWarning ? (
           <div class="login__error" role="alert">
             <p>

@@ -1,5 +1,8 @@
+export const runtime = 'edge'
+
 import type { APIRoute } from 'astro'
 import { createDiscordClient, getDiscordUser } from '@lib/discord'
+import { OAuth2RequestError } from 'arctic'
 import { createSession, generateId } from '@lib/auth'
 import { db } from '@db/index'
 import { users, inviteCodes, settings } from '@db/schema'
@@ -22,8 +25,8 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     const tokens = await discord.validateAuthorizationCode(code, null)
     const discordUser = await getDiscordUser(tokens.accessToken())
 
-    const inviteCode = cookies.get('ajpc_invite_code')?.value
-    cookies.delete('ajpc_invite_code', { path: '/' })
+    // Extract invite code from state if present (format: state:inviteCode)
+    const [, inviteCode] = state.split(':')
 
     let role: 'student' | 'docente' | 'admin' = 'student'
     let inviteValid = false
@@ -121,6 +124,15 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       },
     })
   } catch (error) {
+    if (error instanceof OAuth2RequestError) {
+      console.error('Discord OAuth rate limit:', error)
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: new URL('/login?error=rate_limited', url.origin).toString(),
+        },
+      })
+    }
     console.error('Discord OAuth callback error:', error)
     return new Response('Authentication failed', { status: 500 })
   }
