@@ -1,0 +1,72 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import CourseDashboard from '@components/admin/CourseDashboard.svelte'
+import { isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import { courses, enrollments, users } from '@db/schema'
+import { eq } from 'drizzle-orm'
+
+const user = Astro.locals.user
+if (!user || !isAdmin(user)) {
+  return Astro.redirect('/login')
+}
+
+const { id } = Astro.params
+if (!id) return Astro.redirect('/admin')
+
+const [course] = await db.select().from(courses).where(eq(courses.id, id))
+
+if (!course) {
+  return Astro.redirect('/admin')
+}
+
+const enrollmentData = await db
+  .select({
+    enrollment: enrollments,
+    courseName: courses.name,
+    discordUsername: users.discordUsername,
+  })
+  .from(enrollments)
+  .innerJoin(courses, eq(enrollments.courseId, courses.id))
+  .innerJoin(users, eq(enrollments.userId, users.id))
+  .where(eq(enrollments.courseId, id))
+---
+
+<DashboardLayout
+  metadata={{
+    title: `Administrar ${course.name}`,
+    description: 'Panel de administración del curso',
+  }}
+>
+  <div class="admin-container">
+    <a href="/admin" class="back-link">← Volver al panel general</a>
+    
+    <CourseDashboard 
+      client:load 
+      course={course} 
+      initialEnrollments={enrollmentData} 
+      isSudo={user.role === 'sudo'}
+    />
+  </div>
+</DashboardLayout>
+
+<style>
+  .admin-container {
+    max-width: 75rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: var(--text-color-secondary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .back-link:hover {
+    color: var(--brand-primary);
+    text-decoration: underline;
+  }
+</style>

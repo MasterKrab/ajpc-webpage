@@ -1,0 +1,54 @@
+---
+import EnrollmentLayout from '@layouts/EnrollmentLayout.astro'
+import EnrollmentForm from '@components/enrollment/EnrollmentForm.svelte'
+import { db } from '@db/index'
+import { courses } from '@db/schema'
+import { eq, and } from 'drizzle-orm'
+
+const courseId = Astro.url.searchParams.get('curso')
+
+if (!courseId) return Astro.redirect('/dashboard')
+
+const [course] = await db
+  .select()
+  .from(courses)
+  .where(and(eq(courses.id, courseId), eq(courses.status, 'open')))
+
+if (!course) return Astro.redirect('/dashboard')
+
+const now = new Date()
+if (course.enrollmentStartDate && now < course.enrollmentStartDate) 
+  return Astro.redirect('/dashboard')
+
+if (course.enrollmentEndDate && now > course.enrollmentEndDate) 
+  return Astro.redirect('/dashboard')
+
+---
+
+<EnrollmentLayout
+  metadata={{
+    title: `Inscripción — ${course.name}`,
+    description: `Formulario de inscripción para ${course.name}`,
+  }}
+>
+  <a class="inscribirse__back" href="/dashboard">← Volver a inscripciones</a>
+  <EnrollmentForm
+    client:load
+    courseId={course.id}
+    courseName={course.name}
+  />
+</EnrollmentLayout>
+
+<style>
+  .inscribirse__back {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    transition: color 0.2s;
+  }
+
+  .inscribirse__back:hover {
+    color: var(--brand-primary);
+  }
+</style>

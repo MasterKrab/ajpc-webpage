@@ -1,0 +1,183 @@
+---
+import ToggleTheme from '@components/theme/ToggleTheme.astro'
+---
+
+<nav class="navigation" id="navigation">
+  <slot />
+</nav>
+
+<div class="actions">
+  <slot name="actions">
+    <ToggleTheme />
+  </slot>
+</div>
+
+<button
+  class="open-menu"
+  id="open-menu"
+  role="switch"
+  aria-checked="false"
+  aria-label="Menú de navegación"></button>
+
+<script>
+  const init = () => {
+    const navigation = document.getElementById('navigation')!
+    const openMenu = document.getElementById('open-menu')!
+
+    openMenu.addEventListener('click', () => {
+      const isActive = openMenu.classList.toggle('open-menu--active')
+      navigation.classList.toggle('navigation--active', isActive)
+      openMenu.setAttribute('aria-checked', String(isActive))
+      document.body.classList.toggle('body-menu-active', isActive)
+    })
+  }
+
+  document.addEventListener('astro:page-load', init)
+</script>
+
+<style>
+  @media screen and (max-width: 768px) {
+    .navigation {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: var(--foreground-color);
+      width: 100vw;
+      height: 100vh;
+      transform: translateX(-200%);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .navigation--active {
+      transform: translateX(0);
+    }
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+  }
+
+  .open-menu {
+    box-sizing: content-box;
+    position: relative;
+    z-index: 10000;
+    display: none;
+    justify-self: end;
+    width: 2rem;
+    height: 1.5rem;
+    border-top: 0.25rem solid var(--text-color-primary);
+    order: 3;
+    transition: border-top-color 0.2s ease-in-out;
+  }
+
+  .open-menu::before,
+  .open-menu::after {
+    content: '';
+    display: block;
+    width: 2rem;
+    height: 0.2rem;
+    background-color: var(--text-color-primary);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .open-menu::before {
+    position: absolute;
+    top: 0.5rem;
+  }
+
+  .open-menu::after {
+    position: absolute;
+    bottom: 0;
+  }
+
+  .open-menu--active {
+    border-top-color: transparent;
+  }
+
+  .open-menu--active::before {
+    transform: rotate(45deg);
+  }
+
+  .open-menu--active::after {
+    transform: translateY(-0.75rem) rotate(-45deg);
+  }
+
+  @media screen and (max-width: 768px) {
+    .open-menu {
+      display: inline-block;
+    }
+  }
+
+  .menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    height: 100%;
+    font-weight: bold;
+    list-style: none;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 0;
+  }
+
+  @media screen and (max-width: 768px) {
+    .menu {
+      flex-direction: column;
+      gap: 2.5rem;
+      font-size: 2rem;
+    }
+  }
+
+  .menu__item:hover {
+    color: var(--menu-item-color, var(--text-color));
+  }
+
+  .menu__item:first-child {
+    --menu-item-color: var(--brand-primary);
+  }
+
+  .menu__item:nth-child(2) {
+    --menu-item-color: var(--brand-secondary);
+  }
+
+  .menu__item:nth-child(3) {
+    --menu-item-color: var(--brand-tertiary);
+  }
+
+  .menu__link,
+  .menu__link::before,
+  .menu__link::after {
+    transition: color 0.3s ease-in-out;
+    color: var(--menu-item-color, var(--text-color));
+  }
+
+  .menu__link::before,
+  .menu__link::after {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .menu__link::before {
+    content: '{';
+  }
+
+  .menu__link::after {
+    content: '}';
+  }
+
+  .menu__link--active::before,
+  .menu__link--active::after {
+    opacity: 1;
+  }
+
+  .menu__link:active::before,
+  .menu__link:hover::before,
+  .menu__link:active::after,
+  .menu__link:hover::after {
+    opacity: 1;
+  }
+</style>

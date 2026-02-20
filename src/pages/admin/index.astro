@@ -1,0 +1,63 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import AdminDashboard from '@components/admin/AdminDashboard.svelte'
+import { isSudo, isAdmin } from '@lib/auth'
+
+const user = Astro.locals.user!
+if (!isAdmin(user)) {
+  return Astro.redirect('/dashboard')
+}
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Panel de administración',
+    description: 'Panel de administración de AJPC',
+  }}
+>
+  <div class="admin-page">
+    <header class="admin-page__header">
+      <div>
+        <h1 class="admin-page__title">Panel de administración 🛡️</h1>
+        <p class="admin-page__subtitle">
+          Rol: <strong class="admin-page__role">{user.role}</strong>
+        </p>
+      </div>
+    </header>
+
+    <AdminDashboard client:only="svelte" isSudo={isSudo(user)} />
+  </div>
+</DashboardLayout>
+
+<style>
+  .admin-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .admin-page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .admin-page__title {
+    font-size: 1.75rem;
+    margin: 0;
+  }
+
+  .admin-page__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+  }
+
+  .admin-page__role {
+    text-transform: uppercase;
+    color: var(--brand-tertiary);
+  }
+
+</style>

@@ -1,0 +1,93 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import UserSettings from '@components/profile/UserSettings.svelte'
+import { db } from '@db/index'
+import { users } from '@db/schema'
+import { eq } from 'drizzle-orm'
+import { isAdmin } from '@lib/auth'
+
+const user = Astro.locals.user!
+
+// Redirect if already has both name and email
+if (user.name && user.email) return Astro.redirect('/dashboard')
+
+const [fullUser] = await db
+  .select()
+  .from(users)
+  .where(eq(users.id, user.id))
+
+const isStaffUser = isAdmin(user)
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Completa tu perfil',
+    description: 'Necesitamos unos datos adicionales para continuar',
+  }}
+>
+  <div class="onboarding">
+    <header class="onboarding__header">
+      <h1 class="onboarding__title">¡Hola! Te damos la bienvenida</h1>
+      <p class="onboarding__subtitle">
+        Para comenzar, necesitamos que configures tu nombre real y un correo electrónico de contacto.
+      </p>
+    </header>
+
+    <UserSettings 
+      client:load 
+      initialName={fullUser.name} 
+      initialEmail={fullUser.email} 
+      isAdminUser={isStaffUser} 
+      redirectTo="/dashboard"
+    />
+
+    <div class="onboarding__footer">
+      <p>
+        Estos datos podrán ser editados más tarde desde la configuración de tu cuenta.
+      </p>
+    </div>
+  </div>
+</DashboardLayout>
+
+<style>
+  .onboarding {
+    max-width: 40rem;
+    margin: 4rem auto;
+  }
+
+  .onboarding__header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .onboarding__title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--brand-primary), #4f46e5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @media screen and (min-width: 25rem) {
+    .onboarding__title {
+      font-size: 2.25rem;
+    }
+  }
+
+  .onboarding__subtitle {
+    font-size: 1.125rem;
+    color: var(--text-color-secondary);
+    line-height: 1.6;
+    max-width: 32rem;
+    margin: 0 auto;
+  }
+
+  .onboarding__footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-style: italic;
+  }
+</style>

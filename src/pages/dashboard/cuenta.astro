@@ -1,0 +1,233 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import { db } from '@db/index'
+import { users } from '@db/schema'
+import { eq } from 'drizzle-orm'
+import UserSettings from '@components/profile/UserSettings.svelte'
+import { isAdmin } from '@lib/auth'
+
+const user = Astro.locals.user!
+
+const [fullUser] = await db
+  .select()
+  .from(users)
+  .where(eq(users.id, user.id))
+
+const isStaffUser = isAdmin(user)
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Configuración de cuenta',
+    description: 'Gestiona tu cuenta y perfil',
+  }}
+>
+  <div class="settings">
+    <a
+      class="settings__back"
+      href="/inscripciones"
+      onclick="event.preventDefault(); history.back()"
+    >
+      ← Volver
+    </a>
+
+    <h1 class="settings__title">Configuración de cuenta</h1>
+
+    <UserSettings
+      client:load
+      initialName={fullUser.name}
+      initialEmail={fullUser.email}
+      isAdminUser={isStaffUser}
+    />
+
+    <section class="settings__card">
+      <h2 class="settings__card-title">Perfil de Discord</h2>
+      <div class="settings__profile">
+        {
+          fullUser.discordAvatar && (
+            <img
+              class="settings__avatar"
+              src={`https://cdn.discordapp.com/avatars/${fullUser.discordId}/${fullUser.discordAvatar}.png?size=128`}
+              alt={fullUser.discordUsername}
+              width="80"
+              height="80"
+            />
+          )
+        }
+        <div class="settings__profile-info">
+          <p class="settings__field">
+            <span class="settings__label">Usuario</span>
+            <span class="settings__value">@{fullUser.discordUsername}</span>
+          </p>
+          <p class="settings__field">
+            <span class="settings__label">Discord ID</span>
+            <span class="settings__value settings__value--mono"
+              >{fullUser.discordId}</span
+            >
+          </p>
+          <p class="settings__field">
+            <span class="settings__label">Email</span>
+            <span class="settings__value"
+              >{fullUser.email || 'No proporcionado'}</span
+            >
+          </p>
+          <p class="settings__field">
+            <span class="settings__label">Rol</span>
+            <span class="settings__value settings__value--role"
+              >{fullUser.role}</span
+            >
+          </p>
+        </div>
+      </div>
+      <p class="settings__hint">
+        Tu perfil se sincroniza automáticamente con tu cuenta de Discord cada vez
+        que inicias sesión.
+      </p>
+    </section>
+
+    <section class="settings__card settings__card--danger">
+      <h2 class="settings__card-title">Zona de peligro</h2>
+      <p class="settings__text">
+        Si cierras sesión, podrás volver a iniciar sesión en cualquier momento
+        con tu cuenta de Discord.
+      </p>
+      <a class="settings__danger-button" href="/api/auth/logout" role="button">
+        Cerrar sesión
+      </a>
+    </section>
+  </div>
+</DashboardLayout>
+
+<style>
+  .settings {
+    max-width: 40rem;
+    margin: 0 auto;
+  }
+
+  .settings__back {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    transition: color 0.2s;
+  }
+
+  .settings__back:hover {
+    color: var(--brand-primary);
+  }
+
+  .settings__title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0 0 1.5rem;
+  }
+
+  .settings__card {
+    background-color: var(--foreground-color);
+    border: 1px solid rgba(128, 128, 128, 0.12);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .settings__card--danger {
+    border-color: rgba(220, 53, 69, 0.2);
+  }
+
+  .settings__card-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+  }
+
+  .settings__profile {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .settings__avatar {
+    width: 5rem;
+    height: 5rem;
+    border-radius: 50%;
+    border: 3px solid rgba(128, 128, 128, 0.1);
+    flex-shrink: 0;
+  }
+
+  .settings__profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .settings__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin: 0;
+  }
+
+  .settings__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-color-secondary);
+  }
+
+  .settings__value {
+    font-size: 0.9375rem;
+    color: var(--text-color-primary);
+  }
+
+  .settings__value--mono {
+    font-family: monospace;
+    font-size: 0.8125rem;
+  }
+
+  .settings__value--role {
+    text-transform: capitalize;
+    font-weight: 600;
+  }
+
+  .settings__hint {
+    margin: 1rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    font-style: italic;
+  }
+
+  .settings__text {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    margin: 0 0 1rem;
+  }
+
+  .settings__danger-button {
+    display: inline-block;
+    padding: 0.5rem 1.25rem;
+    background-color: #dc3545;
+    color: #fff;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+      background-color 0.2s,
+      transform 0.1s;
+  }
+
+  .settings__danger-button:hover {
+    background-color: #c82333;
+    transform: translateY(-1px);
+  }
+
+  @media screen and (max-width: 600px) {
+    .settings__profile {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  }
+</style>

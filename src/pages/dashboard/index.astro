@@ -1,0 +1,455 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import StudentEnrollmentModal from '@components/dashboard/StudentEnrollmentModal.svelte'
+import { isSudo, isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import { enrollments, courses } from '@db/schema'
+import { eq } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+const admin = isAdmin(user)
+const sudo = isSudo(user)
+
+const userEnrollments = await db
+  .select({
+    id: enrollments.id,
+    fullName: enrollments.fullName,
+    email: enrollments.email,
+    age: enrollments.age,
+    schoolYear: enrollments.schoolYear,
+    schoolName: enrollments.schoolName,
+    region: enrollments.region,
+    commune: enrollments.commune,
+    previousExperience: enrollments.previousExperience,
+    motivation: enrollments.motivation,
+    status: enrollments.status,
+    feedback: enrollments.feedback,
+    createdAt: enrollments.createdAt,
+    courseName: courses.name,
+    courseLevel: courses.level,
+    enrollmentEndDate: courses.enrollmentEndDate,
+  })
+  .from(enrollments)
+  .innerJoin(courses, eq(enrollments.courseId, courses.id))
+  .where(eq(enrollments.userId, user.id))
+
+const openCourses = await db
+  .select()
+  .from(courses)
+  .where(eq(courses.status, 'open'))
+
+const now = new Date()
+const availableCourses = openCourses.filter((course) => {
+  const start = course.enrollmentStartDate
+  const end = course.enrollmentEndDate
+
+
+  if(start === null && end === null) return true
+
+  if (start && now < start) return false
+  if (end && now > end) return false
+  return true
+})
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Inscripciones',
+    description: 'Panel del estudiante',
+  }}
+>
+  <div class="dashboard">
+    <header class="dashboard__header">
+      <div class="dashboard__user">
+        {
+          user.discordAvatar && (
+            <img
+              class="dashboard__avatar"
+              src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png?size=64`}
+              alt={user.discordUsername}
+              width="48"
+              height="48"
+            />
+          )
+        }
+        <div>
+          <h1 class="dashboard__title">
+            ¡Hola, {user.discordUsername}! 👋
+          </h1>
+          <p class="dashboard__subtitle">Mis inscripciones</p>
+        </div>
+      </div>
+
+      {
+        admin && (
+          <a class="dashboard__admin-link" href="/admin">
+            Panel de administración →
+          </a>
+        )
+      }
+    </header>
+
+    <section class="dashboard__section" aria-labelledby="enrollments-heading">
+      <h2 id="enrollments-heading" class="dashboard__section-title">
+        Mis inscripciones
+      </h2>
+
+      {
+        userEnrollments.length === 0 ? (
+          <p class="dashboard__empty">
+            No tienes inscripciones aún. ¡Inscríbete en un curso!
+          </p>
+        ) : (
+          <ul class="enrollment-list" role="list">
+            {userEnrollments.map((data) => (
+              <li class="enrollment-card">
+                <div class="enrollment-card__header">
+                  <div class="enrollment-card__title-group">
+                    <h3 class="enrollment-card__course">{data.courseName}</h3>
+                    <span class={`tag tag--${data.courseLevel}`}>
+                      {data.courseLevel === 'beginner'
+                        ? '🟢 Básico'
+                        : data.courseLevel === 'intermediate'
+                          ? '🟡 Intermedio'
+                          : '🔴 Avanzado'}
+                    </span>
+                  </div>
+                  <div class="enrollment-card__status-group">
+                    <span class="status-label">Estado:</span>
+                    <span
+                      class={`enrollment-card__status enrollment-card__status--${data.status}`}
+                    >
+                      {data.status === 'pending' && '⏳ Pendiente'}
+                      {data.status === 'approved' && '✅ Aprobada'}
+                      {data.status === 'rejected' && '❌ Rechazada'}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="enrollment-card__footer">
+                  <div class="enrollment-card__info">
+                   <p class="enrollment-card__date">
+                      Cierre postulaciones: {data.enrollmentEndDate ? new Date(data.enrollmentEndDate).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
+                    </p>
+                  </div>
+                  <StudentEnrollmentModal enrollment={data} client:idle />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+
+    {
+      availableCourses.length > 0 && (
+        <section
+          class="dashboard__section"
+          aria-labelledby="available-courses-heading"
+        >
+          <h2 id="available-courses-heading" class="dashboard__section-title">
+            Cursos disponibles
+          </h2>
+          <div class="course-grid">
+            {availableCourses.map((course) => {
+              const alreadyEnrolled = userEnrollments.some(
+                (data) => data.courseName === course.name,
+              )
+              return (
+                <article class="course-card">
+                  <div class="course-card__header">
+                    <h3 class="course-card__name">{course.name}</h3>
+                    <span
+                      class={`tag tag--${course.level}`}
+                    >
+                      {course.level === 'beginner'
+                        ? '🟢 Básico'
+                        : course.level === 'intermediate'
+                          ? '🟡 Intermedio'
+                          : '🔴 Avanzado'}
+                    </span>
+                  </div>
+                  
+                  <p class="course-card__date">
+                     Cierre postulaciones: {course.enrollmentEndDate ? new Date(course.enrollmentEndDate).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
+                  </p>
+                  {course.description && (
+                    <p class="course-card__description">
+                      {course.description}
+                    </p>
+                  )}
+                  {alreadyEnrolled ? (
+                    <span class="course-card__enrolled">Ya inscrito/a</span>
+                  ) : (
+                    <a
+                      class="course-card__button"
+                      href={`/inscripciones/inscribirse?curso=${course.id}`}
+                    >
+                      Inscribirse →
+                    </a>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        </section>
+      )
+    }
+  </div>
+</DashboardLayout>
+
+<style>
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .dashboard__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .dashboard__user {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .dashboard__avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .dashboard__title {
+    font-size: 1.75rem;
+    margin: 0;
+  }
+
+  .dashboard__subtitle {
+    margin: 0;
+    color: var(--text-color-secondary);
+    font-size: 0.875rem;
+  }
+
+  .dashboard__admin-link {
+    padding: 0.5rem 1rem;
+    background-color: var(--brand-tertiary);
+    color: #fff;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: opacity 0.2s;
+  }
+
+  .dashboard__admin-link:hover {
+    opacity: 0.85;
+  }
+
+  .dashboard__section-title {
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .dashboard__empty {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-color-secondary);
+    background-color: var(--foreground-color);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .enrollment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .enrollment-card {
+    padding: 1.5rem;
+    background-color: var(--foreground-color);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--brand-primary);
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .enrollment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .enrollment-card__header,
+  .course-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .enrollment-card__title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .enrollment-card__course {
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .enrollment-card__status-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+  }
+
+  .enrollment-card__status {
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 0.35rem 0.85rem;
+    border-radius: 2rem;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+  }
+
+  .enrollment-card__status--pending {
+    background-color: var(--color-warning-bg);
+    color: var(--color-warning-text);
+  }
+
+  .enrollment-card__status--approved {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+  }
+
+  .enrollment-card__status--rejected {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.625rem;
+    background-color: var(--border-color-light);
+    border-radius: 1rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .enrollment-card__footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color-light);
+  }
+
+  .enrollment-card__date,
+  .course-card__date {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+  }
+
+  .course-card__date {
+    margin-bottom: 1rem;
+  }
+
+  .course-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .course-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    background-color: var(--foreground-color);
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--brand-secondary);
+    box-shadow: var(--shadow);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .course-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .course-card__name {
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--brand-primary);
+  }
+
+  .course-card__description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-color-secondary);
+    margin: 0 0 1.5rem;
+    max-width: 65ch;
+  }
+
+  .course-card__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--brand-primary);
+    color: #fff;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-size: 1rem;
+    transition:
+      background-color 0.2s,
+      transform 0.15s;
+  }
+
+  .course-card__button:hover {
+    background-color: var(--brand-secondary);
+    transform: translateY(-1px);
+  }
+
+  .course-card__enrolled {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+  }
+</style>

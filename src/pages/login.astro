@@ -1,0 +1,196 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import discordLogoSVG from '@assets/discord-color-logo.svg?raw'
+import Svg from '@cxa/astro-inline-svg'
+import { db } from '@db/index'
+import { settings } from '@db/schema'
+import { eq } from 'drizzle-orm'
+
+const user = Astro.locals.user
+
+if (user) return Astro.redirect('/dashboard')
+
+const [registrationSetting] = await db
+  .select()
+  .from(settings)
+  .where(eq(settings.key, 'public_registration'))
+
+const isRegistrationEnabled = registrationSetting?.value !== 'false'
+const hasInvokeCode = Astro.url.searchParams.has('invite')
+const showRegistrationWarning = !isRegistrationEnabled && !hasInvokeCode
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Iniciar sesión',
+    description: 'Inicia sesión con tu cuenta de Discord para inscribirte',
+  }}
+>
+  <div class="login" data-warning={showRegistrationWarning}>
+    <div class="login__card">
+      <Svg
+        class="login__discord-logo"
+        raw={discordLogoSVG}
+        width={80}
+        height={80}
+      />
+
+      <h1 class="login__title">Iniciar sesión</h1>
+
+      <p class="login__text">
+        Conecta tu cuenta de Discord para inscribirte en los cursos de la
+        academia.
+      </p>
+
+      {
+        showRegistrationWarning ? (
+          <div class="login__error" role="alert">
+            <p>
+              ⛔ <strong>Registro desactivado</strong>
+            </p>
+            <p>
+              El registro público está cerrado temporalmente. Solo puedes
+              ingresar con invitación o si ya tienes cuenta.
+            </p>
+          </div>
+        ) : (
+          <Fragment>
+            <a class="login__button" href="/api/auth/login" role="button">
+              <Svg
+                class="login__button-icon"
+                raw={discordLogoSVG}
+                width={20}
+                height={20}
+              />
+              Continuar con Discord
+            </a>
+
+            <p class="login__note">
+              ¿No tienes Discord?
+              <a
+                href="https://discord.com/register"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Crea una cuenta gratis
+              </a>
+              .
+            </p>
+          </Fragment>
+        )
+      }
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { toast } from 'svelte-sonner'
+
+  const loginDiv = document.querySelector('.login') as HTMLElement
+
+  toast.error('Registro público desactivado', {
+    description:
+      'Solo se permite el ingreso a usuarios registrados o con invitación.',
+  })
+</script>
+
+<style>
+  .login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 12rem);
+  }
+
+  .login__card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 26rem;
+    width: 100%;
+    padding: 3rem 2.5rem;
+    background-color: var(--foreground-color);
+    border-radius: 1.25rem;
+    border: 1px solid rgba(128, 128, 128, 0.12);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.06),
+      0 1px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  .login__error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    text-align: left;
+    width: 100%;
+  }
+
+  .login__error p {
+    margin: 0;
+  }
+
+  .login__error p + p {
+    margin-top: 0.25rem;
+  }
+
+  .login__discord-logo {
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 2px 8px rgba(88, 101, 242, 0.3));
+  }
+
+  .login__title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+  }
+
+  .login__text {
+    font-size: 0.9375rem;
+    margin: 0 0 2rem;
+    color: var(--text-color-secondary);
+    line-height: 1.6;
+  }
+
+  .login__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    background-color: rgb(88, 101, 242, 0.8);
+    color: #fff;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+      background-color 0.2s ease,
+      transform 0.15s ease,
+      box-shadow 0.2s ease;
+    box-shadow: 0 2px 8px rgba(88, 101, 242, 0.35);
+    border: none;
+    cursor: pointer;
+  }
+
+  .login__button-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .login__note {
+    margin-top: 1.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+  }
+
+  .login__note a {
+    color: var(--brand-primary);
+    text-decoration: underline;
+  }
+</style>

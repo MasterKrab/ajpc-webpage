@@ -18,6 +18,21 @@
   --transition-theme: background-color 0.3s ease-in-out, color 0.2s ease-in-out;
 
   --shadow: 0.5rem 0.5rem 1rem rgba(0, 0, 0, 0.1);
+
+  --color-success: #28a745;
+  --color-success-bg: #d4edda;
+  --color-success-text: #155724;
+
+  --color-danger: #dc3545;
+  --color-danger-bg: #f8d7da;
+  --color-danger-text: #721c24;
+
+  --color-warning: #ffc107;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #856404;
+
+  --border-color: rgba(128, 128, 128, 0.15);
+  --border-color-light: rgba(128, 128, 128, 0.05); /* For backgrounds like text blocks */
 }
 
 :root.dark {
@@ -63,7 +78,7 @@ html {
   scrollbar-color: var(--primary-color) transparent;
   scrollbar-width: thin;
   box-sizing: border-box;
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -71,7 +86,7 @@ body {
   flex-direction: column;
 
   justify-items: center;
-  height: 100%;
+  min-height: 100%;
   /* background-color: var(--brand-secondary); */
   background-color: var(--foreground-color);
   margin: 0;

@@ -1,0 +1,51 @@
+---
+import BaseHead from '@components/BaseHead.astro'
+import AppLogo from '@components/AppLogo.astro'
+import UserBadge from '@components/UserBadge.astro'
+import MiniFooter from '@components/MiniFooter.astro'
+
+const { metadata = {} } = Astro.props
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead metadata={metadata} />
+  </head>
+  <body>
+    <header class="enrollment-header">
+      <AppLogo />
+      <UserBadge />
+    </header>
+
+    <main class="enrollment-main">
+      <slot />
+    </main>
+
+    <MiniFooter />
+  </body>
+</html>
+
+<style>
+  .enrollment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  }
+
+  .enrollment-main {
+    max-width: 44rem;
+    margin: 0 auto;
+    width: 100%;
+    padding: 2rem 1.5rem;
+    min-height: calc(100vh - 8rem);
+  }
+
+  @media screen and (min-width: 600px) {
+    .enrollment-main {
+      padding: 3rem 2rem;
+    }
+  }
+</style>

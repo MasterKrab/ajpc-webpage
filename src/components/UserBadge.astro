@@ -1,0 +1,229 @@
+---
+const user = Astro.locals.user
+---
+
+{
+  user && (
+    <div class="user-menu">
+      <button
+        class="user-menu__trigger"
+        id="user-menu-trigger"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="user-menu-dropdown"
+      >
+        {user.discordAvatar && (
+          <img
+            class="user-menu__avatar"
+            src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png?size=32`}
+            alt=""
+            width="28"
+            height="28"
+          />
+        )}
+        <span class="user-menu__name">{user.discordUsername}</span>
+        <svg
+          class="user-menu__chevron"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </svg>
+      </button>
+
+      <div class="user-menu__dropdown" id="user-menu-dropdown" role="menu">
+        <div class="user-menu__info">
+          <span class="user-menu__info-name">{user.discordUsername}</span>
+          <span class="user-menu__info-role">{user.role}</span>
+        </div>
+        <hr class="user-menu__divider" />
+        <a class="user-menu__item" href="/dashboard/cuenta" role="menuitem">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          </svg>
+          Configuración
+        </a>
+        <hr class="user-menu__divider" />
+        <a class="user-menu__item user-menu__item--danger" href="/api/auth/logout" role="menuitem">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Cerrar sesión
+        </a>
+      </div>
+    </div>
+  )
+}
+
+<script is:inline>
+  (function() {
+    function initUserMenu() {
+      const trigger = document.getElementById('user-menu-trigger')
+      const dropdown = document.getElementById('user-menu-dropdown')
+      if (!trigger || !dropdown) return
+      if (trigger.dataset.init) return
+      trigger.dataset.init = 'true'
+
+      function toggle(open) {
+        const isOpen = open !== undefined ? open : !dropdown.classList.contains('user-menu__dropdown--open')
+        dropdown.classList.toggle('user-menu__dropdown--open', isOpen)
+        trigger.setAttribute('aria-expanded', String(isOpen))
+      }
+
+      trigger.addEventListener('click', function(e) {
+        e.stopPropagation()
+        toggle()
+      })
+
+      document.addEventListener('click', function() { toggle(false) })
+      dropdown.addEventListener('click', function(e) { e.stopPropagation() })
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') toggle(false)
+      })
+    }
+
+    // Run on initial load
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUserMenu)
+    else initUserMenu()
+
+    // Run on View Transition navigations
+    document.addEventListener('astro:page-load', initUserMenu)
+  })()
+</script>
+
+<style>
+  .user-menu {
+    position: relative;
+  }
+
+  .user-menu__trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: none;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s;
+  }
+
+  .user-menu__trigger:hover {
+    background-color: rgba(128, 128, 128, 0.08);
+    border-color: rgba(128, 128, 128, 0.12);
+  }
+
+  .user-menu__avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+  }
+
+  .user-menu__name {
+    font-weight: 600;
+  }
+
+  .user-menu__chevron {
+    opacity: 0.5;
+    transition: transform 0.2s;
+  }
+
+  .user-menu__trigger[aria-expanded='true'] .user-menu__chevron {
+    transform: rotate(180deg);
+  }
+
+  .user-menu__dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    min-width: 14rem;
+    background-color: var(--foreground-color);
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    border-radius: 0.75rem;
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px) scale(0.97);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease,
+      visibility 0.15s;
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .user-menu__dropdown--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+  }
+
+  .user-menu__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .user-menu__info-name {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--text-color-primary);
+  }
+
+  .user-menu__info-role {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    text-transform: capitalize;
+  }
+
+  .user-menu__divider {
+    margin: 0;
+    border: none;
+    border-top: 1px solid rgba(128, 128, 128, 0.12);
+  }
+
+  .user-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color-primary);
+    text-decoration: none;
+    transition: background-color 0.12s;
+  }
+
+  .user-menu__item:hover {
+    background-color: rgba(128, 128, 128, 0.08);
+  }
+
+  .user-menu__item--danger {
+    color: #dc3545;
+  }
+
+  .user-menu__item--danger:hover {
+    background-color: rgba(220, 53, 69, 0.08);
+  }
+
+  @media screen and (max-width: 600px) {
+    .user-menu__name {
+      display: none;
+    }
+  }
+</style>
