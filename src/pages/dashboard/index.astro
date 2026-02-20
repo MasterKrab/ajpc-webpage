@@ -43,8 +43,7 @@ const availableCourses = openCourses.filter((course) => {
   const start = course.enrollmentStartDate
   const end = course.enrollmentEndDate
 
-
-  if(start === null && end === null) return true
+  if (start === null && end === null) return true
 
   if (start && now < start) return false
   if (end && now > end) return false
@@ -128,8 +127,14 @@ const availableCourses = openCourses.filter((course) => {
 
                 <div class="enrollment-card__footer">
                   <div class="enrollment-card__info">
-                   <p class="enrollment-card__date">
-                      Cierre postulaciones: {data.enrollmentEndDate ? new Date(data.enrollmentEndDate).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
+                    <p class="enrollment-card__date">
+                      Cierre postulaciones:{' '}
+                      {data.enrollmentEndDate
+                        ? new Date(data.enrollmentEndDate).toLocaleDateString(
+                            'es-CL',
+                            { day: 'numeric', month: 'long' },
+                          )
+                        : 'Sin fecha'}
                     </p>
                   </div>
                   <StudentEnrollmentModal enrollment={data} client:idle />
@@ -159,9 +164,7 @@ const availableCourses = openCourses.filter((course) => {
                 <article class="course-card">
                   <div class="course-card__header">
                     <h3 class="course-card__name">{course.name}</h3>
-                    <span
-                      class={`tag tag--${course.level}`}
-                    >
+                    <span class={`tag tag--${course.level}`}>
                       {course.level === 'beginner'
                         ? '🟢 Básico'
                         : course.level === 'intermediate'
@@ -169,21 +172,25 @@ const availableCourses = openCourses.filter((course) => {
                           : '🔴 Avanzado'}
                     </span>
                   </div>
-                  
+
                   <p class="course-card__date">
-                     Cierre postulaciones: {course.enrollmentEndDate ? new Date(course.enrollmentEndDate).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' }) : 'Sin fecha'}
+                    Cierre postulaciones:{' '}
+                    {course.enrollmentEndDate
+                      ? new Date(course.enrollmentEndDate).toLocaleDateString(
+                          'es-CL',
+                          { day: 'numeric', month: 'long' },
+                        )
+                      : 'Sin fecha'}
                   </p>
                   {course.description && (
-                    <p class="course-card__description">
-                      {course.description}
-                    </p>
+                    <p class="course-card__description">{course.description}</p>
                   )}
                   {alreadyEnrolled ? (
                     <span class="course-card__enrolled">Ya inscrito/a</span>
                   ) : (
                     <a
                       class="course-card__button"
-                      href={`/inscripciones/inscribirse?curso=${course.id}`}
+                      href={`/dashboard/inscribirse?curso=${course.id}`}
                     >
                       Inscribirse →
                     </a>
@@ -282,7 +289,9 @@ const availableCourses = openCourses.filter((course) => {
     border: 1px solid var(--border-color);
     border-left: 5px solid var(--brand-primary);
     box-shadow: var(--shadow);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .enrollment-card:hover {
