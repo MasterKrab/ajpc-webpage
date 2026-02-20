@@ -16,7 +16,9 @@ const [registrationSetting] = await db
   .where(eq(settings.key, 'public_registration'))
 
 const isRegistrationEnabled = registrationSetting?.value !== 'false'
-const hasInvokeCode = Astro.url.searchParams.has('invite')
+const inviteCode =
+  Astro.url.searchParams.get('code') || Astro.url.searchParams.get('invite')
+const hasInvokeCode = !!inviteCode
 const showRegistrationWarning = !isRegistrationEnabled && !hasInvokeCode
 ---
 
@@ -55,7 +57,11 @@ const showRegistrationWarning = !isRegistrationEnabled && !hasInvokeCode
           </div>
         ) : (
           <Fragment>
-            <a class="login__button" href="/api/auth/login" role="button">
+            <a
+              class="login__button"
+              href={`/api/auth/login${inviteCode ? `?invite=${inviteCode}` : ''}`}
+              role="button"
+            >
               <Svg
                 class="login__button-icon"
                 raw={discordLogoSVG}
@@ -82,17 +88,6 @@ const showRegistrationWarning = !isRegistrationEnabled && !hasInvokeCode
     </div>
   </div>
 </DashboardLayout>
-
-<script>
-  import { toast } from 'svelte-sonner'
-
-  const loginDiv = document.querySelector('.login') as HTMLElement
-
-  toast.error('Registro público desactivado', {
-    description:
-      'Solo se permite el ingreso a usuarios registrados o con invitación.',
-  })
-</script>
 
 <style>
   .login {

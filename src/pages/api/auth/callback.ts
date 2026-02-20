@@ -49,14 +49,21 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
 
     if (existingUser) {
       userId = existingUser.id
+
+      const updateData: any = {
+        discordUsername: discordUser.username,
+        discordAvatar: discordUser.avatar,
+        email: existingUser.email,
+        updatedAt: new Date(),
+      }
+
+      if (inviteValid) {
+        updateData.role = role
+      }
+
       await db
         .update(users)
-        .set({
-          discordUsername: discordUser.username,
-          discordAvatar: discordUser.avatar,
-          email: existingUser.email,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, existingUser.id))
     } else {
       // Check if registration is allowed
@@ -89,11 +96,11 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
         role: role,
         name: null,
       })
+    }
 
-      if (inviteValid && inviteCode) {
-        // Auto-delete invite after use
-        await db.delete(inviteCodes).where(eq(inviteCodes.code, inviteCode))
-      }
+    if (inviteValid && inviteCode) {
+      // Auto-delete invite after use
+      await db.delete(inviteCodes).where(eq(inviteCodes.code, inviteCode))
     }
 
     createSession(cookies, userId)
