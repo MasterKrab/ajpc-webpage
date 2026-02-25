@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from '@components/ui/Button.svelte'
   interface Props {
     isOpen: boolean
     title: string
@@ -19,7 +20,7 @@
     if (isOpen) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
 
-    return () => document.body.style.overflow = ''
+    return () => (document.body.style.overflow = '')
   })
 
   function portal(node: HTMLElement) {
@@ -48,9 +49,7 @@
     >
       <header class="modal__header">
         <h3 id="modal-title" class="modal__title">{title}</h3>
-        <button class="close-button" onclick={onClose} aria-label="Cerrar"
-          >Cerrar</button
-        >
+        <Button variant="secondary" size="sm" onclick={onClose}>Cerrar</Button>
       </header>
 
       <div class="modal__content">
@@ -112,27 +111,6 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
-  }
-
-  .close-button {
-    padding: 0.625rem 1.25rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    background-color: var(--foreground-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-color-primary);
-  }
-
-  .close-button:hover {
-    background-color: var(--border-color-light);
-  }
-
-  .close-button:hover {
-    background-color: rgba(128, 128, 128, 0.1);
-    color: var(--text-color-primary);
   }
 
   .modal__content {

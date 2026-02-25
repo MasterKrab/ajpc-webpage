@@ -12,8 +12,8 @@
   import Loader from '@components/ui/Loader.svelte'
   import ModuleCard from '@components/ui/ModuleCard.svelte'
   import ConfirmModal from '@components/ui/ConfirmModal.svelte'
-  import type { User } from '@db/schema'
-  import type { Module, Material } from '@app-types/modules'
+  import Button from '@components/ui/Button.svelte'
+  import type { Module } from '@app-types/modules'
 
   type Section = {
     id: string
@@ -48,14 +48,13 @@
   let modulesList = $state<Module[]>([])
   let modulesLoading = $state(false)
 
-  // Observations state
   let selectedStudent = $state<Student | null>(null)
   let observationsList = $state<Observation[]>([])
   let observationsLoading = $state(false)
+  let savingObservation = $state(false)
   let newObservation = $state('')
   let isObservationModalOpen = $state(false)
 
-  // Modules/Materials state
   let selectedModule = $state<Module | null>(null)
   let isMaterialModalOpen = $state(false)
   let newMaterial = $state({
@@ -64,7 +63,6 @@
     type: 'link' as 'link' | 'document',
   })
 
-  // Module Edit State
   let isModuleModalOpen = $state(false)
   let editingModuleId = $state<string | null>(null)
   let newModule = $state({
@@ -72,7 +70,6 @@
     description: '',
   })
 
-  // Confirmation modal state
   let confirmModal = $state({
     open: false,
     title: '',
@@ -95,7 +92,6 @@
 
   let currentAttendance = $state<Attendance[]>([])
 
-  // Search state
   let studentSearchQuery = $state('')
 
   const hasMoreStudents = $derived(studentsList.length < studentsTotal)
@@ -151,7 +147,6 @@
   let hasRequestedStudents = false
   let hasRequestedAttendance = false
 
-  // Effect to fetch students on tab change or search
   let lastSearch = ''
   $effect(() => {
     if (activeTab === 'students' || activeTab === 'attendance') {
@@ -165,7 +160,6 @@
     }
   })
 
-  // Also fetch students when activeTab changes to students for the first time
   $effect(() => {
     if (
       (activeTab === 'students' || activeTab === 'attendance') &&
@@ -203,6 +197,7 @@
 
   async function saveObservation() {
     if (!newObservation.trim() || !selectedStudent) return
+    savingObservation = true
     const response = await fetch('/api/docente/observations', {
       method: 'POST',
       body: JSON.stringify({
@@ -222,6 +217,7 @@
     } else {
       toast.error('Error al guardar la observación')
     }
+    savingObservation = false
   }
 
   async function fetchAttendance(page = 1, append = false) {
@@ -392,12 +388,9 @@
           onLoadMore={() => fetchStudents(studentsPage + 1, true)}
         >
           {#snippet actions(student)}
-            <button
-              class="button button--small button--primary"
-              onclick={() => openObservations(student)}
-            >
+            <Button size="sm" onclick={() => openObservations(student)}>
               📝 Observaciones
-            </button>
+            </Button>
           {/snippet}
         </UserTable>
       </DashboardContent>
@@ -502,13 +495,15 @@
         bind:value={newObservation}
         placeholder="Escribe una nueva observación..."
       ></textarea>
-      <button
-        class="button button--primary"
-        onclick={saveObservation}
+      <Button
+        size="lg"
+        loading={savingObservation}
+        loadingText="Guardando..."
         disabled={!newObservation.trim()}
+        onclick={saveObservation}
       >
         Guardar Observación
-      </button>
+      </Button>
     </div>
   </div>
 </Modal>
@@ -539,13 +534,10 @@
       ></textarea>
     </div>
     <div class="modal-actions">
-      <button
-        class="button button--secondary"
-        onclick={() => (isModuleModalOpen = false)}>Cancelar</button
+      <Button variant="secondary" onclick={() => (isModuleModalOpen = false)}
+        >Cancelar</Button
       >
-      <button class="button button--primary" onclick={saveModule}
-        >Guardar</button
-      >
+      <Button onclick={saveModule}>Guardar</Button>
     </div>
   </div>
 </Modal>
@@ -592,13 +584,10 @@
       </select>
     </div>
     <div class="modal-actions">
-      <button
-        class="button button--secondary"
-        onclick={() => (isMaterialModalOpen = false)}>Cancelar</button
+      <Button variant="secondary" onclick={() => (isMaterialModalOpen = false)}
+        >Cancelar</Button
       >
-      <button class="button button--primary" onclick={addMaterial}
-        >Agregar</button
-      >
+      <Button onclick={addMaterial}>Agregar</Button>
     </div>
   </div>
 </Modal>
@@ -669,48 +658,25 @@
     resize: vertical;
   }
 
-  .button {
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.75rem;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .form-group {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
-    font-size: 0.95rem;
+    margin-bottom: 1rem;
   }
 
-  .button--primary {
-    background: var(--brand-primary);
-    color: var(--text-color-primary);
-  }
-
-  .button--primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.3);
-  }
-
-  .button--secondary {
+  .form-input {
+    padding: 0.625rem;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 0.375rem;
     background: var(--foreground-color);
-    border: 1px solid var(--border-color);
     color: var(--text-color-primary);
   }
 
-  .button--secondary:hover:not(:disabled) {
-    background: var(--border-color-light);
-  }
-
-  .button--small {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-    border-radius: 0.5rem;
-  }
-
-  .button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
   }
 </style>

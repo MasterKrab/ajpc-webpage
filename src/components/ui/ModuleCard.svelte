@@ -1,5 +1,11 @@
 <script lang="ts">
-  import type { Module, Material } from '../../types/modules'
+  import type { Module } from '@types/modules'
+  import Button from '@components/ui/Button.svelte'
+
+  import editIcon from '@assets/icons/edit.svg?raw'
+  import trashIcon from '@assets/icons/trash.svg?raw'
+  import closeIcon from '@assets/icons/close.svg?raw'
+  import plusIcon from '@assets/icons/plus.svg?raw'
 
   interface Props {
     module: Module
@@ -32,45 +38,28 @@
       </div>
       {#if isAdmin}
         <div class="module-card__actions">
-          <button
-            class="action-button action-button--edit"
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            ariaLabel="Editar módulo"
             onclick={onEditModule}
-            aria-label="Editar módulo"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
-              />
-            </svg>
-          </button>
-          <button
-            class="action-button action-button--danger"
+            {#snippet icon()}
+              {@html editIcon}
+            {/snippet}
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            iconOnly
+            ariaLabel="Eliminar módulo"
             onclick={onDeleteModule}
-            aria-label="Eliminar módulo"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path
-                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-              <line x1="10" y1="11" x2="10" y2="17" />
-              <line x1="14" y1="11" x2="14" y2="17" />
-            </svg>
-          </button>
+            {#snippet icon()}
+              {@html trashIcon}
+            {/snippet}
+          </Button>
         </div>
       {/if}
     </header>
@@ -126,23 +115,18 @@
                 <span class="material-title">{mat.title}</span>
               </a>
               {#if isAdmin}
-                <button
-                  class="delete-material-button"
+                <Button
+                  variant="danger"
+                  size="sm"
+                  iconOnly
+                  ariaLabel="Eliminar material"
+                  extraClass="delete-material-btn"
                   onclick={() => onDeleteMaterial?.(mat.id)}
-                  aria-label="Eliminar material"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                  {#snippet icon()}
+                    {@html closeIcon}
+                  {/snippet}
+                </Button>
               {/if}
             </li>
           {/each}
@@ -154,20 +138,17 @@
       {/if}
 
       {#if isAdmin}
-        <button class="add-material-button" onclick={onAddMaterial}>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+        <Button
+          variant="primary"
+          dashed
+          onclick={onAddMaterial}
+          extraClass="add-material-btn"
+        >
+          {#snippet icon()}
+            {@html plusIcon}
+          {/snippet}
           Agregar Material
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
@@ -179,7 +160,10 @@
     border-radius: 1.25rem;
     display: flex;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 100%;
     margin-bottom: 1.5rem;
   }
@@ -232,40 +216,6 @@
   .module-card__actions {
     display: flex;
     gap: 0.5rem;
-  }
-
-  .action-button {
-    width: 2.25rem;
-    height: 2.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.75rem;
-    cursor: pointer;
-  }
-
-  .action-button svg {
-    width: 1.1rem;
-    height: 1.1rem;
-  }
-
-  .action-button:hover {
-    transform: scale(1.05);
-  }
-
-  .action-button--edit {
-    border: 0.125rem solid var(--brand-primary);
-    color: var(--brand-primary);
-  }
-
-  .action-button--danger {
-    color: var(--color-danger);
-    background: var(--color-danger-bg);
-  }
-
-  .action-button--danger:hover {
-    background: var(--color-danger);
-    color: var(--text-color-primary);
   }
 
   .materials-section {
@@ -332,40 +282,12 @@
     flex-shrink: 0;
   }
 
-  .material-icon svg {
-    width: 1rem;
-    height: 1rem;
-  }
-
   .material-title {
     font-size: 0.95rem;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .delete-material-button {
-    background: none;
-    border: none;
-    color: var(--color-danger);
-    cursor: pointer;
-    padding: 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.375rem;
-    transition: all 0.2s;
-    opacity: 0.4;
-  }
-
-  .delete-material-button:hover {
-    opacity: 1;
-  }
-
-  .delete-material-button svg {
-    width: 0.9rem;
-    height: 0.9rem;
   }
 
   .empty-materials {
@@ -379,28 +301,20 @@
     text-align: center;
   }
 
-  .add-material-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: 2px dashed var(--brand-primary);
-    color: var(--brand-primary);
-    border-radius: 1rem;
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
+  :global(.delete-material-btn) {
+    opacity: 0.4;
+    background: none !important;
+    color: var(--color-danger) !important;
+  }
+
+  :global(.delete-material-btn:hover:not(:disabled)) {
+    opacity: 1;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  :global(.add-material-btn) {
+    color: var(--brand-primary) !important;
     width: fit-content;
-  }
-
-  .add-material-button:hover {
-    transform: translateY(-2px);
-  }
-
-  .add-material-button svg {
-    width: 1.1rem;
-    height: 1.1rem;
   }
 </style>

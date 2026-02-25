@@ -4,6 +4,7 @@
   import Loader from '@components/ui/Loader.svelte'
   import ModuleCard from '@components/ui/ModuleCard.svelte'
   import ConfirmModal from '@components/ui/ConfirmModal.svelte'
+  import Button from '@components/ui/Button.svelte'
 
   import type { Module, Material } from '../../../types/modules'
 
@@ -25,7 +26,6 @@
   let isMaterialModalOpen = $state(false)
   let selectedModule = $state<Module | null>(null)
 
-  // Confirmation modal state
   let confirmModal = $state({
     open: false,
     title: '',
@@ -123,8 +123,7 @@
 
 <div class="panel-header">
   <h2>Módulos y Materiales</h2>
-  <button
-    class="button button--primary"
+  <Button
     onclick={() => {
       editingModuleId = null
       newModule = { title: '', description: '' }
@@ -132,7 +131,7 @@
     }}
   >
     + Nuevo Módulo
-  </button>
+  </Button>
 </div>
 
 {#if modulesLoading}
@@ -186,12 +185,11 @@
       ></textarea>
     </div>
     <div class="modal-actions">
-      <button
-        class="button button--secondary"
-        onclick={() => (isModuleModalOpen = false)}>Cancelar</button
+      <Button variant="secondary" onclick={() => (isModuleModalOpen = false)}
+        >Cancelar</Button
       >
-      <button class="button button--primary" onclick={saveModule}
-        >{editingModuleId ? 'Guardar' : 'Crear'}</button
+      <Button onclick={saveModule}
+        >{editingModuleId ? 'Guardar' : 'Crear'}</Button
       >
     </div>
   </div>
@@ -230,13 +228,10 @@
       </select>
     </div>
     <div class="modal-actions">
-      <button
-        class="button button--secondary"
-        onclick={() => (isMaterialModalOpen = false)}>Cancelar</button
+      <Button variant="secondary" onclick={() => (isMaterialModalOpen = false)}
+        >Cancelar</Button
       >
-      <button class="button button--primary" onclick={addMaterial}
-        >Agregar</button
-      >
+      <Button onclick={addMaterial}>Agregar</Button>
     </div>
   </div>
 </Modal>
@@ -256,40 +251,6 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
-  }
-
-  .button {
-    padding: 0.625rem 1.25rem;
-    border-radius: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .button--primary {
-    background: var(--brand-primary);
-    color: white;
-  }
-
-  .button--primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.3);
-  }
-
-  .button--secondary {
-    background: var(--foreground-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-color-primary);
-  }
-
-  .button--secondary:hover {
-    background: var(--border-color-light);
   }
 
   .form-group {

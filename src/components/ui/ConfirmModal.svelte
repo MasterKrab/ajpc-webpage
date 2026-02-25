@@ -1,5 +1,6 @@
 <script lang="ts">
-  import Modal from './Modal.svelte'
+  import Modal from '@components/ui/Modal.svelte'
+  import Button from '@components/ui/Button.svelte'
 
   interface Props {
     isOpen: boolean
@@ -29,17 +30,8 @@
     <p class="confirm-modal__message">{message}</p>
 
     <div class="confirm-modal__actions">
-      <button class="button button--secondary" onclick={onCancel}>
-        {cancelText}
-      </button>
-      <button
-        class="button"
-        class:button--primary={type === 'primary'}
-        class:button--danger={type === 'danger'}
-        onclick={onConfirm}
-      >
-        {confirmText}
-      </button>
+      <Button variant="secondary" onclick={onCancel}>{cancelText}</Button>
+      <Button variant={type} onclick={onConfirm}>{confirmText}</Button>
     </div>
   </div>
 </Modal>
@@ -59,34 +51,5 @@
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
-  }
-
-  .button {
-    padding: 0.625rem 1.25rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-
-  .button--primary {
-    background-color: var(--brand-primary);
-    color: white;
-  }
-
-  .button--danger {
-    background-color: var(--color-danger, #dc3545);
-    color: white;
-  }
-
-  .button--secondary {
-    background: none;
-    border: 1px solid var(--border-color);
-    color: var(--text-color-primary);
-  }
-
-  .button--secondary:hover {
-    background-color: rgba(128, 128, 128, 0.05);
   }
 </style>

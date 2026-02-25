@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
   import Select from '@components/ui/Select.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
@@ -8,6 +7,7 @@
   import InfiniteScroll from '@components/ui/InfiniteScroll.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import EnrollmentDetailModal from '@components/admin/EnrollmentDetailModal.svelte'
+  import Button from '@components/ui/Button.svelte'
   import type { Enrollment } from '@db/schema'
 
   type EnrollmentItem = {
@@ -34,7 +34,7 @@
   let { courseId, initialEnrollments, sectionsList }: Props = $props()
 
   let enrollmentsList = $state<EnrollmentItem[]>(initialEnrollments)
-  let enrollmentTotal = $state(initialEnrollments.length) // Initial count
+  let enrollmentTotal = $state(initialEnrollments.length)
   let enrollmentLoading = $state(false)
   let enrollmentPage = $state(1)
   const ENROLLMENTS_PER_PAGE = 20
@@ -71,7 +71,6 @@
     enrollmentLoading = false
   }
 
-  // Effect for search
   let searchTimeout: any
   $effect(() => {
     if (studentSearch !== undefined) {
@@ -146,7 +145,6 @@
 
     if (res.ok) {
       toast.success('Paralelo asignado')
-      // Map local update for better UX instead of full refresh
       enrollmentsList = enrollmentsList.map((item) => {
         if (item.enrollment.id === enrollmentId) {
           return {
@@ -186,13 +184,14 @@
 {#if enrollmentsList.some((e) => !e.enrollment.notifiedAt && e.enrollment.status !== 'pending')}
   <div class="pending-notice">
     <span>Hay notificaciones pendientes para este curso.</span>
-    <button
-      class="button button--small button--primary"
+    <Button
+      size="sm"
+      loading={actionLoading === 'batch'}
+      loadingText="Enviando..."
       onclick={() => notify()}
-      disabled={actionLoading === 'batch'}
     >
-      {actionLoading === 'batch' ? 'Enviando...' : 'Notificar Pendientes'}
-    </button>
+      Notificar Pendientes
+    </Button>
   </div>
 {/if}
 
@@ -248,24 +247,23 @@
                     ).toLocaleDateString()}
                   </span>
                 {:else if item.enrollment.status !== 'pending'}
-                  <button
-                    class="button button--small"
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={actionLoading === item.enrollment.id}
+                    loadingText="..."
                     onclick={() => notify(item.enrollment.id)}
-                    disabled={actionLoading === item.enrollment.id}
                   >
-                    {actionLoading === item.enrollment.id ? '...' : 'Notificar'}
-                  </button>
+                    Notificar
+                  </Button>
                 {:else}
                   <span class="text-muted">—</span>
                 {/if}
               </td>
               <td class="actions-cell">
-                <button
-                  class="button button--small button--primary"
-                  onclick={() => openEnrollmentDetail(item)}
-                >
+                <Button size="sm" onclick={() => openEnrollmentDetail(item)}>
                   Ver postulación
-                </button>
+                </Button>
               </td>
             </tr>
           {/each}
@@ -274,9 +272,7 @@
     </div>
 
     {#if enrollmentLoading && enrollmentsList.length === 0}
-      <div class="loading-state">
-        <Loader label="Cargando inscripciones..." />
-      </div>
+      <Loader label="Cargando inscripciones..." />
     {/if}
 
     {#if hasMoreEnrollments}
@@ -305,20 +301,24 @@
   .table-wrapper {
     overflow-x: auto;
   }
+
   .table {
     width: 100%;
     border-collapse: collapse;
   }
+
   .table th,
   .table td {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);
   }
+
   .text-muted {
     color: var(--text-color-secondary);
     font-size: 0.85em;
   }
+
   .status-pill {
     padding: 0.25rem 0.75rem;
     border-radius: 1rem;
@@ -326,21 +326,26 @@
     font-weight: 700;
     text-transform: uppercase;
   }
+
   .status--approved {
     background-color: var(--color-success-bg);
     color: var(--color-success-text);
   }
+
   .status--rejected {
     background-color: var(--color-danger-bg);
     color: var(--color-danger-text);
   }
+
   .status--pending {
     background-color: var(--color-warning-bg);
     color: var(--color-warning-text);
   }
+
   .actions-cell {
     min-width: 200px;
   }
+
   .pending-notice {
     display: flex;
     align-items: center;
@@ -353,37 +358,19 @@
     font-size: 0.875rem;
     font-weight: 600;
   }
+
   .notified-at {
     font-size: 0.75rem;
     color: var(--text-color-secondary);
   }
+
   .section-select {
     min-width: 12rem;
   }
-  .button {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    color: var(--text-color-primary);
-  }
-  .button--primary {
-    background: var(--brand-primary);
-    color: white;
-  }
-  .button--small {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-  }
+
   .empty-state {
     padding: 3rem;
     text-align: center;
     color: var(--text-color-secondary);
-  }
-  .loading-state {
-    padding: 2rem;
-    display: flex;
-    justify-content: center;
   }
 </style>

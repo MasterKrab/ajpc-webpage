@@ -1,6 +1,6 @@
 <script lang="ts">
   import { z } from 'zod'
-  import Loader from '@components/ui/Loader.svelte'
+  import Button from '@components/ui/Button.svelte'
 
   interface Props {
     courseId: string
@@ -240,13 +240,9 @@
       <span class="form-counter">{motivation.length}/1000</span>
     </div>
 
-    <button class="form-submit" type="submit" disabled={loading}>
-      {#if loading}
-        <Loader label="Enviando..." />
-      {:else}
-        Enviar inscripción
-      {/if}
-    </button>
+    <Button type="submit" size="lg" {loading} loadingText="Enviando...">
+      Enviar inscripción
+    </Button>
   </form>
 {/if}
 
@@ -303,7 +299,7 @@
   }
 
   .form-input--error {
-    border-color: #dc3545;
+    border-color: var(--color-danger);
   }
 
   .form-textarea {
@@ -313,7 +309,7 @@
 
   .form-hint {
     font-size: 0.8125rem;
-    color: #dc3545;
+    color: var(--color-danger);
   }
 
   .form-counter {
@@ -324,35 +320,10 @@
 
   .form-error {
     padding: 0.75rem 1rem;
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
     border-radius: 0.5rem;
     font-size: 0.875rem;
-  }
-
-  .form-submit {
-    padding: 0.875rem 2rem;
-    background-color: var(--brand-primary);
-    color: #fff;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition:
-      opacity 0.2s,
-      transform 0.15s;
-  }
-
-  .form-submit:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-
-  .form-submit:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 
   .form-success {
@@ -369,9 +340,9 @@
     display: inline-block;
     margin-top: 1rem;
     padding: 0.75rem 1.5rem;
-    background-color: var(--brand-primary);
-    color: #fff;
-    border-radius: 0.5rem;
+    background-color: var(--button-primary-bg);
+    color: var(--button-primary-color);
+    border-radius: var(--button-radius);
     font-weight: 600;
   }
 

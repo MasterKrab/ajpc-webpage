@@ -3,6 +3,7 @@
   import Modal from '@components/ui/Modal.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import SearchBox from '@components/ui/SearchBox.svelte'
+  import Button from '@components/ui/Button.svelte'
 
   type Teacher = {
     id: string
@@ -202,9 +203,7 @@
 
 <div class="panel-header">
   <h2>Gestión de Paralelos</h2>
-  <button class="button button--primary" onclick={openCreateSection}>
-    + Nuevo Paralelo
-  </button>
+  <Button onclick={openCreateSection}>+ Nuevo Paralelo</Button>
 </div>
 
 {#if sectionsLoading}
@@ -225,43 +224,50 @@
         </tr>
       </thead>
       <tbody>
-        {#each sectionsList as s}
+        {#each sectionsList as section}
           <tr>
-            <td class="table__td"><strong>{s.name}</strong></td>
+            <td class="table__td"><strong>{section.name}</strong></td>
             <td class="table__td">
               <div class="docentes-list">
-                {#each s.docentes as d}
-                  <span class="docente-tag">{d.name || d.discordUsername}</span>
+                {#each section.docentes as teacher}
+                  <span class="docente-tag"
+                    >{teacher.name || teacher.discordUsername}</span
+                  >
                 {:else}
                   <span class="text-muted">Sin docente</span>
                 {/each}
               </div>
             </td>
             <td class="table__td">
-              {studentCounts[s.id] || 0}
+              {studentCounts[section.id] || 0}
             </td>
             <td class="table__td">
-              <button
-                class="button button--small"
-                onclick={() => {
-                  assignmentSection = s
-                  isStudentModalOpen = true
-                }}
-              >
-                Gestionar Alumnos
-              </button>
-              <button
-                class="button button--small"
-                onclick={() => openEditSection(s)}
-              >
-                Editar
-              </button>
-              <button
-                class="button button--small button--danger"
-                onclick={() => deleteSection(s.id)}
-              >
-                Eliminar
-              </button>
+              <div class="actions-row">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onclick={() => {
+                    assignmentSection = section
+                    isStudentModalOpen = true
+                  }}
+                >
+                  Gestionar Alumnos
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onclick={() => openEditSection(section)}
+                >
+                  Editar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onclick={() => deleteSection(section.id)}
+                >
+                  Eliminar
+                </Button>
+              </div>
             </td>
           </tr>
         {/each}
@@ -308,24 +314,20 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button
+      <Button
         type="button"
-        class="button"
+        variant="secondary"
         onclick={() => (showSectionForm = false)}
       >
         Cancelar
-      </button>
-      <button
+      </Button>
+      <Button
         type="submit"
-        class="button button--primary"
-        disabled={sectionFormLoading}
+        loading={sectionFormLoading}
+        loadingText="Procesando..."
       >
-        {sectionFormLoading
-          ? 'Procesando...'
-          : editingSectionId
-            ? 'Guardar Cambios'
-            : 'Crear Paralelo'}
-      </button>
+        {editingSectionId ? 'Guardar Cambios' : 'Crear Paralelo'}
+      </Button>
     </div>
   </form>
 </Modal>
@@ -367,10 +369,9 @@
                 </span>
               {/if}
             </div>
-            <button
-              class="button button--small {isAssigned
-                ? 'button--danger'
-                : 'button--primary'}"
+            <Button
+              size="sm"
+              variant={isAssigned ? 'danger' : 'primary'}
               onclick={() =>
                 assignSectionToStudent(
                   item.enrollment.id,
@@ -378,7 +379,7 @@
                 )}
             >
               {isAssigned ? 'Quitar' : 'Asignar'}
-            </button>
+            </Button>
           </div>
         {/each}
       </div>
@@ -416,26 +417,10 @@
     margin-right: 0.25rem;
   }
 
-  .button {
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .button--primary {
-    background: var(--brand-primary);
-    color: white;
-  }
-  .button--small {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.75rem;
-  }
-
-  .button--danger {
-    background: #dc3545;
-    color: white;
+  .actions-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .edit-form {
@@ -496,6 +481,7 @@
     gap: 1rem;
     max-height: 70vh;
   }
+
   .student-list {
     display: flex;
     flex-direction: column;
@@ -527,5 +513,10 @@
     border-radius: 0.2rem;
     width: fit-content;
     margin-top: 0.25rem;
+  }
+
+  .text-muted {
+    color: var(--text-color-secondary);
+    font-size: 0.85em;
   }
 </style>

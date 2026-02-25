@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
+  import Button from '@components/ui/Button.svelte'
 
   interface Props {
     initialName: string | null
@@ -82,20 +83,16 @@
       />
 
       <div class="form-actions">
-        <button
-          class="button button--primary"
+        <Button
           onclick={updateProfile}
-          disabled={loading ||
-            !name.trim() ||
+          {loading}
+          loadingText="Guardando..."
+          disabled={!name.trim() ||
             !email.trim() ||
             (name === initialName && email === initialEmail)}
         >
-          {#if loading}
-            Cargando...
-          {:else}
-            Guardar Cambios
-          {/if}
-        </button>
+          Guardar Cambios
+        </Button>
       </div>
 
       {#if isAdminUser && (!initialName || !initialEmail)}
@@ -172,27 +169,6 @@
     border-color: var(--brand-primary);
   }
 
-  .button {
-    padding: 0.625rem 1.25rem;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-
-  .button--primary {
-    background-color: var(--brand-primary);
-    color: white;
-  }
-
-  .button--primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
   .error-text {
     font-size: 0.75rem;
     color: #d32f2f;
@@ -203,10 +179,6 @@
   @media screen and (max-width: 480px) {
     .form-actions {
       flex-direction: column;
-    }
-
-    .button {
-      width: 100%;
     }
   }
 </style>

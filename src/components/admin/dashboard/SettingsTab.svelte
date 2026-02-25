@@ -2,6 +2,7 @@
   import { toast } from 'svelte-sonner'
   import Select from '@components/ui/Select.svelte'
   import DeleteConfirmation from '../DeleteConfirmation.svelte'
+  import Button from '@components/ui/Button.svelte'
 
   type Course = {
     id: string
@@ -86,7 +87,7 @@
 
 <div class="settings-panel">
   <section class="settings-section">
-    <h2>Editar Curso</h2>
+    <h2 class="settings-section__title">Editar Curso</h2>
     <form
       class="edit-form"
       onsubmit={(e) => {
@@ -174,28 +175,28 @@
           bind:value={editForm.description}
         ></textarea>
       </div>
-      <button
+      <Button
         type="submit"
-        class="button button--primary"
-        disabled={updateLoading}
+        size="lg"
+        loading={updateLoading}
+        loadingText="Guardando..."
       >
-        {updateLoading ? 'Guardando...' : 'Guardar cambios'}
-      </button>
+        Guardar cambios
+      </Button>
     </form>
   </section>
 
-  <section class="settings-section danger-zone">
-    <h2>Zona de Peligro</h2>
+  <section class="settings-section settings-section--danger-zone">
+    <h2 class="settings-section__title settings-section--danger-zone">
+      Zona de Peligro
+    </h2>
     <p>
       Eliminar este curso borrará permanentemente todas las inscripciones
       asociadas.
     </p>
-    <button
-      class="button button--danger"
-      onclick={() => (isDeleteModalOpen = true)}
-    >
+    <Button variant="danger" onclick={() => (isDeleteModalOpen = true)}>
       Eliminar curso
-    </button>
+    </Button>
   </section>
 </div>
 
@@ -215,26 +216,31 @@
     flex-direction: column;
     gap: 3rem;
   }
-  .settings-section h2 {
+
+  .settings-section__title {
     margin-bottom: 1.5rem;
     font-size: 1.5rem;
   }
+
   .edit-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     max-width: 800px;
   }
+
   .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
   }
+
   .form-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
+
   .form-input {
     padding: 0.75rem;
     border: 1px solid rgba(128, 128, 128, 0.2);
@@ -243,29 +249,15 @@
     color: var(--text-color-primary);
     font-size: 1rem;
   }
-  .button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  .button--primary {
-    background: var(--brand-primary);
-    color: white;
-  }
-  .button--danger {
-    background: #dc3545;
-    color: white;
-  }
-  .danger-zone {
+
+  .settings-section--danger-zone {
     padding: 2rem;
     border: 2px solid rgba(220, 53, 69, 0.2);
     border-radius: 1rem;
     background: rgba(220, 53, 69, 0.05);
   }
-  .danger-zone h2 {
-    color: #dc3545;
+
+  .settings-section__title--danger-zone {
+    color: var(--button-danger-bg);
   }
 </style>
