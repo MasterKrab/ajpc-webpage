@@ -12,8 +12,8 @@
       "@utils/*": ["src/utils/*"],
       "@constants/*": ["src/constants/*"],
       "@db/*": ["src/db/*"],
-      "@lib/*": ["src/lib/*"]
+      "@lib/*": ["src/lib/*"],
+      "@app-types/*": ["src/types/*"]
     }
   }
 }
-

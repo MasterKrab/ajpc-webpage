@@ -3,11 +3,9 @@ import '@q42/floating-focus-a11y/dist/unstyled/index.css'
 ---
 
 <script>
-  const init = async () => {
-    const { default: FloatingFocus } = await import(
-      // @ts-ignore
-      '@q42/floating-focus-a11y/dist/unstyled'
-    )
+  import FloatingFocus from '@q42/floating-focus-a11y/dist/unstyled/index.js'
+
+  const init = () => {
     new FloatingFocus()
   }
 

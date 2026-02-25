@@ -138,6 +138,7 @@ export const modules = sqliteTable('modules', {
     .notNull()
     .references(() => courses.id),
   title: text('title').notNull(),
+  description: text('description'),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),

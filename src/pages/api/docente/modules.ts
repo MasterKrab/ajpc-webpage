@@ -8,6 +8,7 @@ import { z } from 'zod'
 const moduleSchema = z.object({
   courseId: z.string().min(1),
   title: z.string().min(1).max(200),
+  description: z.string().max(1000).optional().nullable(),
 })
 
 const materialSchema = z.object({
@@ -73,6 +74,24 @@ export const POST: APIRoute = async ({ locals, request, url }) => {
   const id = generateId()
   await db.insert(modules).values({ id, ...parsed.data })
   return Response.json({ id }, { status: 201 })
+}
+
+export const PATCH: APIRoute = async ({ locals, request, url }) => {
+  const user = locals.user!
+  if (!isAdmin(user)) {
+    return Response.json({ error: 'No autorizado' }, { status: 403 })
+  }
+
+  const id = url.searchParams.get('id')
+  if (!id) return Response.json({ error: 'ID requerido' }, { status: 400 })
+
+  const body = await request.json()
+  const parsed = moduleSchema.safeParse(body)
+  if (!parsed.success)
+    return Response.json({ error: 'Datos inválidos' }, { status: 400 })
+
+  await db.update(modules).set(parsed.data).where(eq(modules.id, id))
+  return Response.json({ success: true })
 }
 
 export const DELETE: APIRoute = async ({ locals, url }) => {

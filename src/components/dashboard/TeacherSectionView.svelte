@@ -6,18 +6,14 @@
   import { toast } from 'svelte-sonner'
   import SearchBox from '@components/ui/SearchBox.svelte'
   import UserTable from '@components/ui/UserTable.svelte'
+  import type { Student } from '@app-types/users'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
   import Loader from '@components/ui/Loader.svelte'
-
-  type Student = {
-    id: string
-    discordId: string
-    discordUsername: string
-    discordAvatar: string | null
-    name: string | null
-    enrollmentId: string
-  }
+  import ModuleCard from '@components/ui/ModuleCard.svelte'
+  import ConfirmModal from '@components/ui/ConfirmModal.svelte'
+  import type { User } from '@db/schema'
+  import type { Module, Material } from '@app-types/modules'
 
   type Section = {
     id: string
@@ -25,17 +21,6 @@
     courseId: string
     courseName: string
     studentCount: number
-  }
-
-  type Module = {
-    id: string
-    title: string
-    materials: {
-      id: string
-      title: string
-      url: string
-      type: 'link' | 'document'
-    }[]
   }
 
   type Observation = {
@@ -72,6 +57,29 @@
 
   // Modules/Materials state
   let selectedModule = $state<Module | null>(null)
+  let isMaterialModalOpen = $state(false)
+  let newMaterial = $state({
+    title: '',
+    url: '',
+    type: 'link' as 'link' | 'document',
+  })
+
+  // Module Edit State
+  let isModuleModalOpen = $state(false)
+  let editingModuleId = $state<string | null>(null)
+  let newModule = $state({
+    title: '',
+    description: '',
+  })
+
+  // Confirmation modal state
+  let confirmModal = $state({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'primary' as 'primary' | 'danger',
+  })
 
   let studentsList = $state<Student[]>([])
   let studentsTotal = $state(0)
@@ -271,11 +279,78 @@
       }
 
       toast.success(`Asistencia: ${statusLabels[status] || status}`, {
-        description: `La asistencia de ${studentsList.find(({ id }) => id === studentId)?.name} ha sido actualizada a ${statusLabels[status] || status}.`,
+        description: `La asistencia de ${studentsList.find((s) => s.id === studentId)?.name || 'alumno'} ha sido actualizada a ${statusLabels[status] || status}.`,
         duration: 2000,
       })
     } else {
       toast.error('Error al actualizar asistencia')
+    }
+  }
+
+  async function saveModule() {
+    if (!newModule.title.trim() || !editingModuleId) return
+    const response = await fetch(`/api/docente/modules?id=${editingModuleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        courseId: section.courseId,
+        ...newModule,
+      }),
+    })
+    if (!response.ok) return
+
+    toast.success('Módulo actualizado')
+    isModuleModalOpen = false
+    editingModuleId = null
+    fetchModules()
+  }
+
+  function openEditModule(mod: Module) {
+    editingModuleId = mod.id
+    newModule = {
+      title: mod.title,
+      description: mod.description || '',
+    }
+    isModuleModalOpen = true
+  }
+
+  async function addMaterial() {
+    if (!newMaterial.title.trim() || !newMaterial.url.trim() || !selectedModule)
+      return
+    const response = await fetch('/api/docente/modules?action=material', {
+      method: 'POST',
+      body: JSON.stringify({ moduleId: selectedModule.id, ...newMaterial }),
+    })
+
+    if (!response.ok) return
+
+    toast.success('Material agregado')
+    isMaterialModalOpen = false
+    newMaterial = { title: '', url: '', type: 'link' }
+    fetchModules()
+  }
+
+  async function deleteModuleItem(id: string, type: 'module' | 'material') {
+    confirmModal = {
+      open: true,
+      title: type === 'module' ? 'Eliminar Módulo' : 'Eliminar Material',
+      message:
+        type === 'module'
+          ? '¿Estás seguro de que deseas eliminar este módulo y todo su contenido? Esta acción no se puede deshacer.'
+          : '¿Estás seguro de que deseas eliminar este material?',
+      type: 'danger',
+      onConfirm: async () => {
+        const response = await fetch(
+          `/api/docente/modules?id=${id}&type=${type}`,
+          {
+            method: 'DELETE',
+          },
+        )
+        if (!response.ok) return
+
+        toast.success('Eliminado')
+        confirmModal.open = false
+        fetchModules()
+      },
     }
   }
 
@@ -337,27 +412,17 @@
         {:else}
           <div class="modules-grid">
             {#each modulesList as mod}
-              <article class="module-card">
-                <header class="module-card__header">
-                  <h3 class="module-card__title">{mod.title}</h3>
-                </header>
-
-                <ul class="materials-list">
-                  {#each mod.materials as mat}
-                    <li class="material-list__item">
-                      <a
-                        href={mat.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="material-list__link"
-                      >
-                        {mat.type === 'document' ? '📄' : '🔗'}
-                        {mat.title}
-                      </a>
-                    </li>
-                  {/each}
-                </ul>
-              </article>
+              <ModuleCard
+                module={mod}
+                {isAdmin}
+                onAddMaterial={() => {
+                  selectedModule = mod
+                  isMaterialModalOpen = true
+                }}
+                onDeleteMaterial={(id) => deleteModuleItem(id, 'material')}
+                onDeleteModule={() => deleteModuleItem(mod.id, 'module')}
+                onEditModule={() => openEditModule(mod)}
+              />
             {/each}
           </div>
         {/if}
@@ -448,6 +513,96 @@
   </div>
 </Modal>
 
+<Modal
+  isOpen={isModuleModalOpen}
+  title="Editar Módulo"
+  onClose={() => (isModuleModalOpen = false)}
+>
+  <div class="form-modal">
+    <div class="form-group">
+      <label for="module-title">Título del Módulo</label>
+      <input
+        id="module-title"
+        class="form-input"
+        bind:value={newModule.title}
+        placeholder="Ej: Clase 1: Introducción"
+      />
+    </div>
+    <div class="form-group">
+      <label for="module-description">Descripción (opcional)</label>
+      <textarea
+        id="module-description"
+        class="form-input"
+        bind:value={newModule.description}
+        placeholder="Breve descripción del contenido..."
+        rows="3"
+      ></textarea>
+    </div>
+    <div class="modal-actions">
+      <button
+        class="button button--secondary"
+        onclick={() => (isModuleModalOpen = false)}>Cancelar</button
+      >
+      <button class="button button--primary" onclick={saveModule}
+        >Guardar</button
+      >
+    </div>
+  </div>
+</Modal>
+
+<ConfirmModal
+  isOpen={confirmModal.open}
+  title={confirmModal.title}
+  message={confirmModal.message}
+  type={confirmModal.type}
+  onConfirm={confirmModal.onConfirm}
+  onCancel={() => (confirmModal.open = false)}
+/>
+
+<Modal
+  isOpen={isMaterialModalOpen}
+  title="Agregar Material a: {selectedModule?.title}"
+  onClose={() => (isMaterialModalOpen = false)}
+>
+  <div class="form-modal">
+    <div class="form-group">
+      <label for="material-title">Título</label>
+      <input
+        id="material-title"
+        class="form-input"
+        bind:value={newMaterial.title}
+        placeholder="Ej: Diapositivas"
+      />
+    </div>
+    <div class="form-group">
+      <label for="material-url">URL (Link)</label>
+      <input
+        id="material-url"
+        class="form-input"
+        type="url"
+        bind:value={newMaterial.url}
+        placeholder="https://..."
+      />
+    </div>
+    <div class="form-group">
+      <label for="module-type">Tipo de Material</label>
+      <select id="module-type" class="form-input" bind:value={newMaterial.type}>
+        <option value="link">🔗 Enlace página web</option>
+        <option value="document">📄 Documento / Recurso</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button
+        class="button button--secondary"
+        onclick={() => (isMaterialModalOpen = false)}>Cancelar</button
+      >
+      <button class="button button--primary" onclick={addMaterial}
+        >Agregar</button
+      >
+    </div>
+  </div>
+</Modal>
+
 <style>
   .section-dashboard {
     display: flex;
@@ -471,76 +626,6 @@
     min-height: 500px;
   }
 
-  .modules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .module-card {
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 1.25rem;
-    padding: 1.5rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    border-left: 4px solid var(--brand-primary);
-  }
-
-  .module-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
-    border-color: var(--brand-primary);
-  }
-
-  .module-card__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .module-card__title {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--text-color-primary);
-  }
-
-  .materials-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .materials-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.95rem;
-    padding: 0.5rem 0.75rem;
-    background: white;
-    border-radius: 0.75rem;
-    transition: background-color 0.2s;
-  }
-
-  .materials-list__item:hover {
-    background-color: rgba(var(--brand-primary-rgb), 0.05);
-  }
-
-  .materials-list__link {
-    color: var(--text-color-primary);
-    text-decoration: none;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
   .attendance-container {
     display: flex;
     flex-direction: column;
@@ -550,8 +635,8 @@
   .empty-state {
     padding: 4rem;
     text-align: center;
+    background-color: var(--background-color);
     color: var(--text-color-secondary);
-    background: white;
     border-radius: 1.25rem;
     border: 2px dashed var(--border-color);
   }
@@ -576,9 +661,9 @@
     width: 100%;
     min-height: 120px;
     padding: 1rem;
+    background-color: var(--background-color);
     border-radius: 0.75rem;
     border: 1px solid var(--border-color);
-    background: white;
     color: var(--text-color-primary);
     margin-bottom: 1rem;
     resize: vertical;
@@ -588,30 +673,34 @@
     padding: 0.75rem 1.25rem;
     border-radius: 0.75rem;
     border: none;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    color: var(--text-color-primary);
-    background: var(--border-color-light);
-  }
-
-  .button:hover:not(:disabled) {
-    background: var(--border-color);
+    font-size: 0.95rem;
   }
 
   .button--primary {
     background: var(--brand-primary);
-    color: white;
+    color: var(--text-color-primary);
   }
 
   .button--primary:hover:not(:disabled) {
-    background: var(--brand-primary);
-    filter: brightness(1.1);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(var(--brand-primary-rgb), 0.3);
+  }
+
+  .button--secondary {
+    background: var(--foreground-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color-primary);
+  }
+
+  .button--secondary:hover:not(:disabled) {
+    background: var(--border-color-light);
   }
 
   .button--small {

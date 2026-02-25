@@ -324,12 +324,6 @@
     cursor: not-allowed;
   }
 
-  .loading {
-    text-align: center;
-    color: var(--text-color-secondary);
-    padding: 2rem;
-  }
-
   .editor-header {
     display: flex;
     justify-content: space-between;

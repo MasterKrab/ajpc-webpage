@@ -1,0 +1,143 @@
+---
+import PanelHeader from '@components/ui/PanelHeader.svelte'
+import Tabs from '@components/ui/Tabs.svelte'
+
+interface Props {
+  course: {
+    id: string
+    name: string
+    level: string
+    year: number
+    status: string
+  }
+  activeTab: 'enrollments' | 'sections' | 'modules' | 'settings'
+  enrollmentTotal?: number
+}
+
+const { course, activeTab, enrollmentTotal = 0 } = Astro.props
+
+const tabs = [
+  {
+    id: 'enrollments',
+    label: 'Inscripciones',
+    count: enrollmentTotal,
+    href: `/admin/cursos/${course.id}/inscripciones`,
+  },
+  {
+    id: 'sections',
+    label: 'Paralelos',
+    href: `/admin/cursos/${course.id}/paralelos`,
+  },
+  {
+    id: 'modules',
+    label: 'Módulos',
+    href: `/admin/cursos/${course.id}/modulos`,
+  },
+  {
+    id: 'settings',
+    label: 'Configuración',
+    href: `/admin/cursos/${course.id}/configuracion`,
+  },
+]
+
+const levelLabel = (level: string) => {
+  switch (level) {
+    case 'beginner':
+      return '🟢 Básico'
+    case 'intermediate':
+      return '🟡 Intermedio'
+    case 'advanced':
+      return '🔴 Avanzado'
+    default:
+      return level
+  }
+}
+---
+
+<PanelHeader title={course.name} onBack="window.history.back()">
+  <div slot="extra" class="course-header__badges">
+    <span class="badge badge--level">{levelLabel(course.level)}</span>
+    <span class="badge badge--year">{course.year}</span>
+    <span class="badge badge--status status--{course.status}">
+      {course.status === 'open' ? 'Abierto' : 'Cerrado'}
+    </span>
+  </div>
+
+  <div class="tabs-container">
+    {
+      tabs.map((tab) => (
+        <a
+          href={tab.href}
+          class={`tab-item ${activeTab === tab.id ? 'is-active' : ''}`}
+        >
+          {tab.label}
+          {tab.count !== undefined && tab.count > 0 && (
+            <span class="tab-count">{tab.count}</span>
+          )}
+        </a>
+      ))
+    }
+  </div>
+</PanelHeader>
+
+<style>
+  .course-header__badges {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: rgba(128, 128, 128, 0.1);
+  }
+
+  .status--open {
+    background-color: var(--color-success-bg);
+    color: var(--color-success-text);
+  }
+  .status--closed {
+    background-color: var(--color-danger-bg);
+    color: var(--color-danger-text);
+  }
+
+  .tabs-container {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  }
+
+  .tab-item {
+    padding: 0.75rem 0.25rem;
+    text-decoration: none;
+    color: var(--text-color-secondary);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tab-item:hover {
+    color: var(--brand-primary);
+  }
+
+  .tab-item.is-active {
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+  }
+
+  .tab-count {
+    background: var(--brand-primary);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 1rem;
+    font-weight: 700;
+  }
+</style>

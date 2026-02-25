@@ -1,0 +1,77 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import CourseDashboardHeader from '@components/admin/dashboard/CourseDashboardHeader.astro'
+import ModulesTab from '@components/admin/dashboard/ModulesTab.svelte'
+import { isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import { courses, enrollments, modules, moduleMaterials } from '@db/schema'
+import { eq, count } from 'drizzle-orm'
+import type { Module, MaterialType } from '@app-types/modules'
+
+const user = Astro.locals.user
+if (!user || !isAdmin(user)) return Astro.redirect('/login')
+
+const { id } = Astro.params
+if (!id) return Astro.redirect('/admin')
+
+const [course] = await db.select().from(courses).where(eq(courses.id, id))
+if (!course) return Astro.redirect('/admin')
+
+// Fetch total count for header
+const [totalRes] = await db
+  .select({ value: count() })
+  .from(enrollments)
+  .where(eq(enrollments.courseId, id))
+
+// Fetch modules with materials
+const rawModules = (await db
+  .select()
+  .from(modules)
+  .where(eq(modules.courseId, id))) as any[]
+
+const modulesWithMaterials: Module[] = await Promise.all(
+  rawModules.map(async (module) => {
+    const materials = await db
+      .select()
+      .from(moduleMaterials)
+      .where(eq(moduleMaterials.moduleId, module.id))
+    return {
+      id: module.id,
+      courseId: module.courseId,
+      title: module.title,
+      description: module.description ?? null,
+      createdAt: module.createdAt ?? null,
+      updatedAt: module.updatedAt ?? null,
+      materials: materials.map((material) => ({
+        id: material.id,
+        moduleId: material.moduleId,
+        title: material.title,
+        url: material.url,
+        type: material.type as MaterialType,
+        createdAt: material.createdAt ?? null,
+      })),
+    }
+  }),
+)
+---
+
+<DashboardLayout
+  metadata={{
+    title: `Administrar ${course.name} - Módulos`,
+    description: 'Panel de administración del curso',
+  }}
+>
+  <CourseDashboardHeader
+    course={course}
+    activeTab="modules"
+    enrollmentTotal={totalRes.value}
+  />
+
+  <main>
+    <ModulesTab
+      client:load
+      courseId={id}
+      initialModules={modulesWithMaterials}
+    />
+  </main>
+</DashboardLayout>

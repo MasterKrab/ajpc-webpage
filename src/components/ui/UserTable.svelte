@@ -1,18 +1,22 @@
-<script lang="ts">
+<script module lang="ts">
+  import type { UserDisplayData } from '@app-types/users'
+  export type { UserDisplayData }
+</script>
+
+<script lang="ts" generics="T extends UserDisplayData">
   import InfiniteScroll from '@components/ui/InfiniteScroll.svelte'
   import RoleBadge from '@components/ui/RoleBadge.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import type { Snippet } from 'svelte'
-  import type { User } from '@db/schema'
 
   interface Props {
-    users: User[]
+    users: T[]
     loading?: boolean
     hasMore?: boolean
     onLoadMore?: () => void
     showEmail?: boolean
     showRole?: boolean
-    actions?: Snippet<[User]>
+    actions?: Snippet<[T]>
     emptyMessage?: string
   }
 

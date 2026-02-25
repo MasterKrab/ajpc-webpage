@@ -1,0 +1,67 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import CourseDashboardHeader from '@components/admin/dashboard/CourseDashboardHeader.astro'
+import EnrollmentsTab from '@components/admin/dashboard/EnrollmentsTab.svelte'
+import { isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import { courses, enrollments, users, sections } from '@db/schema'
+import { eq, sql, count } from 'drizzle-orm'
+
+const user = Astro.locals.user
+if (!user || !isAdmin(user)) return Astro.redirect('/login')
+
+const { id } = Astro.params
+if (!id) return Astro.redirect('/admin')
+
+const [course] = await db.select().from(courses).where(eq(courses.id, id))
+if (!course) return Astro.redirect('/admin')
+
+// Fetch total count
+const [totalRes] = await db
+  .select({ value: count() })
+  .from(enrollments)
+  .where(eq(enrollments.courseId, id))
+
+const total = totalRes.value
+
+// Fetch initial enrollments
+const enrollmentData = await db
+  .select({
+    enrollment: enrollments,
+    courseName: courses.name,
+    discordUsername: users.discordUsername,
+  })
+  .from(enrollments)
+  .innerJoin(courses, eq(enrollments.courseId, courses.id))
+  .innerJoin(users, eq(enrollments.userId, users.id))
+  .where(eq(enrollments.courseId, id))
+  .limit(20) // Initial page
+
+// Fetch sections for the dropdown
+const sectionsList = await db
+  .select()
+  .from(sections)
+  .where(eq(sections.courseId, id))
+---
+
+<DashboardLayout
+  metadata={{
+    title: `Administrar ${course.name} - Inscripciones`,
+    description: 'Panel de administración del curso',
+  }}
+>
+  <CourseDashboardHeader
+    course={course}
+    activeTab="enrollments"
+    enrollmentTotal={total}
+  />
+
+  <main>
+    <EnrollmentsTab
+      client:load
+      courseId={id}
+      initialEnrollments={enrollmentData}
+      sectionsList={sectionsList}
+    />
+  </main>
+</DashboardLayout>

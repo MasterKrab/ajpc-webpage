@@ -6,7 +6,7 @@
     name,
     disabled = false,
     fullWidth = false,
-    placeholder = 'Selecciona una una opción',
+    placeholder = 'Selecciona una opción',
     onChange,
     extraClass = '',
   }: {
@@ -20,6 +20,10 @@
     onChange?: (val: any) => void
     extraClass?: string
   } = $props()
+
+  const hasPlaceholderInOptions = $derived(
+    options.some((o) => o.value === '' || o.value === undefined),
+  )
 
   const handleSelect = (event: Event) => {
     const target = event.target as HTMLSelectElement
@@ -36,12 +40,12 @@
     <select
       class="select-input {extraClass}"
       {name}
-      id={name}
+      id={name || undefined}
       {value}
       {disabled}
       onchange={handleSelect}
     >
-      {#if placeholder}
+      {#if placeholder && placeholder.length > 0 && !hasPlaceholderInOptions}
         <option value="" disabled selected={!value}>{placeholder}</option>
       {/if}
       {#each options as option}
@@ -89,7 +93,8 @@
 
   .select-input {
     appearance: none;
-    width: min-content;
+    width: 100%;
+    min-width: 8rem;
     padding: 0.75rem 2.5rem 0.75rem 1rem;
     font-family: inherit;
     font-size: 0.95rem;
@@ -108,7 +113,7 @@
   }
 
   .select-input:hover:not(:disabled) {
-    opacity: 0.5;
+    border-color: var(--brand-primary);
   }
 
   .select-input:focus {
