@@ -192,6 +192,19 @@ export const inviteCodes = sqliteTable('invite_codes', {
     sql`(unixepoch())`,
   ),
   usedAt: integer('used_at', { mode: 'timestamp' }),
+  maxUses: integer('max_uses').default(1),
+  uses: integer('uses').default(0),
+})
+
+export const inviteUsages = sqliteTable('invite_usages', {
+  id: text('id').primaryKey(),
+  inviteCode: text('invite_code')
+    .notNull()
+    .references(() => inviteCodes.code, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  usedAt: integer('used_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 })
 
 export type User = typeof users.$inferSelect
@@ -216,6 +229,8 @@ export type SectionDocente = typeof sectionDocentes.$inferSelect
 export type NewSectionDocente = typeof sectionDocentes.$inferInsert
 export type InviteCode = typeof inviteCodes.$inferSelect
 export type NewInviteCode = typeof inviteCodes.$inferInsert
+export type InviteUsage = typeof inviteUsages.$inferSelect
+export type NewInviteUsage = typeof inviteUsages.$inferInsert
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(), // JSON string or simple value

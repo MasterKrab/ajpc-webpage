@@ -10,9 +10,14 @@
     code: string
     role: 'student' | 'docente' | 'admin'
     createdBy: string
+    creatorUsername?: string
+    creatorAvatar?: string | null
+    creatorDiscordId?: string | null
     usedBy: string | null
     createdAt: string
     usedAt: string | null
+    maxUses: number
+    uses: number
   }
 
   let { isSudo }: { isSudo: boolean } = $props()
@@ -22,6 +27,7 @@
   let generating = $state(false)
   let deleting = $state<string | null>(null)
   let selectedRole = $state<'student' | 'docente' | 'admin'>('student')
+  let maxUses = $state(1)
 
   const roleOptions = $derived([
     { value: 'student', label: 'Estudiante' },
@@ -37,8 +43,8 @@
     try {
       const response = await fetch('/api/admin/invites')
       invites = await response.json()
-    } catch (e) {
-      console.error(e)
+    } catch (error) {
+      console.error(error)
     } finally {
       loading = false
     }
@@ -50,7 +56,7 @@
       const response = await fetch('/api/admin/invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: selectedRole }),
+        body: JSON.stringify({ role: selectedRole, maxUses }),
       })
 
       if (response.ok) {
@@ -60,7 +66,8 @@
         const data = await response.json()
         toast.error(data.error || 'Error al generar invitación')
       }
-    } catch (e) {
+    } catch (error) {
+      console.error(error)
       toast.error('Error al generar invitación')
     } finally {
       generating = false
@@ -90,7 +97,8 @@
         const data = await response.json()
         toast.error(data.error || 'Error al eliminar invitación')
       }
-    } catch (e) {
+    } catch (error) {
+      console.error(error)
       toast.error('Error al eliminar invitación')
     } finally {
       deleting = null
@@ -130,11 +138,25 @@
     </div>
 
     <div class="invite-generator">
-      <Select
-        options={roleOptions}
-        bind:value={selectedRole}
-        placeholder="Selecciona un rol"
-      />
+      <div class="generator-group">
+        <Select
+          options={roleOptions}
+          bind:value={selectedRole}
+          placeholder="Selecciona un rol"
+        />
+      </div>
+      <div class="generator-group">
+        <label for="max-uses" class="generator-label">Cant. de usos</label>
+        <input
+          id="max-uses"
+          type="number"
+          min="1"
+          max="100"
+          bind:value={maxUses}
+          class="count-input"
+          title="Máximo de usos"
+        />
+      </div>
       <button
         class="button button--primary"
         onclick={generateInvite}
@@ -158,8 +180,9 @@
           <tr>
             <th>Rol</th>
             <th>Link / Código</th>
-            <th>Estado</th>
-            <th>Creado</th>
+            <th>Usos</th>
+            <th>Creador</th>
+            <th>Fecha</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -175,11 +198,32 @@
                 <code class="code-text">{invite.code}</code>
               </td>
               <td>
-                {#if invite.usedBy}
-                  <span class="status-pill status--used">Usado</span>
-                {:else}
-                  <span class="status-pill status--available">Disponible</span>
-                {/if}
+                <div class="usage-info">
+                  <span class="usage-text"
+                    >{invite.uses} / {invite.maxUses}</span
+                  >
+                  <div class="usage-bar">
+                    <div
+                      class="usage-bar-fill"
+                      style:width="{(invite.uses / invite.maxUses) * 100}%"
+                      class:usage-bar-fill--full={invite.uses >= invite.maxUses}
+                    ></div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="creator-info">
+                  {#if invite.creatorDiscordId && invite.creatorAvatar}
+                    <img
+                      src="https://cdn.discordapp.com/avatars/{invite.creatorDiscordId}/{invite.creatorAvatar}.png?size=32"
+                      alt=""
+                      class="creator-avatar"
+                    />
+                  {/if}
+                  <span class="creator-name">
+                    @{invite.creatorUsername || 'Sistema'}
+                  </span>
+                </div>
               </td>
               <td>
                 <span class="date-text">
@@ -187,28 +231,26 @@
                 </span>
               </td>
               <td>
-                {#if !invite.usedBy}
+                {#if invite.uses < invite.maxUses}
                   <button
                     class="button button--small"
                     onclick={() => copyToClipboard(invite.code)}
                   >
                     Copiar Link
                   </button>
-                  <button
-                    class="button button--small button--danger"
-                    onclick={() => confirmDelete(invite.code)}
-                    disabled={deleting === invite.code}
-                    aria-label="Eliminar invitación"
-                  >
-                    {#if deleting === invite.code}
-                      ...
-                    {:else}
-                      <span class="icon-trash">{@html trashIcon}</span>
-                    {/if}
-                  </button>
-                {:else}
-                  <span class="text-muted">Usado por {invite.usedBy}</span>
                 {/if}
+                <button
+                  class="button button--small button--danger"
+                  onclick={() => confirmDelete(invite.code)}
+                  disabled={deleting === invite.code}
+                  aria-label="Eliminar invitación"
+                >
+                  {#if deleting === invite.code}
+                    ...
+                  {:else}
+                    <span class="icon-trash">{@html trashIcon}</span>
+                  {/if}
+                </button>
               </td>
             </tr>
           {/each}
@@ -259,7 +301,33 @@
 
   .invite-generator {
     display: flex;
+    align-items: center;
     gap: 0.75rem;
+  }
+
+  .generator-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .count-input {
+    width: 4rem;
+    padding: 0.5rem;
+    padding-right: 0.2rem;
+    border: 2px solid rgba(128, 128, 128, 0.2);
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--text-color-primary);
+    font-weight: 600;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+
+  .count-input::-webkit-outer-spin-button,
+  .count-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 
   .button {
@@ -333,27 +401,62 @@
     color: var(--role-student-text-color);
   }
 
-  .status-pill {
-    padding: 0.125rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
+  .usage-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 80px;
   }
 
-  .status--available {
-    background-color: var(
-      --color-success-background-color,
-      var(--color-success-bg)
-    );
-    color: var(--color-success-text-color, var(--color-success-text));
+  .usage-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-color-secondary);
   }
-  .status--used {
-    background-color: var(
-      --color-danger-background-color,
-      var(--color-danger-bg)
-    );
-    color: var(--color-danger-text-color, var(--color-danger-text));
+
+  .usage-bar {
+    height: 4px;
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .usage-bar-fill {
+    height: 100%;
+    background: var(--brand-primary);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .usage-bar-fill--full {
+    background: #ef4444;
+  }
+
+  .generator-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-color-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  .creator-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .creator-avatar {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba(128, 128, 128, 0.1);
+  }
+
+  .creator-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-color-primary);
   }
 
   .code-text {

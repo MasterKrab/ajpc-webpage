@@ -15,6 +15,13 @@
       "when": 1771796162702,
       "tag": "0001_salty_umar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771989483095,
+      "tag": "0002_petite_paibok",
+      "breakpoints": true
     }
   ]
 }

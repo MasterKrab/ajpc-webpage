@@ -5,7 +5,7 @@ import { createDiscordClient, getDiscordUser } from '@lib/discord'
 import { OAuth2RequestError } from 'arctic'
 import { createSession, generateId } from '@lib/auth'
 import { db } from '@db/index'
-import { users, inviteCodes, settings } from '@db/schema'
+import { users, inviteCodes, settings, inviteUsages } from '@db/schema'
 import { eq, sql } from 'drizzle-orm'
 
 export const GET: APIRoute = async ({ url, cookies, request }) => {
@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
         .from(inviteCodes)
         .where(eq(inviteCodes.code, inviteCode))
 
-      if (invite && !invite.usedBy) {
+      if (invite && (invite.uses ?? 0) < (invite.maxUses ?? 1)) {
         role = invite.role
         inviteValid = true
       }
@@ -102,8 +102,21 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     }
 
     if (inviteValid && inviteCode) {
-      // Auto-delete invite after use
-      await db.delete(inviteCodes).where(eq(inviteCodes.code, inviteCode))
+      // Record usage and increment counter
+      await db
+        .update(inviteCodes)
+        .set({
+          uses: sql`${inviteCodes.uses} + 1`,
+          usedBy: userId,
+          usedAt: new Date(),
+        })
+        .where(eq(inviteCodes.code, inviteCode))
+
+      await db.insert(inviteUsages).values({
+        id: generateId(),
+        inviteCode: inviteCode,
+        userId: userId,
+      })
     }
 
     createSession(cookies, userId)
