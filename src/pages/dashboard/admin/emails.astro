@@ -1,0 +1,16 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import AdminNavigation from '@components/admin/AdminNavigation.astro'
+import EmailSender from '@components/admin/EmailSender.svelte'
+import { isAdmin, isSudo } from '@lib/auth'
+
+const user = Astro.locals.user!
+if (!isAdmin(user)) return Astro.redirect('/dashboard')
+---
+
+<DashboardLayout
+  metadata={{ title: 'Admin — Correos', description: 'Enviar correos masivos' }}
+>
+  <AdminNavigation activeTab="emails" isSudo={isSudo(user)} userRole={user.role} />
+  <EmailSender client:load />
+</DashboardLayout>

@@ -1,0 +1,149 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import PanelNavigation from '@components/ui/PanelNavigation.astro'
+import SectionAttendanceView from '@components/dashboard/SectionAttendanceView.svelte'
+import { isTeacher, isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import {
+  sections,
+  courses,
+  enrollments,
+  users,
+  modules,
+  moduleMaterials,
+  sectionDocentes,
+} from '@db/schema'
+import { eq, and, sql } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!isTeacher(user)) return Astro.redirect('/dashboard')
+
+const { sectionId } = Astro.params
+
+const [sectionRow] = await db
+  .select({
+    id: sections.id,
+    name: sections.name,
+    courseId: sections.courseId,
+    courseName: courses.name,
+  })
+  .from(sections)
+  .innerJoin(courses, eq(sections.courseId, courses.id))
+  .where(eq(sections.id, sectionId!))
+
+if (!sectionRow) return Astro.redirect('/dashboard/docente')
+
+if (!isAdmin(user)) {
+  const [access] = await db
+    .select()
+    .from(sectionDocentes)
+    .where(eq(sectionDocentes.sectionId, sectionId!))
+  if (!access || access.teacherId !== user.id)
+    return Astro.redirect('/dashboard/docente')
+}
+
+// SSR modules + students in parallel
+const [rawModules, studentsResult] = await Promise.all([
+  db
+    .select()
+    .from(modules)
+    .where(eq(modules.courseId, sectionRow.courseId))
+    .orderBy(modules.createdAt),
+  (async () => {
+    const conditions = [
+      eq(enrollments.sectionId, sectionId!),
+      eq(enrollments.status, 'approved'),
+    ]
+    const finalWhere = and(...conditions)
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(enrollments)
+      .innerJoin(users, eq(enrollments.userId, users.id))
+      .where(finalWhere as any)
+    const students = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        discordUsername: users.discordUsername,
+        discordId: users.discordId,
+        discordAvatar: users.discordAvatar,
+        enrollmentId: enrollments.id,
+      })
+      .from(enrollments)
+      .innerJoin(users, eq(enrollments.userId, users.id))
+      .where(finalWhere as any)
+      .limit(50)
+    return { students, total: count }
+  })(),
+])
+
+const initialModules = await Promise.all(
+  rawModules.map(async (m) => {
+    const materials = await db
+      .select()
+      .from(moduleMaterials)
+      .where(eq(moduleMaterials.moduleId, m.id))
+    return { ...m, materials }
+  }),
+)
+
+const tabs = [
+  {
+    id: 'modules',
+    href: `/dashboard/docente/${sectionId}/modules`,
+    label: 'Contenidos',
+    icon: '📚',
+  },
+  {
+    id: 'attendance',
+    href: `/dashboard/docente/${sectionId}/attendance`,
+    label: 'Asistencia',
+    icon: '📝',
+  },
+  {
+    id: 'students',
+    href: `/dashboard/docente/${sectionId}/students`,
+    label: 'Alumnos',
+    icon: '👥',
+  },
+]
+---
+
+<DashboardLayout
+  metadata={{
+    title: `${sectionRow.name} — Asistencia`,
+    description: sectionRow.courseName,
+  }}
+>
+  <PanelNavigation
+    title={`${sectionRow.name} · ${sectionRow.courseName}`}
+    {tabs}
+    activeTab="attendance"
+    ariaLabel={`Secciones de ${sectionRow.name}`}
+  >
+    <Fragment slot="meta">
+      <a href="/dashboard/docente" class="back-link">← Volver</a>
+    </Fragment>
+  </PanelNavigation>
+
+  <SectionAttendanceView
+    client:load
+    sectionId={sectionRow.id}
+    courseId={sectionRow.courseId}
+    initialModules={initialModules}
+    initialStudents={studentsResult.students as any}
+    initialTotal={studentsResult.total}
+  />
+</DashboardLayout>
+
+<style>
+  .back-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    transition: color 0.15s;
+  }
+  .back-link:hover {
+    color: var(--brand-primary);
+  }
+</style>

@@ -1,0 +1,19 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import AdminNavigation from '@components/admin/AdminNavigation.astro'
+import TemplateEditor from '@components/admin/TemplateEditor.svelte'
+import { isAdmin, isSudo } from '@lib/auth'
+
+const user = Astro.locals.user!
+if (!isAdmin(user)) return Astro.redirect('/dashboard')
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Admin — Plantillas',
+    description: 'Editor de plantillas de correo',
+  }}
+>
+  <AdminNavigation activeTab="templates" isSudo={isSudo(user)} userRole={user.role} />
+  <TemplateEditor client:load />
+</DashboardLayout>

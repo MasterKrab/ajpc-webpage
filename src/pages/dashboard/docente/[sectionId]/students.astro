@@ -1,0 +1,130 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import PanelNavigation from '@components/ui/PanelNavigation.astro'
+import SectionStudentsView from '@components/dashboard/SectionStudentsView.svelte'
+import { isTeacher, isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import {
+  sections,
+  courses,
+  enrollments,
+  users,
+  sectionDocentes,
+} from '@db/schema'
+import { eq, and, sql } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!isTeacher(user)) return Astro.redirect('/dashboard')
+
+const { sectionId } = Astro.params
+
+const [sectionRow] = await db
+  .select({
+    id: sections.id,
+    name: sections.name,
+    courseId: sections.courseId,
+    courseName: courses.name,
+  })
+  .from(sections)
+  .innerJoin(courses, eq(sections.courseId, courses.id))
+  .where(eq(sections.id, sectionId!))
+
+if (!sectionRow) return Astro.redirect('/dashboard/docente')
+
+if (!isAdmin(user)) {
+  const [access] = await db
+    .select()
+    .from(sectionDocentes)
+    .where(eq(sectionDocentes.sectionId, sectionId!))
+  if (!access || access.teacherId !== user.id)
+    return Astro.redirect('/dashboard/docente')
+}
+
+// SSR first page of students
+const LIMIT = 20
+const conditions = [
+  eq(enrollments.sectionId, sectionId!),
+  eq(enrollments.status, 'approved'),
+]
+const finalWhere = and(...conditions)
+
+const [{ count: totalStudents }] = await db
+  .select({ count: sql<number>`count(*)` })
+  .from(enrollments)
+  .innerJoin(users, eq(enrollments.userId, users.id))
+  .where(finalWhere as any)
+
+const initialStudents = await db
+  .select({
+    id: users.id,
+    name: users.name,
+    discordUsername: users.discordUsername,
+    discordId: users.discordId,
+    discordAvatar: users.discordAvatar,
+    enrollmentId: enrollments.id,
+  })
+  .from(enrollments)
+  .innerJoin(users, eq(enrollments.userId, users.id))
+  .where(finalWhere as any)
+  .limit(LIMIT)
+  .offset(0)
+
+const tabs = [
+  {
+    id: 'modules',
+    href: `/dashboard/docente/${sectionId}/modules`,
+    label: 'Contenidos',
+    icon: '📚',
+  },
+  {
+    id: 'attendance',
+    href: `/dashboard/docente/${sectionId}/attendance`,
+    label: 'Asistencia',
+    icon: '📝',
+  },
+  {
+    id: 'students',
+    href: `/dashboard/docente/${sectionId}/students`,
+    label: 'Alumnos',
+    icon: '👥',
+  },
+]
+---
+
+<DashboardLayout
+  metadata={{
+    title: `${sectionRow.name} — Alumnos`,
+    description: sectionRow.courseName,
+  }}
+>
+  <PanelNavigation
+    title={`${sectionRow.name} · ${sectionRow.courseName}`}
+    {tabs}
+    activeTab="students"
+    ariaLabel={`Secciones de ${sectionRow.name}`}
+  >
+    <Fragment slot="meta">
+      <a href="/dashboard/docente" class="back-link">← Volver</a>
+    </Fragment>
+  </PanelNavigation>
+
+  <SectionStudentsView
+    client:load
+    sectionId={sectionRow.id}
+    courseId={sectionRow.courseId}
+    initialStudents={initialStudents as any}
+    initialTotal={totalStudents}
+  />
+</DashboardLayout>
+
+<style>
+  .back-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    transition: color 0.15s;
+  }
+  .back-link:hover {
+    color: var(--brand-primary);
+  }
+</style>

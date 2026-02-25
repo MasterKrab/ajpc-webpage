@@ -15,6 +15,7 @@
   let {
     userRole,
     user,
+    initialSections = [],
   }: {
     userRole: 'student' | 'docente' | 'admin' | 'sudo'
     user: {
@@ -22,9 +23,10 @@
       discordAvatar: string | null
       discordId: string
     }
+    initialSections?: Section[]
   } = $props()
-  let sections = $state<Section[]>([])
-  let loading = $state(true)
+  let sections = $state<Section[]>(initialSections)
+  let loading = $state(initialSections.length === 0)
   let activeSectionId = $state<string | null>(null)
 
   const isAdmin = $derived(userRole === 'admin' || userRole === 'sudo')
@@ -45,7 +47,9 @@
     }
   }
 
-  onMount(fetchSections)
+  onMount(() => {
+    if (initialSections.length === 0) fetchSections()
+  })
 </script>
 
 <div class="teacher-dashboard">

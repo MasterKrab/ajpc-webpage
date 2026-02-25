@@ -1,0 +1,46 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import AdminNavigation from '@components/admin/AdminNavigation.astro'
+import InviteManager from '@components/admin/InviteManager.svelte'
+import { isAdmin, isSudo } from '@lib/auth'
+import { db } from '@db/index'
+import { inviteCodes, users } from '@db/schema'
+import { eq, desc } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!isAdmin(user)) return Astro.redirect('/dashboard')
+
+const sudo = isSudo(user)
+
+let query = db
+  .select({
+    code: inviteCodes.code,
+    role: inviteCodes.role,
+    createdBy: inviteCodes.createdBy,
+    creatorUsername: users.discordUsername,
+    creatorAvatar: users.discordAvatar,
+    creatorDiscordId: users.discordId,
+    usedBy: inviteCodes.usedBy,
+    createdAt: inviteCodes.createdAt,
+    usedAt: inviteCodes.usedAt,
+    maxUses: inviteCodes.maxUses,
+    uses: inviteCodes.uses,
+  })
+  .from(inviteCodes)
+  .leftJoin(users, eq(inviteCodes.createdBy, users.id))
+  .orderBy(desc(inviteCodes.createdAt))
+
+const initialInvites = sudo
+  ? await query
+  : await query.where(eq(inviteCodes.createdBy, user.id))
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Admin — Invitaciones',
+    description: 'Sistema de invitaciones',
+  }}
+>
+  <AdminNavigation activeTab="invites" isSudo={sudo} userRole={user.role} />
+  <InviteManager client:load {isSudo} initialInvites={initialInvites} />
+</DashboardLayout>

@@ -1,0 +1,119 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import PanelNavigation from '@components/ui/PanelNavigation.astro'
+import SectionModulesView from '@components/dashboard/SectionModulesView.svelte'
+import { isTeacher, isAdmin } from '@lib/auth'
+import { db } from '@db/index'
+import {
+  sections,
+  courses,
+  modules,
+  moduleMaterials,
+  sectionDocentes,
+} from '@db/schema'
+import { eq } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!isTeacher(user)) return Astro.redirect('/dashboard')
+
+const { sectionId } = Astro.params
+
+// Load section + course
+const [sectionRow] = await db
+  .select({
+    id: sections.id,
+    name: sections.name,
+    courseId: sections.courseId,
+    courseName: courses.name,
+  })
+  .from(sections)
+  .innerJoin(courses, eq(sections.courseId, courses.id))
+  .where(eq(sections.id, sectionId!))
+
+if (!sectionRow) return Astro.redirect('/dashboard/docente')
+
+// Access check for non-admins
+if (!isAdmin(user)) {
+  const [access] = await db
+    .select()
+    .from(sectionDocentes)
+    .where(eq(sectionDocentes.sectionId, sectionId!))
+  if (!access || access.teacherId !== user.id)
+    return Astro.redirect('/dashboard/docente')
+}
+
+// SSR modules
+const rawModules = await db
+  .select()
+  .from(modules)
+  .where(eq(modules.courseId, sectionRow.courseId))
+  .orderBy(modules.createdAt)
+
+const initialModules = await Promise.all(
+  rawModules.map(async (m) => {
+    const materials = await db
+      .select()
+      .from(moduleMaterials)
+      .where(eq(moduleMaterials.moduleId, m.id))
+    return { ...m, materials }
+  }),
+)
+
+const tabs = [
+  {
+    id: 'modules',
+    href: `/dashboard/docente/${sectionId}/modules`,
+    label: 'Contenidos',
+    icon: '📚',
+  },
+  {
+    id: 'attendance',
+    href: `/dashboard/docente/${sectionId}/attendance`,
+    label: 'Asistencia',
+    icon: '📝',
+  },
+  {
+    id: 'students',
+    href: `/dashboard/docente/${sectionId}/students`,
+    label: 'Alumnos',
+    icon: '👥',
+  },
+]
+---
+
+<DashboardLayout
+  metadata={{
+    title: `${sectionRow.name} — Contenidos`,
+    description: sectionRow.courseName,
+  }}
+>
+  <PanelNavigation
+    title={`${sectionRow.name} · ${sectionRow.courseName}`}
+    {tabs}
+    activeTab="modules"
+    ariaLabel={`Secciones de ${sectionRow.name}`}
+  >
+    <Fragment slot="meta">
+      <a href="/dashboard/docente" class="back-link">← Volver</a>
+    </Fragment>
+  </PanelNavigation>
+
+  <SectionModulesView
+    client:load
+    courseId={sectionRow.courseId}
+    isAdmin={isAdmin(user)}
+    initialModules={initialModules}
+  />
+</DashboardLayout>
+
+<style>
+  .back-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    transition: color 0.15s;
+  }
+  .back-link:hover {
+    color: var(--brand-primary);
+  }
+</style>

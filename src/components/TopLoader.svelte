@@ -50,11 +50,11 @@
   }
 
   .top-loader--loading {
-    opacity: 1;
     transform: scaleX(0.85);
     transition:
       transform 4s cubic-bezier(0.1, 0.5, 0.3, 1),
       opacity 0.2s ease;
+    opacity: 1;
   }
 
   .top-loader--done {

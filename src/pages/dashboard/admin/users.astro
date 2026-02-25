@@ -1,0 +1,32 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import AdminNavigation from '@components/admin/AdminNavigation.astro'
+import UsersPanel from '@components/admin/UsersPanel.svelte'
+import { isAdmin, isSudo } from '@lib/auth'
+import { db } from '@db/index'
+import { users } from '@db/schema'
+import { sql } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!isAdmin(user)) return Astro.redirect('/dashboard')
+if (!isSudo(user)) return Astro.redirect('/dashboard/admin')
+
+const LIMIT = 20
+
+const [{ count: totalUsers }] = await db
+  .select({ count: sql<number>`count(*)` })
+  .from(users)
+
+const initialUsers = await db.select().from(users).limit(LIMIT).offset(0)
+---
+
+<DashboardLayout
+  metadata={{ title: 'Admin — Usuarios', description: 'Gestión de usuarios' }}
+>
+  <AdminNavigation activeTab="users" isSudo={true} userRole={user.role} />
+  <UsersPanel
+    client:load
+    initialUsers={initialUsers}
+    initialTotal={totalUsers}
+  />
+</DashboardLayout>

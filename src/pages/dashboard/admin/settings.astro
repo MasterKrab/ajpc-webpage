@@ -1,0 +1,34 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import AdminNavigation from '@components/admin/AdminNavigation.astro'
+import SettingsManager from '@components/admin/SettingsManager.svelte'
+import { isAdmin, isSudo } from '@lib/auth'
+import { db } from '@db/index'
+import { settings } from '@db/schema'
+
+const user = Astro.locals.user!
+if (!isAdmin(user)) return Astro.redirect('/dashboard')
+
+const allSettings = await db.select().from(settings)
+const initialSettings = allSettings.reduce(
+  (acc, curr) => {
+    acc[curr.key] = curr.value
+    return acc
+  },
+  {} as Record<string, string>,
+)
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Admin — Configuración',
+    description: 'Configuración del sistema',
+  }}
+>
+  <AdminNavigation
+    activeTab="settings"
+    isSudo={isSudo(user)}
+    userRole={user.role}
+  />
+  <SettingsManager client:load initialSettings={initialSettings} />
+</DashboardLayout>

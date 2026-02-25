@@ -1,0 +1,107 @@
+---
+interface Tab {
+  id: string
+  href: string
+  label: string
+  icon?: string
+}
+
+interface Props {
+  title: string
+  tabs: Tab[]
+  activeTab: string
+  ariaLabel?: string
+}
+
+const {
+  title,
+  tabs,
+  activeTab,
+  ariaLabel = 'Secciones del panel',
+} = Astro.props
+---
+
+<header class="panel-navigation">
+  <div class="panel-navigation__header">
+    <h1 class="panel-navigation__title">{title}</h1>
+    <slot name="meta" />
+  </div>
+
+  <nav class="panel-navigation__tabs" aria-label={ariaLabel}>
+    {
+      tabs.map((tab) => (
+        <a
+          href={tab.href}
+          class:list={[
+            'panel-navigation__tab',
+            { 'panel-navigation__tab--active': activeTab === tab.id },
+          ]}
+          aria-current={activeTab === tab.id ? 'page' : undefined}
+        >
+          {tab.icon && (
+            <span class="panel-navigation__tab-icon" aria-hidden="true">
+              {tab.icon}
+            </span>
+          )}
+          <span class="panel-navigation__tab-label">{tab.label}</span>
+        </a>
+      ))
+    }
+  </nav>
+</header>
+
+<style>
+  .panel-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .panel-navigation__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .panel-navigation__title {
+    font-size: 1.75rem;
+    margin: 0;
+    flex: 1;
+  }
+
+  .panel-navigation__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .panel-navigation__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+
+  .panel-navigation__tab:hover {
+    background-color: rgba(128, 128, 128, 0.1);
+    color: var(--text-color-primary);
+  }
+
+  .panel-navigation__tab--active {
+    background-color: rgba(17, 107, 177, 0.1);
+    color: var(--brand-primary);
+  }
+
+  .panel-navigation__tab-icon {
+    font-size: 1rem;
+  }
+</style>

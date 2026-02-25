@@ -1,0 +1,85 @@
+---
+import PanelNavigation from '@components/ui/PanelNavigation.astro'
+import RoleBadge from '@components/ui/RoleBadge.svelte'
+
+interface Props {
+  activeTab:
+    | 'courses'
+    | 'users'
+    | 'templates'
+    | 'emails'
+    | 'invites'
+    | 'settings'
+  isSudo: boolean
+  userRole: string
+}
+
+const { activeTab, isSudo, userRole } = Astro.props
+
+const tabs = [
+  {
+    id: 'courses',
+    href: '/dashboard/admin/courses',
+    label: 'Cursos',
+    icon: '📚',
+  },
+  ...(isSudo
+    ? [
+        {
+          id: 'users',
+          href: '/dashboard/admin/users',
+          label: 'Usuarios',
+          icon: '👥',
+        },
+      ]
+    : []),
+  {
+    id: 'templates',
+    href: '/dashboard/admin/templates',
+    label: 'Plantillas',
+    icon: '📧',
+  },
+  {
+    id: 'emails',
+    href: '/dashboard/admin/emails',
+    label: 'Correos',
+    icon: '✉️',
+  },
+  {
+    id: 'invites',
+    href: '/dashboard/admin/invites',
+    label: 'Invitaciones',
+    icon: '🎟️',
+  },
+  {
+    id: 'settings',
+    href: '/dashboard/admin/settings',
+    label: 'Configuración',
+    icon: '⚙️',
+  },
+]
+---
+
+<PanelNavigation
+  title="Panel de Administración 🛡️"
+  {tabs}
+  {activeTab}
+  ariaLabel="Secciones del panel de admin"
+>
+  <Fragment slot="meta">
+    <p class="admin-navigation__role">
+      Rol: <RoleBadge role={userRole} />
+    </p>
+  </Fragment>
+</PanelNavigation>
+
+<style>
+  .admin-navigation__role {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+</style>

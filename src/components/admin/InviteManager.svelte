@@ -20,10 +20,13 @@
     uses: number
   }
 
-  let { isSudo }: { isSudo: boolean } = $props()
+  let {
+    isSudo,
+    initialInvites = [],
+  }: { isSudo: boolean; initialInvites?: Invite[] } = $props()
 
-  let invites = $state<Invite[]>([])
-  let loading = $state(true)
+  let invites = $state<Invite[]>(initialInvites)
+  let loading = $state(initialInvites.length === 0)
   let generating = $state(false)
   let deleting = $state<string | null>(null)
   let selectedRole = $state<'student' | 'docente' | 'admin'>('student')
@@ -125,7 +128,9 @@
     }
   }
 
-  onMount(fetchInvites)
+  onMount(() => {
+    if (initialInvites.length === 0) fetchInvites()
+  })
 </script>
 
 <div class="invite-manager">

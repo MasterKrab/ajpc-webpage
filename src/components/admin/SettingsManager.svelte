@@ -3,8 +3,14 @@
   import { toast } from 'svelte-sonner'
   import Loader from '@components/ui/Loader.svelte'
 
-  let settings = $state<Record<string, string>>({})
-  let loading = $state(true)
+  interface Props {
+    initialSettings?: Record<string, string>
+  }
+
+  let { initialSettings = {} }: Props = $props()
+
+  let settings = $state<Record<string, string>>(initialSettings)
+  let loading = $state(Object.keys(initialSettings).length === 0)
   let updating = $state(false)
 
   const fetchSettings = async () => {
@@ -45,7 +51,7 @@
   }
 
   onMount(() => {
-    fetchSettings()
+    if (Object.keys(initialSettings).length === 0) fetchSettings()
   })
 </script>
 
