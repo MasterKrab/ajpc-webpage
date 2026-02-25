@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import Loader from '@components/ui/Loader.svelte'
   import { wrapTemplate } from '@lib/email-shared'
   import { toast } from 'svelte-sonner'
   import EmailPreview from '@components/admin/EmailPreview.svelte'
@@ -56,13 +57,13 @@
     signature: string,
   ) => {
     saving = id
-    const res = await fetch(`/api/admin/templates?id=${id}`, {
+    const response = await fetch(`/api/admin/templates?id=${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subject, body, signature }),
     })
 
-    if (res.ok) {
+    if (response.ok) {
       toast.success('Plantilla guardada correctamente')
       storage.remove(`editor_content_template_${id}`)
     } else {
@@ -99,7 +100,7 @@
   </header>
 
   {#if loading}
-    <p class="loading">Cargando plantillas...</p>
+    <Loader label="Cargando plantillas..." />
   {:else}
     <div class="templates-grid">
       {#each templates as template}
@@ -174,7 +175,11 @@
                   template.signature,
                 )}
             >
-              {saving === template.id ? 'Guardando...' : 'Guardar Cambios'}
+              {#if saving === template.id}
+                <Loader label="Guardando..." />
+              {:else}
+                Guardar Cambios
+              {/if}
             </button>
           </div>
         </section>

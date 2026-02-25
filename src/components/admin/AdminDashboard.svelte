@@ -14,6 +14,7 @@
   import UserTable from '@components/ui/UserTable.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
+  import Loader from '@components/ui/Loader.svelte'
 
   type Course = {
     id: string
@@ -351,7 +352,7 @@
 
       {#if coursesLoading}
         <DashboardContent>
-          <p class="admin__loading">Cargando cursos...</p>
+          <Loader label="Cargando cursos..." />
         </DashboardContent>
       {:else if coursesList.length === 0}
         <DashboardContent>

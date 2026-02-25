@@ -4,19 +4,18 @@ import UserSettings from '@components/profile/UserSettings.svelte'
 import { db } from '@db/index'
 import { users } from '@db/schema'
 import { eq } from 'drizzle-orm'
-import { isAdmin } from '@lib/auth'
+import { isTeacher, isAdmin } from '@lib/auth'
 
 const user = Astro.locals.user!
 
 // Redirect if already has both name and email
 if (user.name && user.email) return Astro.redirect('/dashboard')
 
-const [fullUser] = await db
-  .select()
-  .from(users)
-  .where(eq(users.id, user.id))
+if (!isTeacher(user)) return Astro.redirect('/dashboard')
 
-const isStaffUser = isAdmin(user)
+const [fullUser] = await db.select().from(users).where(eq(users.id, user.id))
+
+const isAdminUser = isAdmin(user)
 ---
 
 <DashboardLayout
@@ -29,21 +28,23 @@ const isStaffUser = isAdmin(user)
     <header class="onboarding__header">
       <h1 class="onboarding__title">¡Hola! Te damos la bienvenida</h1>
       <p class="onboarding__subtitle">
-        Para comenzar, necesitamos que configures tu nombre real y un correo electrónico de contacto.
+        Para comenzar, necesitamos que configures tu nombre real y un correo
+        electrónico de contacto.
       </p>
     </header>
 
-    <UserSettings 
-      client:load 
-      initialName={fullUser.name} 
-      initialEmail={fullUser.email} 
-      isAdminUser={isStaffUser} 
+    <UserSettings
+      client:load
+      initialName={fullUser.name}
+      initialEmail={fullUser.email}
+      isAdminUser={isAdminUser}
       redirectTo="/dashboard"
     />
 
     <div class="onboarding__footer">
       <p>
-        Estos datos podrán ser editados más tarde desde la configuración de tu cuenta.
+        Estos datos podrán ser editados más tarde desde la configuración de tu
+        cuenta.
       </p>
     </div>
   </div>

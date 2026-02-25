@@ -90,7 +90,11 @@
             !email.trim() ||
             (name === initialName && email === initialEmail)}
         >
-          {loading ? 'Guardando...' : 'Guardar Cambios'}
+          {#if loading}
+            Cargando...
+          {:else}
+            Guardar Cambios
+          {/if}
         </button>
       </div>
 

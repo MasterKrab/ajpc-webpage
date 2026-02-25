@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
+  import Loader from '@components/ui/Loader.svelte'
 
   let settings = $state<Record<string, string>>({})
   let loading = $state(true)
@@ -9,12 +10,9 @@
   const fetchSettings = async () => {
     try {
       loading = true
-      const res = await fetch('/api/admin/settings')
-      if (res.ok) {
-        settings = await res.json()
-      } else {
-        toast.error('Error al cargar la configuración')
-      }
+      const response = await fetch('/api/admin/settings')
+      if (response.ok) settings = await response.json()
+      else toast.error('Error al cargar la configuración')
     } catch (error) {
       console.error(error)
       toast.error('Error de conexión')
@@ -55,7 +53,7 @@
   <h2 class="settings-manager__title">Configuración del Sistema</h2>
 
   {#if loading}
-    <p class="settings-manager__loading">Cargando configuración...</p>
+    <Loader label="Cargando configuración..." />
   {:else}
     <div class="settings-grid">
       <article class="setting-card">
@@ -79,10 +77,10 @@
               disabled={updating}
               aria-labelledby="registration-title"
               aria-describedby="registration-desc"
-              onchange={(e) =>
+              onchange={({ currentTarget }) =>
                 updateSetting(
                   'public_registration',
-                  e.currentTarget.checked ? 'true' : 'false',
+                  currentTarget.checked ? 'true' : 'false',
                 )}
             />
             <label
@@ -110,12 +108,6 @@
   .settings-manager__title {
     font-size: 1.5rem;
     margin: 0;
-  }
-
-  .settings-manager__loading {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-color-secondary);
   }
 
   .settings-grid {

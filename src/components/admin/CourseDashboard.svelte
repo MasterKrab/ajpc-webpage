@@ -9,6 +9,7 @@
   import DashboardContent from '@components/ui/DashboardContent.svelte'
   import SearchBox from '@components/ui/SearchBox.svelte'
   import InfiniteScroll from '@components/ui/InfiniteScroll.svelte'
+  import Loader from '@components/ui/Loader.svelte'
 
   type Course = {
     id: string
@@ -606,7 +607,9 @@
           </div>
 
           {#if enrollmentLoading && enrollmentsList.length === 0}
-            <div class="loading-state">Cargando inscripciones...</div>
+            <div class="loading-state">
+              <Loader label="Cargando inscripciones..." />
+            </div>
           {/if}
 
           {#if hasMoreEnrollments}
@@ -690,7 +693,9 @@
         </Modal>
 
         {#if sectionsLoading}
-          <p>Cargando paralelos...</p>
+          <div class="loading-state">
+            <Loader label="Cargando paralelos..." />
+          </div>
         {:else if sectionsList.length === 0}
           <div class="empty-state">
             <p>No hay paralelos creados para este curso.</p>
@@ -767,7 +772,9 @@
         </div>
 
         {#if modulesLoading}
-          <div class="loading-state">Cargando módulos...</div>
+          <div class="loading-state">
+            <Loader label="Cargando módulos..." />
+          </div>
         {:else if modulesList.length === 0}
           <div class="empty-state">
             <p>No hay módulos creados para este curso.</p>

@@ -2,7 +2,8 @@
   import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
   import ConfirmModal from '@components/ui/ConfirmModal.svelte'
-  import Select from '../ui/Select.svelte'
+  import Select from '@components/ui/Select.svelte'
+  import Loader from '@components/ui/Loader.svelte'
   import trashIcon from '@assets/icons/trash.svg?raw'
 
   type Invite = {
@@ -145,7 +146,7 @@
   </header>
 
   {#if loading}
-    <p class="loading">Cargando invitaciones...</p>
+    <Loader label="Cargando invitaciones..." />
   {:else if invites.length === 0}
     <div class="empty-state">
       <p>No hay invitaciones generadas aún.</p>
@@ -362,7 +363,6 @@
     border-radius: 0.25rem;
   }
 
-  .loading,
   .empty-state {
     padding: 3rem;
     text-align: center;

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { isStaff, generateId } from '@lib/auth'
+import { isTeacher, generateId } from '@lib/auth'
 import { db } from '@db/index'
 import { attendance } from '@db/schema'
 import { eq, and, sql } from 'drizzle-orm'
@@ -14,7 +14,7 @@ const attendanceSchema = z.object({
 
 export const GET: APIRoute = async ({ locals, url }) => {
   const user = locals.user!
-  if (!isStaff(user)) {
+  if (!isTeacher(user)) {
     return Response.json({ error: 'No autorizado' }, { status: 403 })
   }
 
@@ -55,7 +55,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
 export const POST: APIRoute = async ({ locals, request }) => {
   const user = locals.user!
-  if (!isStaff(user)) {
+  if (!isTeacher(user)) {
     return Response.json({ error: 'No autorizado' }, { status: 403 })
   }
 

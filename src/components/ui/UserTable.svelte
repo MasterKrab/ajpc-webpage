@@ -1,27 +1,18 @@
-<script lang="ts" generics="T extends User">
-  import InfiniteScroll from './InfiniteScroll.svelte'
-  import RoleBadge from './RoleBadge.svelte'
+<script lang="ts">
+  import InfiniteScroll from '@components/ui/InfiniteScroll.svelte'
+  import RoleBadge from '@components/ui/RoleBadge.svelte'
+  import Loader from '@components/ui/Loader.svelte'
   import type { Snippet } from 'svelte'
-
-  type User = {
-    id: string
-    discordId: string
-    discordUsername: string
-    discordAvatar: string | null
-    name: string | null
-    email?: string | null
-    role?: string
-    [key: string]: any
-  }
+  import type { User } from '@db/schema'
 
   interface Props {
-    users: T[]
+    users: User[]
     loading?: boolean
     hasMore?: boolean
     onLoadMore?: () => void
     showEmail?: boolean
     showRole?: boolean
-    actions?: Snippet<[T]>
+    actions?: Snippet<[User]>
     emptyMessage?: string
   }
 
@@ -39,10 +30,7 @@
 
 <div class="user-table-container">
   {#if loading && users.length === 0}
-    <div class="loading-overlay">
-      <div class="spinner"></div>
-      <p>Cargando...</p>
-    </div>
+    <Loader size="lg" label="Cargando usuarios..." />
   {:else if users.length === 0}
     <div class="empty-state">
       <p>{emptyMessage}</p>
@@ -217,7 +205,6 @@
     color: var(--text-color-secondary);
   }
 
-  .loading-overlay,
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -226,22 +213,6 @@
     padding: 4rem 2rem;
     color: var(--text-color-secondary);
     text-align: center;
-  }
-
-  .spinner {
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 4px solid rgba(var(--brand-primary-rgb), 0.1);
-    border-top-color: var(--brand-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 
   @media (max-width: 640px) {

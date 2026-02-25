@@ -1,5 +1,6 @@
 <script lang="ts">
   import { z } from 'zod'
+  import Loader from '@components/ui/Loader.svelte'
 
   interface Props {
     courseId: string
@@ -240,7 +241,11 @@
     </div>
 
     <button class="form-submit" type="submit" disabled={loading}>
-      {loading ? 'Enviando...' : 'Enviar inscripción'}
+      {#if loading}
+        <Loader label="Enviando..." />
+      {:else}
+        Enviar inscripción
+      {/if}
     </button>
   </form>
 {/if}

@@ -71,8 +71,7 @@ export const hasRole = (
 export const isAdmin = (user: User | null): boolean =>
   hasRole(user, 'admin', 'sudo')
 
-export const isStaff = (user: User | null): boolean =>
+export const isTeacher = (user: User | null): boolean =>
   hasRole(user, 'docente', 'admin', 'sudo')
 
-export const isSudo = (user: User | null): boolean =>
-  hasRole(user, 'sudo')
+export const isSudo = (user: User | null): boolean => hasRole(user, 'sudo')

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
+  import Loader from '@components/ui/Loader.svelte'
   import type Quill from 'quill'
   import DOMPurify from 'dompurify'
   import Modal from '@components/ui/Modal.svelte'
@@ -243,9 +244,8 @@
 
 <div class="rich-text-editor">
   {#if isLoading}
-    <div class="editor-skeleton">
-      <div class="skeleton-toolbar"></div>
-      <div class="skeleton-content"></div>
+    <div class="editor-loader">
+      <Loader label="Cargando editor..." />
     </div>
   {/if}
 
@@ -550,42 +550,12 @@
     opacity: 0.9;
   }
 
-  .editor-skeleton {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--foreground-color);
-    z-index: 10;
+  .editor-loader {
     display: flex;
-    flex-direction: column;
-  }
-
-  .skeleton-toolbar {
-    height: 42px;
-    background: rgba(128, 128, 128, 0.1);
-    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
-    animation: pulse 1.5s infinite ease-in-out;
-  }
-
-  .skeleton-content {
-    flex: 1;
-    background: rgba(128, 128, 128, 0.05);
-    animation: pulse 1.5s infinite ease-in-out;
-    animation-delay: 0.2s;
+    justify-content: center;
+    align-items: center;
+    padding: 3rem;
     min-height: 25rem;
-  }
-
-  @keyframes pulse {
-    0% {
-      opacity: 0.6;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0.6;
-    }
+    background: rgba(128, 128, 128, 0.05);
   }
 </style>

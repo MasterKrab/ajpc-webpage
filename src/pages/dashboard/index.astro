@@ -1,14 +1,14 @@
 ---
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import StudentEnrollmentModal from '@components/dashboard/StudentEnrollmentModal.svelte'
-import { isSudo, isStaff, isAdmin } from '@lib/auth'
+import { isTeacher, isAdmin } from '@lib/auth'
 import { db } from '@db/index'
 import { enrollments, courses } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
 const user = Astro.locals.user!
 const admin = isAdmin(user)
-const staff = isStaff(user)
+const teacher = isTeacher(user)
 
 const userEnrollments = await db
   .select({
@@ -81,8 +81,8 @@ const availableCourses = openCourses.filter((course) => {
 
       <div class="dashboard__links">
         {
-          staff && (
-            <a class="dashboard__staff-link" href="/dashboard/docente">
+          teacher && (
+            <a class="dashboard__teacher-link" href="/dashboard/docente">
               Panel de Docente →
             </a>
           )
@@ -260,7 +260,7 @@ const availableCourses = openCourses.filter((course) => {
   }
 
   .dashboard__admin-link,
-  .dashboard__staff-link {
+  .dashboard__teacher-link {
     padding: 0.5rem 1rem;
     color: #fff;
     border-radius: 0.5rem;
@@ -273,12 +273,12 @@ const availableCourses = openCourses.filter((course) => {
     background-color: var(--brand-tertiary);
   }
 
-  .dashboard__staff-link {
+  .dashboard__teacher-link {
     background-color: var(--brand-primary);
   }
 
   .dashboard__admin-link:hover,
-  .dashboard__staff-link:hover {
+  .dashboard__teacher-link:hover {
     opacity: 0.85;
   }
 

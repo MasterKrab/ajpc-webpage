@@ -6,7 +6,7 @@ import Navigation from '@components/Navigation.astro'
 import ToggleTheme from '@components/theme/ToggleTheme.astro'
 import MiniFooter from '@components/MiniFooter.astro'
 import { Toaster } from 'svelte-sonner'
-import { isAdmin } from '@lib/auth'
+import { isAdmin, isTeacher } from '@lib/auth'
 
 const { metadata = {} } = Astro.props
 const user = Astro.locals.user
@@ -36,6 +36,25 @@ const user = Astro.locals.user
                   href="/dashboard"
                 >
                   Dashboard
+                </a>
+              </li>
+            )
+          }
+
+          {
+            user && isTeacher(user) && (
+              <li class="menu__item">
+                <a
+                  class:list={[
+                    'menu__link',
+                    {
+                      'menu__link--active':
+                        Astro.url.pathname.startsWith('/dashboard/docente'),
+                    },
+                  ]}
+                  href="/dashboard/docente"
+                >
+                  Docente
                 </a>
               </li>
             )

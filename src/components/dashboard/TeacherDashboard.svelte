@@ -2,13 +2,7 @@
   import { onMount } from 'svelte'
   import { fade } from 'svelte/transition'
   import TeacherSectionView from './TeacherSectionView.svelte'
-
-  type Student = {
-    id: string
-    name: string | null
-    discordUsername: string
-    enrollmentId: string
-  }
+  import Loader from '@components/ui/Loader.svelte'
 
   type Section = {
     id: string
@@ -56,15 +50,12 @@
 
 <div class="teacher-dashboard">
   {#if loading}
-    <div class="loading-state">
-      <div class="loader"></div>
-      <p>Cargando tus paralelos...</p>
-    </div>
+    <Loader label="Cargando tus paralelos..." />
   {:else if sections.length === 0}
     <div class="empty-state" in:fade>
       <div class="empty-state__icon">📚</div>
-      <h2>No tienes paralelos asignados</h2>
-      <p>
+      <h2 class="empty-state__title">No tienes paralelos asignados</h2>
+      <p class="empty-state__text">
         Aún no has sido asignado a ningún paralelo (sección) de un curso. Por
         favor, contacta a un administrador.
       </p>
@@ -131,7 +122,6 @@
     min-height: 500px;
   }
 
-  .loading-state,
   .empty-state {
     padding: 6rem 2rem;
     text-align: center;
@@ -141,29 +131,13 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .loader {
-    width: 40px;
-    height: 40px;
-    border: 4px solid var(--foreground-color);
-    border-top: 4px solid var(--brand-primary);
-    border-radius: 50%;
-    margin: 0 auto 1.5rem;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .empty-state h2 {
+  .empty-state__title {
     margin: 0 0 1rem;
     font-size: 1.75rem;
     font-weight: 800;
   }
 
-  .empty-state p {
+  .empty-state__text {
     color: var(--text-color-secondary);
     max-width: 450px;
     margin: 0 auto;

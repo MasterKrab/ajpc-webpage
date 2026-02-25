@@ -8,6 +8,7 @@
   import UserTable from '@components/ui/UserTable.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
+  import Loader from '@components/ui/Loader.svelte'
 
   type Student = {
     id: string
@@ -328,7 +329,7 @@
     {:else if activeTab === 'modules'}
       <div class="modules-manager">
         {#if modulesLoading}
-          <div class="loading-state">Cargando módulos...</div>
+          <Loader label="Cargando módulos..." />
         {:else if modulesList.length === 0}
           <div class="empty-state">
             <p>No hay módulos creados aún.</p>
@@ -418,7 +419,7 @@
   <div class="observations-modal">
     <div class="observations-list">
       {#if observationsLoading}
-        <p>Cargando...</p>
+        <Loader size="sm" />
       {:else if observationsList.length === 0}
         <p class="empty-text">No hay observaciones para este alumno.</p>
       {:else}
@@ -540,17 +541,12 @@
     gap: 0.5rem;
   }
 
-  .materials-list__link:hover {
-    color: var(--brand-primary);
-  }
-
   .attendance-container {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
   }
 
-  .loading-state,
   .empty-state {
     padding: 4rem;
     text-align: center;

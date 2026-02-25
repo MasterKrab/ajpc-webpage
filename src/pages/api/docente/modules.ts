@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro'
-import { isStaff, isAdmin, generateId } from '@lib/auth'
+import { isTeacher, isAdmin, generateId } from '@lib/auth'
 import { db } from '@db/index'
 import { modules, moduleMaterials } from '@db/schema'
 import { eq } from 'drizzle-orm'
@@ -19,14 +19,14 @@ const materialSchema = z.object({
 
 export const GET: APIRoute = async ({ locals, url }) => {
   const user = locals.user!
-  if (!isStaff(user)) {
+
+  if (!isTeacher(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
-  }
 
   const courseId = url.searchParams.get('courseId')
-  if (!courseId) {
+
+  if (!courseId)
     return Response.json({ error: 'courseId requerido' }, { status: 400 })
-  }
 
   const courseModules = await db
     .select()

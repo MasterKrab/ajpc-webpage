@@ -1,12 +1,12 @@
 import type { APIRoute } from 'astro'
-import { isStaff } from '@lib/auth'
+import { isTeacher } from '@lib/auth'
 import { db } from '@db/index'
 import { enrollments, users } from '@db/schema'
 import { eq, and, sql, or, like } from 'drizzle-orm'
 
 export const GET: APIRoute = async ({ locals, url }) => {
   const user = locals.user!
-  if (!isStaff(user)) {
+  if (!isTeacher(user)) {
     return Response.json({ error: 'No autorizado' }, { status: 403 })
   }
 

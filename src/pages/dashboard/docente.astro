@@ -1,11 +1,11 @@
 ---
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import TeacherDashboard from '@components/dashboard/TeacherDashboard.svelte'
-import { isStaff } from '@lib/auth'
+import { isTeacher } from '@lib/auth'
 
 const user = Astro.locals.user!
 
-if (!isStaff(user)) return Astro.redirect('/dashboard')
+if (!isTeacher(user)) return Astro.redirect('/dashboard')
 ---
 
 <DashboardLayout
