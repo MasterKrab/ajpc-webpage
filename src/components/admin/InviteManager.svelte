@@ -145,7 +145,7 @@
           placeholder="Selecciona un rol"
         />
       </div>
-      <div class="generator-group">
+      <div class="generator-group generator-group--count">
         <label for="max-uses" class="generator-label">Cant. de usos</label>
         <input
           id="max-uses"
@@ -302,22 +302,29 @@
   .invite-generator {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
   }
 
   .generator-group {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .generator-group--count {
+    padding-left: 1rem;
+    border: 2px solid rgba(128, 128, 128, 0.2);
+    border-radius: 0.5rem;
   }
 
   .count-input {
     width: 4rem;
-    padding: 0.5rem;
-    padding-right: 0.2rem;
-    border: 2px solid rgba(128, 128, 128, 0.2);
-    border-radius: 0.5rem;
-    background: transparent;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border: none;
+    background-color: transparent;
     color: var(--text-color-primary);
     font-weight: 600;
     text-align: center;
