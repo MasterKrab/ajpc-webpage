@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 
 export const users = sqliteTable('users', {
@@ -41,6 +41,37 @@ export const courses = sqliteTable('courses', {
   ),
 })
 
+export const sections = sqliteTable('sections', {
+  id: text('id').primaryKey(),
+  courseId: text('course_id')
+    .notNull()
+    .references(() => courses.id),
+  name: text('name').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
+export const sectionDocentes = sqliteTable(
+  'section_docentes',
+  {
+    sectionId: text('section_id')
+      .notNull()
+      .references(() => sections.id, { onDelete: 'cascade' }),
+    teacherId: text('teacher_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({ columns: [table.sectionId, table.teacherId] }),
+    }
+  },
+)
+
 export const enrollments = sqliteTable('enrollments', {
   id: text('id').primaryKey(),
   userId: text('user_id')
@@ -49,6 +80,7 @@ export const enrollments = sqliteTable('enrollments', {
   courseId: text('course_id')
     .notNull()
     .references(() => courses.id),
+  sectionId: text('section_id').references(() => sections.id),
   fullName: text('full_name').notNull(),
   email: text('email').notNull(),
   age: integer('age').notNull(),
@@ -83,6 +115,72 @@ export const emailTemplates = sqliteTable('email_templates', {
   ),
 })
 
+export const studentObservations = sqliteTable('student_observations', {
+  id: text('id').primaryKey(),
+  studentId: text('student_id')
+    .notNull()
+    .references(() => users.id),
+  teacherId: text('teacher_id')
+    .notNull()
+    .references(() => users.id),
+  courseId: text('course_id')
+    .notNull()
+    .references(() => courses.id),
+  observation: text('observation').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
+export const modules = sqliteTable('modules', {
+  id: text('id').primaryKey(),
+  courseId: text('course_id')
+    .notNull()
+    .references(() => courses.id),
+  title: text('title').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
+export const moduleMaterials = sqliteTable('module_materials', {
+  id: text('id').primaryKey(),
+  moduleId: text('module_id')
+    .notNull()
+    .references(() => modules.id),
+  title: text('title').notNull(),
+  url: text('url').notNull(),
+  type: text('type').notNull().default('link'), // 'link', 'document', 'video', etc.
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
+export const attendance = sqliteTable('attendance', {
+  id: text('id').primaryKey(),
+  moduleId: text('module_id')
+    .notNull()
+    .references(() => modules.id),
+  studentId: text('student_id')
+    .notNull()
+    .references(() => users.id),
+  sectionId: text('section_id')
+    .notNull()
+    .references(() => sections.id),
+  status: text('status', { enum: ['present', 'absent', 'late', 'excused'] })
+    .default('present')
+    .notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
 export const inviteCodes = sqliteTable('invite_codes', {
   code: text('code').primaryKey(),
   role: text('role', { enum: ['student', 'docente', 'admin'] }).notNull(),
@@ -100,13 +198,24 @@ export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Course = typeof courses.$inferSelect
 export type NewCourse = typeof courses.$inferInsert
+export type Section = typeof sections.$inferSelect
+export type NewSection = typeof sections.$inferInsert
 export type Enrollment = typeof enrollments.$inferSelect
 export type NewEnrollment = typeof enrollments.$inferInsert
 export type EmailTemplate = typeof emailTemplates.$inferSelect
 export type NewEmailTemplate = typeof emailTemplates.$inferInsert
+export type StudentObservation = typeof studentObservations.$inferSelect
+export type NewStudentObservation = typeof studentObservations.$inferInsert
+export type Module = typeof modules.$inferSelect
+export type NewModule = typeof modules.$inferInsert
+export type ModuleMaterial = typeof moduleMaterials.$inferSelect
+export type NewModuleMaterial = typeof moduleMaterials.$inferInsert
+export type Attendance = typeof attendance.$inferSelect
+export type NewAttendance = typeof attendance.$inferInsert
+export type SectionDocente = typeof sectionDocentes.$inferSelect
+export type NewSectionDocente = typeof sectionDocentes.$inferInsert
 export type InviteCode = typeof inviteCodes.$inferSelect
 export type NewInviteCode = typeof inviteCodes.$inferInsert
-
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(), // JSON string or simple value

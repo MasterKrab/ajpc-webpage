@@ -1,13 +1,14 @@
 ---
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import StudentEnrollmentModal from '@components/dashboard/StudentEnrollmentModal.svelte'
-import { isAdmin } from '@lib/auth'
+import { isSudo, isStaff, isAdmin } from '@lib/auth'
 import { db } from '@db/index'
 import { enrollments, courses } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
 const user = Astro.locals.user!
 const admin = isAdmin(user)
+const staff = isStaff(user)
 
 const userEnrollments = await db
   .select({
@@ -78,13 +79,22 @@ const availableCourses = openCourses.filter((course) => {
         </div>
       </div>
 
-      {
-        admin && (
-          <a class="dashboard__admin-link" href="/admin">
-            Panel de administración →
-          </a>
-        )
-      }
+      <div class="dashboard__links">
+        {
+          staff && (
+            <a class="dashboard__staff-link" href="/dashboard/docente">
+              Panel de Docente →
+            </a>
+          )
+        }
+        {
+          admin && (
+            <a class="dashboard__admin-link" href="/admin">
+              Panel de admin →
+            </a>
+          )
+        }
+      </div>
     </header>
 
     <section class="dashboard__section" aria-labelledby="enrollments-heading">
@@ -243,9 +253,15 @@ const availableCourses = openCourses.filter((course) => {
     font-size: 0.875rem;
   }
 
-  .dashboard__admin-link {
+  .dashboard__links {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .dashboard__admin-link,
+  .dashboard__staff-link {
     padding: 0.5rem 1rem;
-    background-color: var(--brand-tertiary);
     color: #fff;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -253,7 +269,16 @@ const availableCourses = openCourses.filter((course) => {
     transition: opacity 0.2s;
   }
 
-  .dashboard__admin-link:hover {
+  .dashboard__admin-link {
+    background-color: var(--brand-tertiary);
+  }
+
+  .dashboard__staff-link {
+    background-color: var(--brand-primary);
+  }
+
+  .dashboard__admin-link:hover,
+  .dashboard__staff-link:hover {
     opacity: 0.85;
   }
 

@@ -7,18 +7,15 @@ import { courses, enrollments, users } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
 const user = Astro.locals.user
-if (!user || !isAdmin(user)) {
-  return Astro.redirect('/login')
-}
+
+if (!user || !isAdmin(user)) return Astro.redirect('/login')
 
 const { id } = Astro.params
 if (!id) return Astro.redirect('/admin')
 
 const [course] = await db.select().from(courses).where(eq(courses.id, id))
 
-if (!course) {
-  return Astro.redirect('/admin')
-}
+if (!course) return Astro.redirect('/admin')
 
 const enrollmentData = await db
   .select({
@@ -38,35 +35,10 @@ const enrollmentData = await db
     description: 'Panel de administración del curso',
   }}
 >
-  <div class="admin-container">
-    <a href="/admin" class="back-link">← Volver al panel general</a>
-
-    <CourseDashboard
-      client:only
-      course={course}
-      initialEnrollments={enrollmentData}
-      isSudo={user.role === 'sudo'}
-    />
-  </div>
+  <CourseDashboard
+    client:only
+    course={course}
+    initialEnrollments={enrollmentData}
+    isSudo={user.role === 'sudo'}
+  />
 </DashboardLayout>
-
-<style>
-  .admin-container {
-    max-width: 75rem;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .back-link {
-    display: inline-block;
-    margin-bottom: 1.5rem;
-    color: var(--text-color-secondary);
-    text-decoration: none;
-    font-weight: 500;
-  }
-
-  .back-link:hover {
-    color: var(--brand-primary);
-    text-decoration: underline;
-  }
-</style>

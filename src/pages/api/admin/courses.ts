@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro'
 import { isAdmin, generateId } from '@lib/auth'
 import { db } from '@db/index'
 import { courses, enrollments } from '@db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 const courseSchema = z.object({
@@ -16,13 +16,27 @@ const courseSchema = z.object({
   enrollmentEndDate: z.string().optional().nullable(),
 })
 
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async ({ locals, url }) => {
   const user = locals.user!
   if (!isAdmin(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
 
-  const result = await db.select().from(courses)
-  return Response.json(result)
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'))
+  const limit = Math.max(1, parseInt(url.searchParams.get('limit') || '50'))
+  const offset = (page - 1) * limit
+
+  const [totalCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(courses)
+
+  const result = await db.select().from(courses).limit(limit).offset(offset)
+
+  return Response.json({
+    courses: result,
+    total: totalCount.count,
+    page,
+    limit,
+  })
 }
 
 export const POST: APIRoute = async ({ locals, request }) => {

@@ -16,27 +16,35 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (user) {
     const hasIncompleteProfile = !user.name?.trim() || !user.email?.trim()
-    
+
     if (hasIncompleteProfile) {
-      const isSharedPath = 
-        pathname === '/' || 
+      const isSharedPath =
+        pathname === '/' ||
         pathname.startsWith('/api/auth') ||
         pathname.startsWith('/_image') ||
         pathname.startsWith('/_astro') ||
         pathname.includes('favicon')
 
-      const isOnboardingFlow = 
-        pathname.startsWith('/dashboard/onboarding') || 
+      const isOnboardingFlow =
+        pathname.startsWith('/dashboard/onboarding') ||
         pathname.startsWith('/api/user/profile')
 
       if (!isSharedPath && !isOnboardingFlow) {
-        console.log(`[Middleware] Redirecting user ${user.id} to onboarding. Missing name/email.`)
+        console.log(
+          `[Middleware] Redirecting user ${user.id} to onboarding. Missing name/email.`,
+        )
         return context.redirect('/dashboard/onboarding')
       }
     }
   }
 
-  if (pathname.startsWith('/inscripciones') || pathname.startsWith('/api/inscripciones')) {
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/api/user') ||
+    pathname.startsWith('/api/docente') ||
+    pathname.startsWith('/inscripciones') ||
+    pathname.startsWith('/api/inscripciones')
+  ) {
     if (!user) return context.redirect('/login')
   }
 

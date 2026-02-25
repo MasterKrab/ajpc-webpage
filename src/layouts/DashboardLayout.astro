@@ -5,6 +5,7 @@ import UserBadge from '@components/UserBadge.astro'
 import Navigation from '@components/Navigation.astro'
 import ToggleTheme from '@components/theme/ToggleTheme.astro'
 import MiniFooter from '@components/MiniFooter.astro'
+import { Toaster } from 'svelte-sonner'
 import { isAdmin } from '@lib/auth'
 
 const { metadata = {} } = Astro.props
@@ -39,6 +40,7 @@ const user = Astro.locals.user
               </li>
             )
           }
+
           {
             user && isAdmin(user) && (
               <li class="menu__item">
@@ -70,6 +72,8 @@ const user = Astro.locals.user
       <slot />
     </main>
 
+    <Toaster client:load />
+
     <MiniFooter />
   </body>
 </html>
@@ -80,7 +84,6 @@ const user = Astro.locals.user
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 2rem;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
     gap: 1rem;
     flex-wrap: wrap;
   }

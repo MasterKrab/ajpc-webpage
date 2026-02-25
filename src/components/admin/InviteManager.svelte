@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
-  import ConfirmModal from '../ui/ConfirmModal.svelte'
+  import ConfirmModal from '@components/ui/ConfirmModal.svelte'
+  import Select from '../ui/Select.svelte'
   import trashIcon from '@assets/icons/trash.svg?raw'
 
   type Invite = {
@@ -13,11 +14,7 @@
     usedAt: string | null
   }
 
-  interface Props {
-    isSudo: boolean
-  }
-
-  let { isSudo }: Props = $props()
+  let { isSudo }: { isSudo: boolean } = $props()
 
   let invites = $state<Invite[]>([])
   let loading = $state(true)
@@ -25,32 +22,48 @@
   let deleting = $state<string | null>(null)
   let selectedRole = $state<'student' | 'docente' | 'admin'>('student')
 
+  const roleOptions = $derived([
+    { value: 'student', label: 'Estudiante' },
+    { value: 'docente', label: 'Docente' },
+    ...(isSudo ? [{ value: 'admin', label: 'Administrador' }] : []),
+  ])
+
   let isDeleteModalOpen = $state(false)
   let inviteToDelete = $state<string | null>(null)
 
   const fetchInvites = async () => {
     loading = true
-    const res = await fetch('/api/admin/invites')
-    invites = await res.json()
-    loading = false
+    try {
+      const response = await fetch('/api/admin/invites')
+      invites = await response.json()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      loading = false
+    }
   }
 
   const generateInvite = async () => {
     generating = true
-    const res = await fetch('/api/admin/invites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: selectedRole }),
-    })
+    try {
+      const response = await fetch('/api/admin/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: selectedRole }),
+      })
 
-    if (res.ok) {
-      toast.success('Invitación generada')
-      await fetchInvites()
-    } else {
-      const data = await res.json()
-      toast.error(data.error || 'Error al generar invitación')
+      if (response.ok) {
+        toast.success('Invitación generada')
+        await fetchInvites()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Error al generar invitación')
+      }
+    } catch (e) {
+      toast.error('Error al generar invitación')
+    } finally {
+      generating = false
     }
-    generating = false
   }
 
   const confirmDelete = (code: string) => {
@@ -60,24 +73,28 @@
 
   const deleteInvite = async () => {
     if (!inviteToDelete) return
-
     const code = inviteToDelete
     isDeleteModalOpen = false
     deleting = code
 
-    const res = await fetch(`/api/admin/invites?code=${code}`, {
-      method: 'DELETE',
-    })
+    try {
+      const response = await fetch(`/api/admin/invites?code=${code}`, {
+        method: 'DELETE',
+      })
 
-    if (res.ok) {
-      toast.success('Invitación eliminada')
-      await fetchInvites()
-    } else {
-      const data = await res.json()
-      toast.error(data.error || 'Error al eliminar invitación')
+      if (response.ok) {
+        toast.success('Invitación eliminada')
+        await fetchInvites()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Error al eliminar invitación')
+      }
+    } catch (e) {
+      toast.error('Error al eliminar invitación')
+    } finally {
+      deleting = null
+      inviteToDelete = null
     }
-    deleting = null
-    inviteToDelete = null
   }
 
   const copyToClipboard = (code: string) => {
@@ -112,13 +129,11 @@
     </div>
 
     <div class="invite-generator">
-      <select class="form-input" bind:value={selectedRole}>
-        <option value="student">Estudiante</option>
-        <option value="docente">Docente</option>
-        {#if isSudo}
-          <option value="admin">Administrador</option>
-        {/if}
-      </select>
+      <Select
+        options={roleOptions}
+        bind:value={selectedRole}
+        placeholder="Selecciona un rol"
+      />
       <button
         class="button button--primary"
         onclick={generateInvite}
@@ -246,15 +261,6 @@
     gap: 0.75rem;
   }
 
-  .form-input {
-    padding: 0.5rem 0.75rem;
-    border: 2px solid rgba(128, 128, 128, 0.2);
-    border-radius: 0.5rem;
-    background: var(--foreground-color);
-    color: var(--text-color-primary);
-    font-family: inherit;
-  }
-
   .button {
     padding: 0.5rem 1.25rem;
     border: none;
@@ -314,16 +320,16 @@
   }
 
   .role-badge--admin {
-    background: #fce4ec;
-    color: #c62828;
+    background-color: var(--role-admin-background-color);
+    color: var(--role-admin-text-color);
   }
   .role-badge--docente {
-    background: #fff3e0;
-    color: #e65100;
+    background-color: var(--role-docente-background-color);
+    color: var(--role-docente-text-color);
   }
   .role-badge--student {
-    background: #e3f2fd;
-    color: #1565c0;
+    background-color: var(--role-student-background-color);
+    color: var(--role-student-text-color);
   }
 
   .status-pill {
@@ -335,12 +341,18 @@
   }
 
   .status--available {
-    background: #d4edda;
-    color: #155724;
+    background-color: var(
+      --color-success-background-color,
+      var(--color-success-bg)
+    );
+    color: var(--color-success-text-color, var(--color-success-text));
   }
   .status--used {
-    background: #f8d7da;
-    color: #721c24;
+    background-color: var(
+      --color-danger-background-color,
+      var(--color-danger-bg)
+    );
+    color: var(--color-danger-text-color, var(--color-danger-text));
   }
 
   .code-text {
@@ -366,12 +378,15 @@
   }
 
   .button--danger {
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
+    background-color: var(
+      --color-danger-background-color,
+      var(--color-danger-bg)
+    );
+    color: var(--color-danger-text-color, var(--color-danger-text));
   }
 
   .button--danger:hover {
-    background: rgba(220, 53, 69, 0.2);
+    opacity: 0.8;
   }
 
   .icon-trash {

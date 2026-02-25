@@ -1,10 +1,19 @@
 <script lang="ts">
   import Modal from '@components/ui/Modal.svelte'
+  import Tabs from '@components/ui/Tabs.svelte'
+  import PanelHeader from '@components/ui/PanelHeader.svelte'
+  import RoleBadge from '@components/ui/RoleBadge.svelte'
+  import Select from '@components/ui/Select.svelte'
   import TemplateEditor from './TemplateEditor.svelte'
   import EmailSender from './EmailSender.svelte'
   import InviteManager from './InviteManager.svelte'
   import SettingsManager from './SettingsManager.svelte'
-  import { Toaster, toast } from 'svelte-sonner'
+  import { toast } from 'svelte-sonner'
+  import SearchBox from '@components/ui/SearchBox.svelte'
+
+  import UserTable from '@components/ui/UserTable.svelte'
+  import SubHeader from '@components/ui/SubHeader.svelte'
+  import DashboardContent from '@components/ui/DashboardContent.svelte'
 
   type Course = {
     id: string
@@ -28,18 +37,21 @@
 
   interface Props {
     isSudo: boolean
+    userRole: string
   }
 
-  let { isSudo }: Props = $props()
+  let { isSudo, userRole }: Props = $props()
 
-  type Tab =
-    | 'courses'
-    | 'users'
-    | 'templates'
-    | 'email'
-    | 'invites'
-    | 'settings'
-  let activeTab = $state<Tab>('courses')
+  const tabs = $derived([
+    { id: 'courses', label: 'Cursos', icon: '📚' },
+    ...(isSudo ? [{ id: 'users', label: 'Usuarios', icon: '👥' }] : []),
+    { id: 'templates', label: 'Plantillas', icon: '📧' },
+    { id: 'email', label: 'Enviar Correos', icon: '✉️' },
+    { id: 'invites', label: 'Invitaciones', icon: '🎟️' },
+    { id: 'settings', label: 'Configuración', icon: '⚙️' },
+  ])
+
+  let activeTab = $state<string>('courses')
 
   let coursesList = $state<Course[]>([])
   let coursesLoading = $state(true)
@@ -56,26 +68,82 @@
   let courseFormLoading = $state(false)
 
   let usersList = $state<User[]>([])
-  let usersLoading = $state(true)
+  let usersTotal = $state(0)
+  let usersLoading = $state(false)
   let roleChangeLoading = $state<string | null>(null)
+
+  let userSearchQuery = $state('')
+  let usersPage = $state(1)
+  const USERS_PER_PAGE = 20
+
+  const hasMoreUsers = $derived(usersList.length < usersTotal)
 
   const fetchCourses = async () => {
     coursesLoading = true
-    const res = await fetch('/api/admin/courses')
-    coursesList = await res.json()
-    coursesLoading = false
+    try {
+      const response = await fetch('/api/admin/courses')
+      const data = await response.json()
+      coursesList = data.courses || []
+    } catch (error) {
+      console.error('Error fetching courses:', error)
+      toast.error('Error al cargar cursos')
+    } finally {
+      coursesLoading = false
+    }
   }
 
-  const fetchUsers = async () => {
-    usersLoading = true
-    const res = await fetch('/api/admin/users')
-    usersList = await res.json()
-    usersLoading = false
+  const fetchUsers = async (page = 1, append = false) => {
+    if (!append) usersLoading = true
+    try {
+      const searchParam = userSearchQuery
+        ? `&search=${encodeURIComponent(userSearchQuery)}`
+        : ''
+      const response = await fetch(
+        `/api/admin/users?page=${page}&limit=${USERS_PER_PAGE}${searchParam}`,
+      )
+      const data = await response.json()
+
+      if (append) usersList = [...usersList, ...(data.users || [])]
+      else usersList = data.users || []
+
+      usersTotal = data.total || 0
+      usersPage = page
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      toast.error('Error al cargar usuarios')
+    } finally {
+      usersLoading = false
+    }
   }
 
   $effect(() => {
     fetchCourses()
-    if (isSudo) fetchUsers()
+  })
+
+  let hasRequestedUsers = false
+  $effect(() => {
+    if (
+      isSudo &&
+      activeTab === 'users' &&
+      !hasRequestedUsers &&
+      !usersLoading
+    ) {
+      hasRequestedUsers = true
+      fetchUsers(1, false)
+    }
+  })
+
+  let lastSearch = ''
+  $effect(() => {
+    if (!isSudo || activeTab !== 'users') return
+    if (userSearchQuery === lastSearch) return
+
+    const timer = setTimeout(() => {
+      lastSearch = userSearchQuery
+      fetchUsers(1, false)
+    }, 400)
+
+    return () => clearTimeout(timer)
   })
 
   const createCourse = async () => {
@@ -120,7 +188,7 @@
     else toast.error('Error al actualizar el rol')
 
     roleChangeLoading = null
-    await fetchUsers()
+    fetchUsers(1, false)
   }
 
   const levelLabel = (level: string) => {
@@ -150,83 +218,26 @@
   }
 </script>
 
-<Toaster position="top-right" richColors />
-
 <div class="admin">
-  <div
-    class="admin__tabs"
-    role="tablist"
-    aria-label="Secciones de administración"
-  >
-    <button
-      class="admin__tab"
-      class:admin__tab--active={activeTab === 'courses'}
-      role="tab"
-      aria-selected={activeTab === 'courses'}
-      onclick={() => (activeTab = 'courses')}
-    >
-      📚 Cursos
-    </button>
-    {#if isSudo}
-      <button
-        class="admin__tab"
-        class:admin__tab--active={activeTab === 'users'}
-        role="tab"
-        aria-selected={activeTab === 'users'}
-        onclick={() => (activeTab = 'users')}
-      >
-        👥 Usuarios
-      </button>
-    {/if}
-    <button
-      class="admin__tab"
-      class:admin__tab--active={activeTab === 'templates'}
-      role="tab"
-      aria-selected={activeTab === 'templates'}
-      onclick={() => (activeTab = 'templates')}
-    >
-      📧 Plantillas
-    </button>
-    <button
-      class="admin__tab"
-      class:admin__tab--active={activeTab === 'email'}
-      role="tab"
-      aria-selected={activeTab === 'email'}
-      onclick={() => (activeTab = 'email')}
-    >
-      ✉️ Enviar Correos
-    </button>
-    <button
-      class="admin__tab"
-      class:admin__tab--active={activeTab === 'invites'}
-      role="tab"
-      aria-selected={activeTab === 'invites'}
-      onclick={() => (activeTab = 'invites')}
-    >
-      🎟️ Invitaciones
-    </button>
-    <button
-      class="admin__tab"
-      class:admin__tab--active={activeTab === 'settings'}
-      role="tab"
-      aria-selected={activeTab === 'settings'}
-      onclick={() => (activeTab = 'settings')}
-    >
-      ⚙️ Configuración
-    </button>
-  </div>
+  <PanelHeader title="Panel de Administración 🛡️">
+    {#snippet subtitle()}
+      Rol: <RoleBadge role={userRole} />
+    {/snippet}
+    <Tabs {tabs} bind:activeTab />
+  </PanelHeader>
 
   {#if activeTab === 'courses'}
     <section class="admin__panel" role="tabpanel">
-      <div class="admin__toolbar">
-        <h2 class="admin__panel-title">Cursos</h2>
-        <button
-          class="button button--primary"
-          onclick={() => (showCourseForm = true)}
-        >
-          + Nuevo curso
-        </button>
-      </div>
+      <SubHeader title="Cursos">
+        {#snippet actions()}
+          <button
+            class="button button--primary"
+            onclick={() => (showCourseForm = true)}
+          >
+            + Nuevo curso
+          </button>
+        {/snippet}
+      </SubHeader>
 
       <Modal
         isOpen={showCourseForm}
@@ -339,9 +350,13 @@
       </Modal>
 
       {#if coursesLoading}
-        <p class="admin__loading">Cargando cursos...</p>
+        <DashboardContent>
+          <p class="admin__loading">Cargando cursos...</p>
+        </DashboardContent>
       {:else if coursesList.length === 0}
-        <p class="admin__empty">No hay cursos creados.</p>
+        <DashboardContent>
+          <p class="admin__empty">No hay cursos creados.</p>
+        </DashboardContent>
       {:else}
         <div class="courses-grid">
           {#each coursesList as course}
@@ -378,67 +393,40 @@
 
   {#if activeTab === 'users' && isSudo}
     <section class="admin__panel" role="tabpanel">
-      <h2 class="admin__panel-title">Gestión de usuarios</h2>
+      <SubHeader title="Gestión de usuarios">
+        {#snippet actions()}
+          <SearchBox
+            bind:value={userSearchQuery}
+            placeholder="Buscar usuarios..."
+          />
+        {/snippet}
+      </SubHeader>
 
-      {#if usersLoading}
-        <p class="admin__loading">Cargando usuarios...</p>
-      {:else}
-        <div class="table-wrapper">
-          <table class="admin__table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                <th>Nombre Sistema</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each usersList as u}
-                <tr>
-                  <td>
-                    <div class="user-cell">
-                      {#if u.discordAvatar}
-                        <img
-                          class="user-cell__avatar"
-                          src={`https://cdn.discordapp.com/avatars/${u.discordId}/${u.discordAvatar}.png?size=32`}
-                          alt=""
-                          width="32"
-                          height="32"
-                        />
-                      {/if}
-                      <span>@{u.discordUsername}</span>
-                    </div>
-                  </td>
-                  <td>{u.name || '—'}</td>
-                  <td>{u.email || '—'}</td>
-                  <td>
-                    <span class="role-badge role-badge--{u.role}">
-                      {u.role}
-                    </span>
-                  </td>
-                  <td>
-                    <select
-                      class="admin__role-select"
-                      value={u.role}
-                      disabled={roleChangeLoading === u.id}
-                      onchange={(e) =>
-                        changeRole(u.id, (e.target as HTMLSelectElement).value)}
-                      aria-label={`Cambiar rol de ${u.discordUsername}`}
-                    >
-                      <option value="student">student</option>
-                      <option value="docente">docente</option>
-                      <option value="admin">admin</option>
-                      <option value="sudo">sudo</option>
-                    </select>
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
+      <DashboardContent padding={false}>
+        <UserTable
+          users={usersList}
+          loading={usersLoading}
+          hasMore={hasMoreUsers}
+          onLoadMore={() => fetchUsers(usersPage + 1, true)}
+          showEmail
+          showRole
+        >
+          {#snippet actions(user)}
+            <Select
+              options={[
+                { value: 'student', label: 'student' },
+                { value: 'docente', label: 'docente' },
+                { value: 'admin', label: 'admin' },
+                { value: 'sudo', label: 'sudo' },
+              ]}
+              value={user.role}
+              disabled={roleChangeLoading === user.id || user.role === 'sudo'}
+              onChange={(val) => changeRole(user.id, val)}
+              placeholder=""
+            />
+          {/snippet}
+        </UserTable>
+      </DashboardContent>
     </section>
   {/if}
 
@@ -472,38 +460,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-  }
-
-  .admin__tabs {
-    display: flex;
-    gap: 0.25rem;
-    border-bottom: 2px solid rgba(128, 128, 128, 0.15);
-    overflow-x: auto;
-  }
-
-  .admin__tab {
-    padding: 0.75rem 1.5rem;
-    font-family: inherit;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--text-color-secondary);
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
-    cursor: pointer;
-    transition:
-      color 0.2s,
-      border-color 0.2s;
-    white-space: nowrap;
-  }
-
-  .admin__tab:hover {
-    color: var(--text-color-primary);
-  }
-
-  .admin__tab--active {
-    color: var(--brand-primary);
-    border-bottom-color: var(--brand-primary);
   }
 
   .admin__panel {
@@ -546,25 +502,8 @@
     overflow-x: auto;
   }
 
-  .admin__table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .admin__table th,
-  .admin__table td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.15);
-  }
-
-  .admin__table th {
-    font-weight: 600;
-    color: var(--text-color-secondary);
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .actions-cell {
+    min-width: 12rem;
   }
 
   .actions-cell {
@@ -811,12 +750,6 @@
     box-sizing: border-box;
   }
 
-  td {
-    min-width: 10rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .user-cell {
     display: flex;
     align-items: center;
@@ -827,30 +760,6 @@
     width: 2rem;
     height: 2rem;
     border-radius: 50%;
-  }
-
-  .role-badge {
-    font-size: 0.75rem;
-    font-weight: 700;
-    padding: 0.2rem 0.5rem;
-    border-radius: 0.25rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .role-badge--student {
-    background-color: #e3f2fd;
-    color: #1565c0;
-  }
-
-  .role-badge--admin {
-    background-color: #fff3e0;
-    color: #e65100;
-  }
-
-  .role-badge--sudo {
-    background-color: #fce4ec;
-    color: #c62828;
   }
 
   .admin__role-select {

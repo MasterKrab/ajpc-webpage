@@ -1,5 +1,5 @@
 :root {
-  --brand-primary: #116bb1;
+  --brand-primary: rgb(17, 107, 177);
   --brand-secondary: #1eca6c;
   --brand-tertiary: #711e8c;
 
@@ -32,7 +32,25 @@
   --color-warning-text: #856404;
 
   --border-color: rgba(128, 128, 128, 0.15);
-  --border-color-light: rgba(128, 128, 128, 0.05); /* For backgrounds like text blocks */
+  --border-color-light: rgba(128, 128, 128, 0.05);
+
+  --role-student-background-color: #e3f2fd;
+  --role-student-text-color: #1565c0;
+  --role-docente-background-color: rgba(17, 107, 177, 0.1);
+  --role-docente-text-color: var(--brand-primary);
+  --role-admin-background-color: #fff3e0;
+  --role-admin-text-color: #e65100;
+  --role-sudo-background-color: #fce4ec;
+  --role-sudo-text-color: #c62828;
+
+  --attendance-present-bg: var(--role-student-background-color);
+  --attendance-present-border: var(--role-student-text-color);
+  --attendance-absent-bg: var(--color-danger-bg);
+  --attendance-absent-border: var(--color-danger);
+  --attendance-late-bg: var(--color-warning-bg);
+  --attendance-late-border: var(--color-warning);
+  --attendance-excused-bg: var(--role-admin-background-color);
+  --attendance-excused-border: var(--role-admin-text-color);
 }
 
 :root.dark {
@@ -48,6 +66,26 @@
   --image-background-color: #fff;
 
   --shadow: 1rem 0.5rem 1rem rgba(255, 255, 255, 0.1);
+
+  /* Roles in Dark Mode */
+  --role-student-background-color: rgba(21, 101, 192, 0.2);
+  --role-student-text-color: #64b5f6;
+  --role-docente-background-color: rgba(17, 107, 177, 0.2);
+  --role-docente-text-color: #4fc3f7;
+  --role-admin-background-color: rgba(230, 81, 0, 0.2);
+  --role-admin-text-color: #ffb74d;
+  --role-sudo-background-color: rgba(198, 40, 40, 0.2);
+  --role-sudo-text-color: #ef5350;
+
+  /* Attendance semantic colors (Dark) */
+  --attendance-present-bg: var(--role-student-background-color);
+  --attendance-present-border: var(--role-student-text-color);
+  --attendance-absent-bg: rgba(220, 53, 69, 0.2);
+  --attendance-absent-border: #ef5350;
+  --attendance-late-bg: rgba(255, 193, 7, 0.2);
+  --attendance-late-border: #ffca28;
+  --attendance-excused-bg: var(--role-admin-background-color);
+  --attendance-excused-border: var(--role-admin-text-color);
 }
 
 :root.high-contrast {
@@ -149,4 +187,25 @@ h1 {
   font-size: 3rem;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+/* Attendance Status Classes */
+.attendance-select--present {
+  --select-bg: var(--attendance-present-bg);
+  --select-border: var(--attendance-present-border);
+}
+
+.attendance-select--absent {
+  --select-bg: var(--attendance-absent-bg);
+  --select-border: var(--attendance-absent-border);
+}
+
+.attendance-select--late {
+  --select-bg: var(--attendance-late-bg);
+  --select-border: var(--attendance-late-border);
+}
+
+.attendance-select--excused {
+  --select-bg: var(--attendance-excused-bg);
+  --select-border: var(--attendance-excused-border);
 }

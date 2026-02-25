@@ -1,0 +1,28 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import TeacherDashboard from '@components/dashboard/TeacherDashboard.svelte'
+import { isStaff } from '@lib/auth'
+
+const user = Astro.locals.user!
+
+if (!isStaff(user)) return Astro.redirect('/dashboard')
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Panel de Docente',
+    description: 'Panel de control para docentes de AJPC',
+  }}
+>
+  <div class="docente-page">
+    <TeacherDashboard
+      userRole={user.role}
+      user={{
+        discordUsername: user.discordUsername,
+        discordAvatar: user.discordAvatar,
+        discordId: user.discordId,
+      }}
+      client:load
+    />
+  </div>
+</DashboardLayout>

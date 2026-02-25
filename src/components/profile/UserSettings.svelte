@@ -180,14 +180,13 @@
   }
 
   .button--primary {
-    background: var(--brand-primary);
+    background-color: var(--brand-primary);
     color: white;
   }
 
   .button--primary:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
-    background: var(--text-color-secondary);
   }
 
   .error-text {
