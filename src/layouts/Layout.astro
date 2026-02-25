@@ -14,6 +14,7 @@ import Aside from '@components/Aside.astro'
 import Footer from '@components/Footer.astro'
 import FloatingFocus from '@components/FloatingFocus.astro'
 import CursorEffect from '@components/CursorEffect.astro'
+import TopLoader from '@components/TopLoader.svelte'
 
 const { metadata = {} } = Astro.props
 ---
@@ -22,7 +23,7 @@ const { metadata = {} } = Astro.props
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <link rel="sitemap" href="/sitemap-index.xml" />
 
@@ -41,6 +42,7 @@ const { metadata = {} } = Astro.props
     <ViewTransitions />
   </head>
   <body>
+    <TopLoader client:load />
     <Header />
     <div class="container">
       <main class="main">
