@@ -31,6 +31,11 @@
 
   const STUDENTS_PER_PAGE = 20
 
+  const intl = new Intl.DateTimeFormat('es-CL', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  })
+
   let studentsList = $state<Student[]>(initialStudents)
   let studentsTotal = $state(initialTotal)
   let studentsLoading = $state(initialStudents.length === 0)
@@ -152,8 +157,10 @@
       {:else}
         {#each observationsList as obs}
           <div class="observation-item">
-            <p>{obs.observation}</p>
-            <time>{new Date(obs.createdAt).toLocaleString()}</time>
+            <p class="observation-item__text">{obs.observation}</p>
+            <time class="observation-item__time"
+              >{intl.format(new Date(obs.createdAt))}</time
+            >
           </div>
         {/each}
       {/if}
@@ -179,28 +186,37 @@
 
 <style>
   .observations-list {
-    max-height: 400px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    max-height: 25rem;
     margin-bottom: 1.5rem;
+    overflow-y: auto;
   }
 
   .observation-item {
-    background: white;
-    padding: 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 0.75rem;
-    border-left: 4px solid var(--brand-primary);
+    border-left: 0.25rem solid var(--brand-primary);
+  }
+
+  .observation-item__text {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .observation-item__time {
+    color: var(--text-color-secondary);
+    font-size: 0.9rem;
   }
 
   .observation-form__textarea {
     width: 100%;
     min-height: 120px;
     padding: 1rem;
-    background-color: var(--background-color);
     border-radius: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 0.125rem solid var(--border-color);
+    background-color: var(--background-color);
     color: var(--text-color-primary);
     margin-bottom: 1rem;
     resize: vertical;

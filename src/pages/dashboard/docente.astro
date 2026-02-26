@@ -64,7 +64,7 @@ const sectionsList = await query
       </div>
     ) : (
       <div class="sections-grid">
-        {sectionsList.map((section) => (
+        {sectionsList.map((section: any) => (
           <a
             href={`/dashboard/docente/${section.id}/modules`}
             class="section-card"

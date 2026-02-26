@@ -295,8 +295,7 @@
     font-size: 0.9rem;
     color: var(--text-color-secondary);
     padding: 1rem;
-    background-color: var(--background-color);
-    border: 2px dashed var(--border-color);
+    border: 0.125rem dashed var(--border-color);
     border-radius: 1rem;
     text-align: center;
   }

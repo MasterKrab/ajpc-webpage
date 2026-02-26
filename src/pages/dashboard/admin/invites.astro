@@ -30,9 +30,15 @@ let query = db
   .leftJoin(users, eq(inviteCodes.createdBy, users.id))
   .orderBy(desc(inviteCodes.createdAt))
 
-const initialInvites = sudo
+const rawInvites = sudo
   ? await query
   : await query.where(eq(inviteCodes.createdBy, user.id))
+
+const initialInvites = rawInvites.map((invite) => ({
+  ...invite,
+  createdAt: invite.createdAt?.toISOString() || null,
+  usedAt: invite.usedAt?.toISOString() || null,
+})) as any
 ---
 
 <DashboardLayout

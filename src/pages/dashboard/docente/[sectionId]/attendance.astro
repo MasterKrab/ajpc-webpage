@@ -77,15 +77,23 @@ const [rawModules, studentsResult] = await Promise.all([
   })(),
 ])
 
-const initialModules = await Promise.all(
-  rawModules.map(async (m) => {
+const initialModules = (await Promise.all(
+  rawModules.map(async (module) => {
     const materials = await db
       .select()
       .from(moduleMaterials)
       .where(eq(moduleMaterials.moduleId, m.id))
-    return { ...m, materials }
+    return {
+      ...m,
+      createdAt: m.createdAt?.toISOString() || null,
+      updatedAt: m.updatedAt?.toISOString() || null,
+      materials: materials.map((mat) => ({
+        ...mat,
+        createdAt: mat.createdAt?.toISOString() || null,
+      })),
+    }
   }),
-)
+)) as any
 
 const tabs = [
   {

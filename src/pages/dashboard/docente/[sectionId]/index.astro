@@ -2,7 +2,7 @@
 import { isTeacher } from '@lib/auth'
 import { db } from '@db/index'
 import { sections, sectionDocentes } from '@db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { isAdmin } from '@lib/auth'
 
 const user = Astro.locals.user!
@@ -21,9 +21,12 @@ if (!isAdmin(user)) {
   const [access] = await db
     .select()
     .from(sectionDocentes)
-    .where(eq(sectionDocentes.sectionId, sectionId!))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .where(eq(sectionDocentes.teacherId, user.id) as any)
+    .where(
+      and(
+        eq(sectionDocentes.sectionId, sectionId!),
+        eq(sectionDocentes.teacherId, user.id),
+      ),
+    )
   if (!access) return Astro.redirect('/dashboard/docente')
 }
 

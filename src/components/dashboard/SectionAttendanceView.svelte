@@ -209,9 +209,8 @@
   .empty-state {
     padding: 4rem;
     text-align: center;
-    background-color: var(--background-color);
     color: var(--text-color-secondary);
     border-radius: 1.25rem;
-    border: 2px dashed var(--border-color);
+    border: 0.125rem dashed var(--border-color);
   }
 </style>
