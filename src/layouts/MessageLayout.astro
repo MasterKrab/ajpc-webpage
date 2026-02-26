@@ -1,0 +1,97 @@
+---
+import '@fontsource-variable/onest'
+import '@styles/modern-normalize.css'
+import '@styles/global.css'
+
+import { ClientRouter, ViewTransitions } from 'astro:transitions'
+import LoadThemeScript from '@components/theme/LoadThemeScript.astro'
+import Favicons from '@components/Favicons.astro'
+import Metadata from '@components/Metadata.astro'
+import logoSVG from '@assets/logo.svg?raw'
+import Svg from '@cxa/astro-inline-svg'
+
+const { metadata = {} } = Astro.props
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <Favicons />
+    <Metadata {...metadata} />
+    <LoadThemeScript />
+    <meta name="generator" content={Astro.generator} />
+    <ClientRouter />
+    <ViewTransitions />
+  </head>
+  <body>
+    <main class="message-layout">
+      <a
+        href="/"
+        class="message-layout__logo-link"
+        aria-label="Volver al inicio"
+      >
+        <Svg
+          class="message-layout__logo"
+          raw={logoSVG}
+          width={300}
+          height={150}
+        />
+      </a>
+
+      <div class="message-layout__content">
+        <slot />
+      </div>
+
+      <a href="/" class="message-layout__home-link"> Volver al inicio </a>
+    </main>
+  </body>
+</html>
+
+<style>
+  :global(.body) {
+    background-color: var(--background-color);
+  }
+
+  .message-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100dvh;
+    width: 100%;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .message-layout__logo-link {
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .message-layout__logo-link:hover {
+    transform: scale(1.05);
+  }
+
+  .message-layout__home-link {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--brand-primary);
+    padding: 0.75rem 1.5rem;
+    margin-top: 2rem;
+    color: var(--text-color);
+    border-radius: var(--button-radius);
+    font-weight: var(--button-font-weight);
+    text-decoration: none;
+  }
+
+  .message-layout__home-link:hover {
+    background-color: var(--brand-primary);
+    opacity: 0.9;
+  }
+
+  .message-layout__content {
+    max-width: 40rem;
+  }
+</style>

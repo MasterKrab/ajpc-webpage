@@ -30,5 +30,5 @@ const initialSettings = allSettings.reduce(
     isSudo={isSudo(user)}
     userRole={user.role}
   />
-  <SettingsManager client:load initialSettings={initialSettings} />
+  <SettingsManager client:load initialSettings={initialSettings} userRole={user.role} />
 </DashboardLayout>

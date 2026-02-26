@@ -1,0 +1,92 @@
+---
+import MessageLayout from '@layouts/MessageLayout.astro'
+import { db } from '@db/index'
+import { settings } from '@db/schema'
+import { eq } from 'drizzle-orm'
+import sanitizeHtml from 'sanitize-html'
+
+let maintenanceMessage =
+  'El sitio se encuentra en mantenimiento. Por favor, vuelva más tarde.'
+
+try {
+  const [setting] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, 'maintenance_message'))
+
+  if (setting && setting.value) {
+    maintenanceMessage = setting.value
+  }
+} catch (e) {
+  console.error('Error fetching maintenance message:', e)
+}
+
+const sanitizedMessage = sanitizeHtml(maintenanceMessage)
+---
+
+<MessageLayout
+  metadata={{
+    title: 'Mantenimiento',
+    description: 'El sitio se encuentra en mantenimiento',
+  }}
+>
+  <h1 class="maintenance-title">Sitio en Mantenimiento</h1>
+  <div class="maintenance-message" set:html={sanitizedMessage} />
+</MessageLayout>
+
+<style>
+  .maintenance-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  .maintenance-content {
+    background-color: var(--foreground-color);
+    border: 1px solid rgba(128, 128, 128, 0.15);
+    border-radius: 1rem;
+    padding: 3rem;
+    max-width: 40rem;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+  }
+
+  .maintenance-title {
+    font-size: 2rem;
+    color: var(--brand-primary);
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+  }
+
+  .maintenance-message {
+    font-size: 1.125rem;
+    color: var(--text-color-secondary);
+    line-height: 1.6;
+  }
+
+  .maintenance-message :global(p) {
+    margin-bottom: 1rem;
+  }
+
+  .maintenance-message :global(h1),
+  .maintenance-message :global(h2),
+  .maintenance-message :global(h3) {
+    color: var(--text-color-primary);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .maintenance-message :global(a) {
+    color: var(--brand-secondary);
+    text-decoration: underline;
+  }
+
+  .maintenance-message :global(ul),
+  .maintenance-message :global(ol) {
+    text-align: left;
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+  }
+</style>

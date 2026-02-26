@@ -2,12 +2,14 @@
   import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
   import Loader from '@components/ui/Loader.svelte'
+  import Button from '@components/ui/Button.svelte'
 
   interface Props {
     initialSettings?: Record<string, string>
+    userRole?: 'student' | 'docente' | 'admin' | 'sudo'
   }
 
-  let { initialSettings = {} }: Props = $props()
+  let { initialSettings = {}, userRole = 'admin' }: Props = $props()
 
   let settings = $state<Record<string, string>>(initialSettings)
   let loading = $state(Object.keys(initialSettings).length === 0)
@@ -28,23 +30,30 @@
   }
 
   const updateSetting = async (key: string, value: string) => {
-    try {
-      updating = true
+    const promise = (async () => {
       const response = await fetch('/api/admin/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: value }),
       })
 
-      if (response.ok) {
-        settings[key] = value
-        toast.success('Configuración actualizada')
-      } else {
-        toast.error('Error al guardar la configuración')
-      }
+      if (!response.ok) throw new Error('Failed to update')
+
+      settings[key] = value
+      return response
+    })()
+
+    toast.promise(promise, {
+      loading: 'Actualizando configuración...',
+      success: 'Configuración actualizada correctamente',
+      error: 'Error al guardar la configuración',
+    })
+
+    try {
+      updating = true
+      await promise
     } catch (error) {
       console.error(error)
-      toast.error('Error de conexión')
     } finally {
       updating = false
     }
@@ -59,9 +68,12 @@
   <h2 class="settings-manager__title">Configuración del Sistema</h2>
 
   {#if loading}
-    <Loader label="Cargando configuración..." />
+    <div class="settings-manager__loader">
+      <Loader label="Cargando configuración..." />
+    </div>
   {:else}
-    <div class="settings-grid">
+    <div class="settings-manager__grid">
+      <!-- Public Registration -->
       <article class="setting-card">
         <div class="setting-card__header">
           <div class="setting-card__info">
@@ -69,9 +81,9 @@
               Registro Público
             </h3>
             <p class="setting-card__desc" id="registration-desc">
-              Permitir que cualquier usuario con una cuenta de Discord se
-              registre. Si está desactivado, solo los usuarios con invitación o
-              ya registrados podrán ingresar.
+              Permitir que cualquier usuario con una cuenta de Discord se cree
+              una cuenta. Si está desactivado, solo los usuarios con invitación
+              o ya registrados podrán ingresar.
             </p>
           </div>
           <div class="toggle-switch">
@@ -100,6 +112,139 @@
           </div>
         </div>
       </article>
+
+      <!-- Maintenance Settings -->
+      <article class="setting-card">
+        <div class="setting-card__header">
+          <div class="setting-card__info">
+            <h3 class="setting-card__title">Mantenimiento por Rol</h3>
+            <p class="setting-card__desc">
+              Bloquea el acceso a diferentes tipos de usuario. Los usuarios
+              bloqueados serán redirigidos a la página de mantenimiento. (Sudo
+              nunca es bloqueado).
+            </p>
+          </div>
+        </div>
+
+        <div class="settings-manager__maintenance">
+          <!-- Roles -->
+          <div class="settings-manager__roles">
+            <div class="role-toggle">
+              <span class="role-toggle__label" id="maint-student-title"
+                >Estudiantes</span
+              >
+              <div class="toggle-switch">
+                <input
+                  type="checkbox"
+                  id="maintenance_role_student"
+                  class="toggle-switch__input"
+                  checked={settings['maintenance_role_student'] === 'true'}
+                  disabled={updating}
+                  aria-labelledby="maint-student-title"
+                  onchange={({ currentTarget }) =>
+                    updateSetting(
+                      'maintenance_role_student',
+                      currentTarget.checked ? 'true' : 'false',
+                    )}
+                />
+                <label
+                  for="maintenance_role_student"
+                  class="toggle-switch__label"
+                >
+                  <span class="toggle-switch__inner"></span>
+                  <span class="toggle-switch__switch"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="role-toggle">
+              <span class="role-toggle__label" id="maint-docente-title"
+                >Docentes</span
+              >
+              <div class="toggle-switch">
+                <input
+                  type="checkbox"
+                  id="maintenance_role_docente"
+                  class="toggle-switch__input"
+                  checked={settings['maintenance_role_docente'] === 'true'}
+                  disabled={updating}
+                  aria-labelledby="maint-docente-title"
+                  onchange={({ currentTarget }) =>
+                    updateSetting(
+                      'maintenance_role_docente',
+                      currentTarget.checked ? 'true' : 'false',
+                    )}
+                />
+                <label
+                  for="maintenance_role_docente"
+                  class="toggle-switch__label"
+                >
+                  <span class="toggle-switch__inner"></span>
+                  <span class="toggle-switch__switch"></span>
+                </label>
+              </div>
+            </div>
+
+            {#if userRole === 'sudo'}
+              <div class="role-toggle role-toggle--danger">
+                <span class="role-toggle__label" id="maint-admin-title"
+                  >Administradores (Peligro)</span
+                >
+                <div class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="maintenance_role_admin"
+                    class="toggle-switch__input"
+                    checked={settings['maintenance_role_admin'] === 'true'}
+                    disabled={updating}
+                    aria-labelledby="maint-admin-title"
+                    onchange={({ currentTarget }) =>
+                      updateSetting(
+                        'maintenance_role_admin',
+                        currentTarget.checked ? 'true' : 'false',
+                      )}
+                  />
+                  <label
+                    for="maintenance_role_admin"
+                    class="toggle-switch__label"
+                  >
+                    <span
+                      class="toggle-switch__inner toggle-switch__inner--danger"
+                    ></span>
+                    <span class="toggle-switch__switch"></span>
+                  </label>
+                </div>
+              </div>
+            {/if}
+          </div>
+
+          <!-- Message -->
+          <div class="maintenance-message">
+            <label for="maintenance_message" class="maintenance-message__label">
+              Mensaje de Mantenimiento (Solo HTML)
+            </label>
+            <textarea
+              id="maintenance_message"
+              class="maintenance-message__input"
+              rows="4"
+              disabled={updating}
+              bind:value={settings['maintenance_message']}
+              placeholder="El sitio se encuentra en mantenimiento..."
+            ></textarea>
+            <Button
+              loading={updating}
+              onclick={() =>
+                updateSetting(
+                  'maintenance_message',
+                  settings['maintenance_message'] || '',
+                )}
+              extraClass="maintenance-message__save"
+            >
+              Guardar Mensaje
+            </Button>
+          </div>
+        </div>
+      </article>
     </div>
   {/if}
 </div>
@@ -114,25 +259,34 @@
   .settings-manager__title {
     font-size: 1.5rem;
     margin: 0;
+    color: var(--text-color-primary);
   }
 
-  .settings-grid {
+  .settings-manager__grid {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
+  }
+
+  .settings-manager__loader {
+    padding: 3rem;
+    display: flex;
+    justify-content: center;
   }
 
   .setting-card {
     background-color: var(--foreground-color);
-    border: 1px solid rgba(128, 128, 128, 0.15);
-    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
     padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: var(--transition-theme);
   }
 
   .setting-card__header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 1.5rem;
   }
 
@@ -144,6 +298,7 @@
     margin: 0 0 0.5rem;
     font-size: 1.125rem;
     color: var(--text-color-primary);
+    font-weight: 600;
   }
 
   .setting-card__desc {
@@ -176,46 +331,38 @@
     display: block;
     overflow: hidden;
     cursor: pointer;
-    border: 0 solid #bbb;
     border-radius: 20px;
     margin: 0;
+    height: 100%;
   }
 
   .toggle-switch__inner {
     display: block;
     width: 200%;
     margin-left: -100%;
-    transition: margin 0.3s ease-in 0s;
+    transition: margin 0.3s ease-in-out;
   }
 
-  .toggle-switch__inner:before,
-  .toggle-switch__inner:after {
+  .toggle-switch__inner::before,
+  .toggle-switch__inner::after {
     display: block;
     float: left;
     width: 50%;
     height: 28px;
-    padding: 0;
-    line-height: 28px;
-    font-size: 14px;
-    color: white;
-    font-family: Trebuchet, Arial, sans-serif;
-    font-weight: bold;
     box-sizing: border-box;
+    content: '';
   }
 
-  .toggle-switch__inner:before {
-    content: '';
-    padding-left: 10px;
+  .toggle-switch__inner::before {
     background-color: var(--brand-primary);
-    color: #ffffff;
   }
 
-  .toggle-switch__inner:after {
-    content: '';
-    padding-right: 10px;
+  .toggle-switch__inner::after {
     background-color: rgba(128, 128, 128, 0.2);
-    color: #999999;
-    text-align: right;
+  }
+
+  .toggle-switch__inner--danger::before {
+    background-color: var(--color-danger);
   }
 
   .toggle-switch__switch {
@@ -226,10 +373,9 @@
     background: #ffffff;
     position: absolute;
     top: 0;
-    bottom: 0;
     right: 22px;
-    border-radius: 20px;
-    transition: all 0.3s ease-in 0s;
+    border-radius: 50%;
+    transition: all 0.3s ease-in-out;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
 
@@ -238,11 +384,81 @@
   }
 
   .toggle-switch__input:checked + .toggle-switch__label .toggle-switch__switch {
-    right: 0px;
+    right: 0;
   }
 
   .toggle-switch__input:focus-visible + .toggle-switch__label {
     outline: 2px solid var(--brand-primary);
     outline-offset: 2px;
+  }
+
+  /* Maintenance Section */
+  .settings-manager__maintenance {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .settings-manager__roles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .role-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--border-color-light);
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    transition: var(--transition-theme);
+  }
+
+  .role-toggle--danger {
+    border-left: 4px solid var(--color-danger);
+  }
+
+  .role-toggle__label {
+    font-size: 0.9375rem;
+    color: var(--text-color-primary);
+    font-weight: 500;
+  }
+
+  .maintenance-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .maintenance-message__label {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-weight: 600;
+  }
+
+  .maintenance-message__input {
+    width: 100%;
+    padding: 1rem;
+    background-color: transparent;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    color: var(--text-color-primary);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    resize: vertical;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .maintenance-message__input:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 3px rgba(17, 107, 177, 0.1);
   }
 </style>
