@@ -38,11 +38,11 @@ if (!isAdmin(user)) {
     .select()
     .from(sectionDocentes)
     .where(eq(sectionDocentes.sectionId, sectionId!))
+
   if (!access || access.teacherId !== user.id)
     return Astro.redirect('/dashboard/docente')
 }
 
-// SSR modules + students in parallel
 const [rawModules, studentsResult] = await Promise.all([
   db
     .select()
@@ -82,14 +82,14 @@ const initialModules = (await Promise.all(
     const materials = await db
       .select()
       .from(moduleMaterials)
-      .where(eq(moduleMaterials.moduleId, m.id))
+      .where(eq(moduleMaterials.moduleId, module.id))
     return {
-      ...m,
-      createdAt: m.createdAt?.toISOString() || null,
-      updatedAt: m.updatedAt?.toISOString() || null,
-      materials: materials.map((mat) => ({
-        ...mat,
-        createdAt: mat.createdAt?.toISOString() || null,
+      ...module,
+      createdAt: module.createdAt?.toISOString() || null,
+      updatedAt: module.updatedAt?.toISOString() || null,
+      materials: materials.map((material) => ({
+        ...material,
+        createdAt: material.createdAt?.toISOString() || null,
       })),
     }
   }),
