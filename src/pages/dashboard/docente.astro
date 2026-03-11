@@ -67,6 +67,7 @@ const sectionsList = await query
         {sectionsList.map((section: any) => (
           <a
             href={`/dashboard/docente/${section.id}/modules`}
+            data-astro-prefetch
             class="section-card"
           >
             <div class="section-card__content">

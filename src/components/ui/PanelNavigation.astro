@@ -32,6 +32,7 @@ const {
       tabs.map((tab) => (
         <a
           href={tab.href}
+          data-astro-prefetch
           class:list={[
             'panel-navigation__tab',
             { 'panel-navigation__tab--active': activeTab === tab.id },

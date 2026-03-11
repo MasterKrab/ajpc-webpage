@@ -83,14 +83,22 @@ const availableCourses = openCourses.filter((course) => {
       <div class="dashboard__links">
         {
           teacher && (
-            <a class="dashboard__teacher-link" href="/dashboard/docente">
+            <a
+              data-astro-prefetch
+              class="dashboard__teacher-link"
+              href="/dashboard/docente"
+            >
               Panel de Docente →
             </a>
           )
         }
         {
           admin && (
-            <a class="dashboard__admin-link" href="/dashboard/admin">
+            <a
+              data-astro-prefetch
+              class="dashboard__admin-link"
+              href="/dashboard/admin"
+            >
               Panel de admin →
             </a>
           )
