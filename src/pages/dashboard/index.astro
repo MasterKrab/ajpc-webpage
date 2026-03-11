@@ -39,6 +39,7 @@ const openCourses = await db
   .where(eq(courses.status, 'open'))
 
 const now = new Date()
+
 const availableCourses = openCourses.filter((course) => {
   const start = course.enrollmentStartDate
   const end = course.enrollmentEndDate

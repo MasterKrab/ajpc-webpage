@@ -1,26 +1,25 @@
 import type { APIRoute } from 'astro'
 import { isAdmin } from '@lib/auth'
 import { db } from '@db/index'
-import { enrollments, courses } from '@db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { enrollments, courses, sections } from '@db/schema'
+import { eq, inArray, and } from 'drizzle-orm'
 import { sendEmail } from '@lib/email'
 import { wrapTemplate } from '@lib/email-shared'
 import sanitizeHtml from 'sanitize-html'
 
-
-
-
 export const POST: APIRoute = async ({ locals, request }) => {
-
   const user = locals.user!
-  if (!isAdmin(user)) 
+  if (!isAdmin(user))
     return Response.json({ error: 'No autorizado' }, { status: 403 })
-  
 
-  const { recipientType, courseIds, subject, body, signature } = await request.json()
+  const { recipientType, courseIds, sectionIds, subject, body, signature } =
+    await request.json()
 
   if (!subject || !body) {
-    return Response.json({ error: 'Asunto y cuerpo requeridos' }, { status: 400 })
+    return Response.json(
+      { error: 'Asunto y cuerpo requeridos' },
+      { status: 400 },
+    )
   }
 
   // Sanitize inputs
@@ -49,10 +48,11 @@ export const POST: APIRoute = async ({ locals, request }) => {
     allowedAttributes: {},
   })
 
-  let recipients: { email: string; fullName: string; courseName?: string }[] = []
+  let recipients: { email: string; fullName: string; courseName?: string }[] =
+    []
+  const seenEmails = new Set<string>()
 
   if (recipientType === 'all') {
-    // Approved enrollments represent the student base.
     const allEnrollments = await db
       .select({
         email: enrollments.email,
@@ -61,14 +61,20 @@ export const POST: APIRoute = async ({ locals, request }) => {
       .from(enrollments)
       .where(eq(enrollments.status, 'approved'))
 
-    const seen = new Set<string>()
-    for (const enr of allEnrollments) {
-      if (!seen.has(enr.email)) {
-        recipients.push({ email: enr.email, fullName: enr.fullName })
-        seen.add(enr.email)
+    for (const enrollment of allEnrollments) {
+      if (!seenEmails.has(enrollment.email.toLowerCase())) {
+        recipients.push({
+          email: enrollment.email,
+          fullName: enrollment.fullName,
+        })
+        seenEmails.add(enrollment.email.toLowerCase())
       }
     }
-  } else if (recipientType === 'course' && Array.isArray(courseIds) && courseIds.length > 0) {
+  } else if (
+    recipientType === 'course' &&
+    Array.isArray(courseIds) &&
+    courseIds.length > 0
+  ) {
     const courseEnrollments = await db
       .select({
         email: enrollments.email,
@@ -77,26 +83,58 @@ export const POST: APIRoute = async ({ locals, request }) => {
       })
       .from(enrollments)
       .innerJoin(courses, eq(enrollments.courseId, courses.id))
-      .where(inArray(enrollments.courseId, courseIds))
-    
-    // De-duplicate by email (case where a student is in multiple selected courses)
-    const seen = new Set<string>()
-    for (const enr of courseEnrollments) 
-      if (!seen.has(enr.email)) {
-        recipients.push(enr)
-        seen.add(enr.email)
+      .where(
+        and(
+          inArray(enrollments.courseId, courseIds),
+          eq(enrollments.status, 'approved'),
+        ),
+      )
+
+    for (const enrollment of courseEnrollments) {
+      if (!seenEmails.has(enrollment.email.toLowerCase())) {
+        recipients.push(enrollment)
+        seenEmails.add(enrollment.email.toLowerCase())
       }
-    
+    }
+  } else if (
+    recipientType === 'section' &&
+    Array.isArray(sectionIds) &&
+    sectionIds.length > 0
+  ) {
+    const sectionEnrollments = await db
+      .select({
+        email: enrollments.email,
+        fullName: enrollments.fullName,
+        courseName: courses.name,
+      })
+      .from(enrollments)
+      .innerJoin(courses, eq(enrollments.courseId, courses.id))
+      .innerJoin(sections, eq(enrollments.sectionId, sections.id))
+      .where(
+        and(
+          inArray(enrollments.sectionId, sectionIds),
+          eq(enrollments.status, 'approved'),
+        ),
+      )
+
+    for (const enrollment of sectionEnrollments) {
+      if (!seenEmails.has(enrollment.email.toLowerCase())) {
+        recipients.push(enrollment)
+        seenEmails.add(enrollment.email.toLowerCase())
+      }
+    }
   } else {
     return Response.json({ error: 'Destinatarios no válidos' }, { status: 400 })
   }
 
-  if (recipients.length === 0) 
-    return Response.json({ error: 'No se encontraron destinatarios' }, { status: 404 })
-  
+  if (recipients.length === 0)
+    return Response.json(
+      { error: 'No se encontraron destinatarios' },
+      { status: 404 },
+    )
 
   let successCount = 0
-  
+
   for (const recipient of recipients) {
     const emailBody = cleanBody
       .replace(/{{name}}/g, recipient.fullName)
@@ -114,4 +152,3 @@ export const POST: APIRoute = async ({ locals, request }) => {
 
   return Response.json({ success: true, count: successCount })
 }
-

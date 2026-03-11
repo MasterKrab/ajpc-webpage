@@ -6,6 +6,7 @@
   import EmailPreview from './EmailPreview.svelte'
   import RichTextEditor from './RichTextEditor.svelte'
   import { storage } from '@lib/storage'
+  import Loader from '@components/ui/Loader.svelte'
 
   interface Course {
     id: string
@@ -13,10 +14,18 @@
     year: number
   }
 
-  let courses = $state<Course[]>([])
+  interface Section {
+    id: string
+    name: string
+  }
 
-  let recipientType = $state<'all' | 'course'>('all')
+  let courses = $state<Course[]>([])
+  let sections = $state<Section[]>([])
+
+  let recipientType = $state<'all' | 'course' | 'section'>('all')
   let selectedCourseIds = $state<string[]>([])
+  let selectedSectionIds = $state<string[]>([])
+  let selectedCourseIdForSections = $state<string>('')
   let subject = $state('')
   let body = $state('')
 
@@ -45,8 +54,19 @@
     }
   })
 
+  $effect(() => {
+    if (selectedCourseIdForSections) {
+      fetchSections(selectedCourseIdForSections)
+    } else {
+      sections = []
+      selectedSectionIds = []
+    }
+  })
+
   let signature = $state('Enzo Vivallo - Coordinador')
   let sending = $state(false)
+  let loadingSections = $state(false)
+  let loadingCourses = $state(false)
   let isConfirmModalOpen = $state(false)
 
   const STORAGE_KEY_SUBJECT = 'email_sender_subject'
@@ -70,8 +90,25 @@
   }
 
   const fetchCourses = async () => {
-    const response = await fetch('/api/admin/courses')
-    courses = await response.json()
+    loadingCourses = true
+    try {
+      const response = await fetch('/api/admin/courses')
+      const data = await response.json()
+      courses = data.courses
+    } finally {
+      loadingCourses = false
+    }
+  }
+
+  const fetchSections = async (courseId: string) => {
+    loadingSections = true
+    try {
+      const response = await fetch(`/api/admin/sections?courseId=${courseId}`)
+      sections = await response.json()
+      selectedSectionIds = []
+    } finally {
+      loadingSections = false
+    }
   }
 
   const sendEmails = async () => {
@@ -82,6 +119,11 @@
 
     if (recipientType === 'course' && selectedCourseIds.length === 0) {
       toast.error('Por favor selecciona al menos un curso')
+      return
+    }
+
+    if (recipientType === 'section' && selectedSectionIds.length === 0) {
+      toast.error('Por favor selecciona al menos un paralelo')
       return
     }
 
@@ -97,6 +139,7 @@
       body: JSON.stringify({
         recipientType,
         courseIds: selectedCourseIds,
+        sectionIds: selectedSectionIds,
         subject,
         body,
         signature,
@@ -150,40 +193,102 @@
         >
           <option value="all">Todos los estudiantes AJPC</option>
           <option value="course">Por curso específico</option>
+          <option value="section">Por paralelo específico</option>
         </select>
       </div>
 
       {#if recipientType === 'course'}
         <div class="form-group">
           <span class="selection-label">Seleccionar Cursos</span>
-          <div class="courses-checkbox-grid">
-            {#each courses as c}
-              <label class="checkbox-item">
-                <input
-                  type="checkbox"
-                  value={c.id}
-                  checked={selectedCourseIds.includes(c.id)}
-                  onchange={(e) => {
-                    const checked = (e.target as HTMLInputElement).checked
-                    if (checked) {
-                      selectedCourseIds = [...selectedCourseIds, c.id]
-                    } else {
-                      selectedCourseIds = selectedCourseIds.filter(
-                        (id) => id !== c.id,
-                      )
-                    }
-                  }}
-                />
-                <span class="checkbox-label">{c.name} ({c.year})</span>
-              </label>
-            {/each}
-          </div>
-          {#if selectedCourseIds.length > 0}
-            <p class="selection-hint">
-              {selectedCourseIds.length} curso(s) seleccionado(s)
-            </p>
+          {#if loadingCourses}
+            <Loader size="sm" label="Cargando cursos..." />
+          {:else}
+            <div class="courses-checkbox-grid">
+              {#each courses as course}
+                <label class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    value={course.id}
+                    checked={selectedCourseIds.includes(course.id)}
+                    onchange={(event) => {
+                      const checked = (event.target as HTMLInputElement).checked
+
+                      selectedCourseIds = checked
+                        ? [...selectedCourseIds, course.id]
+                        : selectedCourseIds.filter((id) => id !== course.id)
+                    }}
+                  />
+                  <span class="checkbox-label"
+                    >{course.name} ({course.year})</span
+                  >
+                </label>
+              {/each}
+            </div>
+            {#if selectedCourseIds.length > 0}
+              <p class="selection-hint">
+                {selectedCourseIds.length} curso(s) seleccionado(s)
+              </p>
+            {/if}
           {/if}
         </div>
+      {/if}
+
+      {#if recipientType === 'section'}
+        <div class="form-group">
+          <label for="course-select-for-sections">Seleccionar Curso</label>
+          {#if loadingCourses}
+            <Loader size="xs" label="Cargando cursos..." />
+          {:else}
+            <select
+              id="course-select-for-sections"
+              class="form-input"
+              bind:value={selectedCourseIdForSections}
+            >
+              <option value="">Selecciona un curso...</option>
+              {#each courses as c}
+                <option value={c.id}>{c.name} ({c.year})</option>
+              {/each}
+            </select>
+          {/if}
+        </div>
+
+        {#if loadingSections}
+          <div class="form-group">
+            <Loader size="sm" label="Cargando paralelos..." />
+          </div>
+        {:else if selectedCourseIdForSections && sections.length > 0}
+          <div class="form-group">
+            <span class="selection-label">Seleccionar Paralelos</span>
+            <div class="courses-checkbox-grid">
+              {#each sections as section}
+                <label class="checkbox-item">
+                  <input
+                    type="checkbox"
+                    value={section.id}
+                    checked={selectedSectionIds.includes(section.id)}
+                    onchange={(event) => {
+                      const checked = (event.target as HTMLInputElement).checked
+
+                      selectedSectionIds = checked
+                        ? [...selectedSectionIds, section.id]
+                        : selectedSectionIds.filter((id) => id !== section.id)
+                    }}
+                  />
+                  <span class="checkbox-label">{section.name}</span>
+                </label>
+              {/each}
+            </div>
+            {#if selectedSectionIds.length > 0}
+              <p class="selection-hint">
+                {selectedSectionIds.length} paralelo(s) seleccionado(s)
+              </p>
+            {/if}
+          </div>
+        {:else if selectedCourseIdForSections}
+          <p class="no-sections-hint">
+            No hay paralelos configurados para este curso.
+          </p>
+        {/if}
       {/if}
     </div>
 
@@ -258,7 +363,9 @@
   message={`¿Estás seguro que deseas enviar este correo a ${
     recipientType === 'all'
       ? 'todos los estudiantes AJPC'
-      : 'los alumnos de los cursos seleccionados'
+      : recipientType === 'course'
+        ? 'los alumnos de los cursos seleccionados'
+        : 'los alumnos de los paralelos seleccionados'
   }?`}
   confirmText="Sí, enviar correos"
   onConfirm={handleConfirmSend}
@@ -354,6 +461,12 @@
     color: var(--brand-primary);
     font-weight: 600;
     margin-top: 0.25rem;
+  }
+
+  .no-sections-hint {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-style: italic;
   }
 
   .sender-card__editor-container {
