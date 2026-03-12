@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
+  import { onMount } from 'svelte'
   import UserTable from '@components/ui/UserTable.svelte'
   import Modal from '@components/ui/Modal.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
@@ -115,7 +116,9 @@
     return () => clearTimeout(timer)
   })
 
-  if (initialStudents.length === 0) fetchStudents(1, false)
+  onMount(() => {
+    if (initialStudents.length === 0) fetchStudents(1, false)
+  })
 </script>
 
 <SubHeader title="Alumnos">

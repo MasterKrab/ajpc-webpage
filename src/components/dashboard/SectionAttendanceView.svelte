@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
+  import { onMount } from 'svelte'
   import UserTable from '@components/ui/UserTable.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
@@ -144,8 +145,10 @@
     return () => clearTimeout(timer)
   })
 
-  if (initialModules.length === 0) fetchModules()
-  if (initialStudents.length === 0) fetchStudents(1)
+  onMount(() => {
+    if (initialModules.length === 0) fetchModules()
+    if (initialStudents.length === 0) fetchStudents(1)
+  })
 </script>
 
 <div class="attendance-container">

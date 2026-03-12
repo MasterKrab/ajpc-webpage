@@ -53,10 +53,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
     effectiveRole === 'admin' && maintenanceRoleAdmin,
   ].some(Boolean)
 
+  const isProtectedPath =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/api/user') ||
+    pathname.startsWith('/api/docente') ||
+    pathname.startsWith('/inscripciones') ||
+    pathname.startsWith('/api/inscripciones') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/api/admin')
+
+  if (isProtectedPath && !user) return context.redirect('/login')
+
   // sudo is never under maintenance, and we check that it's actually under maintenance before redirecting
   if (isUnderMaintenance && effectiveRole !== 'sudo') {
     const isBypassPath =
       pathname === '/maintenance' ||
+      pathname === '/login' ||
+      pathname === '/auth' ||
       pathname.startsWith('/api/auth') ||
       pathname.startsWith('/_image') ||
       pathname.startsWith('/_astro') ||
@@ -89,20 +102,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
-  if (
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/api/user') ||
-    pathname.startsWith('/api/docente') ||
-    pathname.startsWith('/inscripciones') ||
-    pathname.startsWith('/api/inscripciones')
-  ) {
-    if (!user) return context.redirect('/login')
-  }
+  const isAdminPath =
+    pathname.startsWith('/admin') || pathname.startsWith('/api/admin')
 
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
-    if (!user) return context.redirect('/login')
-    if (user.role === 'student') return context.redirect('/inscripciones')
-  }
+  if (isAdminPath && user.role === 'student')
+    return context.redirect('/inscripciones')
 
   return next()
 })

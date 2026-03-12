@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
+  import { onMount } from 'svelte'
   import ModuleCard from '@components/ui/ModuleCard.svelte'
   import Modal from '@components/ui/Modal.svelte'
   import ConfirmModal from '@components/ui/ConfirmModal.svelte'
@@ -107,8 +108,10 @@
     }
   }
 
-  // Only fetch if no SSR data
-  if (initialModules.length === 0) fetchModules()
+  // Only fetch on client
+  onMount(() => {
+    if (initialModules.length === 0) fetchModules()
+  })
 </script>
 
 <div class="modules-manager">

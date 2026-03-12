@@ -116,7 +116,7 @@
   }
 
   .search-input {
-    min-width: min(100%, 20rem);
+    width: 100%;
     padding: 0.75rem 2.5rem 0.75rem 3rem;
     font-family: inherit;
     font-size: 0.95rem;

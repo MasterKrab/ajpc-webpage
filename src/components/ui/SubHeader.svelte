@@ -15,41 +15,37 @@
 </script>
 
 <header class="sub-header">
-  <div class="sub-header__content">
-    <div class="sub-header__titles">
-      <h2 class="sub-header__title">{title}</h2>
-      {#if description}
-        <p class="sub-header__description">{description}</p>
-      {/if}
-    </div>
-    {#if actions}
-      <div
-        class="sub-header__actions"
-        class:sub-header__actions--same-row={actionsSameRow}
-      >
-        {@render actions()}
-      </div>
+  <!-- <div class="sub-header__content"> -->
+  <div class="sub-header__titles">
+    <h2 class="sub-header__title">{title}</h2>
+    {#if description}
+      <p class="sub-header__description">{description}</p>
     {/if}
   </div>
+  {#if actions}
+    <div
+      class="sub-header__actions"
+      class:sub-header__actions--same-row={actionsSameRow}
+    >
+      {@render actions()}
+    </div>
+  {/if}
+  <!-- </div> -->
 </header>
 
 <style>
   .sub-header {
-    margin-bottom: 0.5rem;
-  }
-
-  .sub-header__content {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1.5rem;
     flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
   }
 
   .sub-header__title {
     font-size: 1.75rem;
     font-weight: 800;
     margin: 0;
+    min-width: min(20rem, 100vw);
     color: var(--text-color-primary);
     letter-spacing: -0.01em;
   }
@@ -65,8 +61,8 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 1.25rem;
     flex-wrap: wrap;
+    gap: 1.25rem;
   }
 
   .sub-header__actions--same-row {
