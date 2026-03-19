@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ locals }) => {
     return Response.json({ error: 'No autorizado' }, { status: 403 })
   }
 
-  let query = db
+  let queryBuilder = db
     .select({
       code: inviteCodes.code,
       role: inviteCodes.role,
@@ -28,18 +28,19 @@ export const GET: APIRoute = async ({ locals }) => {
     })
     .from(inviteCodes)
     .leftJoin(users, eq(inviteCodes.createdBy, users.id))
-    .orderBy(desc(inviteCodes.createdAt))
 
   // If not sudo, only see own invites
-  if (!isSudo(user)) query = query.where(eq(inviteCodes.createdBy, user.id))
+  const filteredQuery = !isSudo(user)
+    ? queryBuilder.where(eq(inviteCodes.createdBy, user.id))
+    : queryBuilder
 
-  const result = await query
+  const result = await filteredQuery.orderBy(desc(inviteCodes.createdAt))
   return Response.json(result)
 }
 
 const createInviteSchema = z.object({
   role: z.enum(['student', 'docente', 'admin']),
-  maxUses: z.number().int().min(1).optional().default(1),
+  maxUses: z.coerce.number().int().min(1).optional().default(1),
 })
 
 export const POST: APIRoute = async ({ locals, request }) => {
@@ -52,6 +53,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
   const parsed = createInviteSchema.safeParse(body)
 
   if (!parsed.success) {
+    console.error('Invite validation failed:', parsed.error)
     return Response.json({ error: 'Datos inválidos' }, { status: 400 })
   }
 

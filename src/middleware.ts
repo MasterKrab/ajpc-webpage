@@ -105,7 +105,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const isAdminPath =
     pathname.startsWith('/admin') || pathname.startsWith('/api/admin')
 
-  if (isAdminPath && user.role === 'student')
+  if (isAdminPath && user && user.role === 'student')
     return context.redirect('/inscripciones')
 
   return next()

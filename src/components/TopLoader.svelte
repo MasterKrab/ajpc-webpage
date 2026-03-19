@@ -4,7 +4,6 @@
   type LoaderState = 'idle' | 'loading' | 'done'
 
   let state = $state<LoaderState>('idle')
-  let element: HTMLDivElement
 
   onMount(() => {
     const start = () => (state = 'loading')
@@ -21,7 +20,6 @@
 </script>
 
 <div
-  bind:this={element}
   class="top-loader"
   class:top-loader--loading={state === 'loading'}
   class:top-loader--done={state === 'done'}

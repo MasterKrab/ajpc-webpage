@@ -61,7 +61,15 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       }
 
       if (inviteValid) {
-        updateData.role = role
+        // Role hierarchy: student=0, docente=1, admin=2
+        const roleRank = { student: 0, docente: 1, admin: 2 }
+        const currentRank =
+          roleRank[existingUser.role as keyof typeof roleRank] || 0
+        const newRank = roleRank[role] || 0
+
+        if (newRank > currentRank) {
+          updateData.role = role
+        }
       }
 
       await db

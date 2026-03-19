@@ -12,7 +12,7 @@ if (!isAdmin(user)) return Astro.redirect('/dashboard')
 
 const sudo = isSudo(user)
 
-let query = db
+let queryBuilder = db
   .select({
     code: inviteCodes.code,
     role: inviteCodes.role,
@@ -28,11 +28,12 @@ let query = db
   })
   .from(inviteCodes)
   .leftJoin(users, eq(inviteCodes.createdBy, users.id))
-  .orderBy(desc(inviteCodes.createdAt))
 
-const rawInvites = sudo
-  ? await query
-  : await query.where(eq(inviteCodes.createdBy, user.id))
+const filteredQuery = sudo
+  ? queryBuilder
+  : queryBuilder.where(eq(inviteCodes.createdBy, user.id))
+
+const rawInvites = await filteredQuery.orderBy(desc(inviteCodes.createdAt))
 
 const initialInvites = rawInvites.map((invite) => ({
   ...invite,
@@ -48,5 +49,5 @@ const initialInvites = rawInvites.map((invite) => ({
   }}
 >
   <AdminNavigation activeTab="invites" isSudo={sudo} userRole={user.role} />
-  <InviteManager client:load {isSudo} initialInvites={initialInvites} />
+  <InviteManager client:load isSudo={sudo} initialInvites={initialInvites} />
 </DashboardLayout>

@@ -35,7 +35,10 @@
   const roleOptions = $derived([
     { value: 'student', label: 'Estudiante' },
     { value: 'docente', label: 'Docente' },
-    ...(isSudo ? [{ value: 'admin', label: 'Administrador' }] : []),
+    {
+      value: 'admin',
+      label: isSudo ? 'Administrador' : 'Administrador (solo sudo)',
+    },
   ])
 
   let isDeleteModalOpen = $state(false)
