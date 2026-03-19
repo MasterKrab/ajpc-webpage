@@ -36,6 +36,7 @@ if (course.enrollmentEndDate && now > course.enrollmentEndDate)
     client:load
     courseId={course.id}
     courseName={course.name}
+    courseSchedules={course.availableSchedules}
   />
 </EnrollmentLayout>
 

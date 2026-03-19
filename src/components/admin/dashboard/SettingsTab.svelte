@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
+  import { nanoid } from 'nanoid'
   import Select from '@components/ui/Select.svelte'
   import DeleteConfirmation from '../DeleteConfirmation.svelte'
   import Button from '@components/ui/Button.svelte'
@@ -14,6 +15,7 @@
     status: string
     enrollmentStartDate: Date | null
     enrollmentEndDate: Date | null
+    availableSchedules?: { id: string; day: string; timeRange: string }[]
   }
 
   interface Props {
@@ -21,6 +23,7 @@
   }
 
   let { course = $bindable() }: Props = $props()
+  const formId = nanoid(5)
 
   let updateLoading = $state(false)
   let isDeleteModalOpen = $state(false)
@@ -39,6 +42,9 @@
     status: course.status,
     enrollmentStartDate: formatDateForInput(course.enrollmentStartDate),
     enrollmentEndDate: formatDateForInput(course.enrollmentEndDate),
+    availableSchedules: course.availableSchedules
+      ? [...course.availableSchedules]
+      : [],
   })
 
   async function updateCourse() {
@@ -97,18 +103,18 @@
     >
       <div class="form-grid">
         <div class="form-group">
-          <label for="name">Nombre</label>
+          <label for="{formId}-name">Nombre</label>
           <input
-            id="name"
+            id="{formId}-name"
             class="form-input"
             bind:value={editForm.name}
             required
           />
         </div>
         <div class="form-group">
-          <label for="year">Año</label>
+          <label for="{formId}-year">Año</label>
           <input
-            id="year"
+            id="{formId}-year"
             type="number"
             class="form-input"
             bind:value={editForm.year}
@@ -116,8 +122,9 @@
           />
         </div>
         <div class="form-group">
-          <label for="level">Nivel</label>
+          <label for="{formId}-level">Nivel</label>
           <Select
+            name="{formId}-level"
             options={[
               { value: 'beginner', label: 'Básico' },
               { value: 'intermediate', label: 'Intermedio' },
@@ -128,17 +135,18 @@
           />
         </div>
         <div class="form-group">
-          <label for="maxStudents">Máx. Estudiantes</label>
+          <label for="{formId}-maxStudents">Máx. Estudiantes</label>
           <input
-            id="maxStudents"
+            id="{formId}-maxStudents"
             type="number"
             class="form-input"
             bind:value={editForm.maxStudents}
           />
         </div>
         <div class="form-group">
-          <label for="status">Estado</label>
+          <label for="{formId}-status">Estado</label>
           <Select
+            name="{formId}-status"
             options={[
               { value: 'open', label: 'Abierto' },
               { value: 'closed', label: 'Cerrado' },
@@ -148,18 +156,19 @@
           />
         </div>
         <div class="form-group">
-          <label for="startDate">Inicio inscripciones (opcional)</label>
+          <label for="{formId}-startDate">Inicio inscripciones (opcional)</label
+          >
           <input
-            id="startDate"
+            id="{formId}-startDate"
             type="datetime-local"
             class="form-input"
             bind:value={editForm.enrollmentStartDate}
           />
         </div>
         <div class="form-group">
-          <label for="endDate">Fin inscripciones (opcional)</label>
+          <label for="{formId}-endDate">Fin inscripciones (opcional)</label>
           <input
-            id="endDate"
+            id="{formId}-endDate"
             type="datetime-local"
             class="form-input"
             bind:value={editForm.enrollmentEndDate}
@@ -167,14 +176,66 @@
         </div>
       </div>
       <div class="form-group">
-        <label for="description">Descripción</label>
+        <label for="{formId}-description">Descripción</label>
         <textarea
-          id="description"
+          id="{formId}-description"
           class="form-input"
           rows="3"
           bind:value={editForm.description}
         ></textarea>
       </div>
+
+      <fieldset class="form-group" style="padding: 0; margin: 0; border: none;">
+        <legend class="form-label" style="font-weight: 500;"
+          >Horarios Disponibles</legend
+        >
+        <div class="schedules-list">
+          {#each editForm.availableSchedules as schedule, i}
+            <div class="schedule-item">
+              <Select
+                aria-label="Día de horario"
+                options={[
+                  { value: 'Lunes', label: 'Lunes' },
+                  { value: 'Martes', label: 'Martes' },
+                  { value: 'Miércoles', label: 'Miércoles' },
+                  { value: 'Jueves', label: 'Jueves' },
+                  { value: 'Viernes', label: 'Viernes' },
+                  { value: 'Sábado', label: 'Sábado' },
+                  { value: 'Domingo', label: 'Domingo' },
+                ]}
+                bind:value={schedule.day}
+                placeholder="Día"
+              />
+              <input
+                aria-label="Rango de horario"
+                class="form-input"
+                placeholder="Ej: 18:30 - 20:00"
+                bind:value={schedule.timeRange}
+              />
+              <button
+                class="remove-btn"
+                type="button"
+                onclick={() => editForm.availableSchedules.splice(i, 1)}
+              >
+                &times;
+              </button>
+            </div>
+          {/each}
+          <button
+            type="button"
+            class="add-schedule-btn"
+            onclick={() =>
+              editForm.availableSchedules.push({
+                id: Math.random().toString(36).substr(2, 9),
+                day: 'Lunes',
+                timeRange: '',
+              })}
+          >
+            + Agregar horario
+          </button>
+        </div>
+      </fieldset>
+
       <Button
         type="submit"
         size="lg"
@@ -259,5 +320,52 @@
 
   .settings-section__title--danger-zone {
     color: var(--button-danger-bg);
+  }
+
+  .schedules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(128, 128, 128, 0.05);
+    border-radius: 0.5rem;
+    border: 1px dashed rgba(128, 128, 128, 0.2);
+  }
+
+  .schedule-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-danger);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.25rem;
+  }
+
+  .remove-btn:hover {
+    color: var(--color-danger-text);
+  }
+
+  .add-schedule-btn {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid var(--brand-primary);
+    color: var(--brand-primary);
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .add-schedule-btn:hover {
+    background: var(--brand-primary);
+    color: white;
   }
 </style>

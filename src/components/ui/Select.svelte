@@ -9,6 +9,7 @@
     placeholder = 'Selecciona una opción',
     onChange,
     extraClass = '',
+    'aria-label': ariaLabel,
   }: {
     options: { value: any; label: string }[]
     value: any
@@ -19,6 +20,7 @@
     placeholder?: string
     onChange?: (val: any) => void
     extraClass?: string
+    'aria-label'?: string
   } = $props()
 
   const hasPlaceholderInOptions = $derived(
@@ -43,6 +45,7 @@
       id={name || undefined}
       {value}
       {disabled}
+      aria-label={ariaLabel}
       onchange={handleSelect}
     >
       {#if placeholder && placeholder.length > 0 && !hasPlaceholderInOptions}

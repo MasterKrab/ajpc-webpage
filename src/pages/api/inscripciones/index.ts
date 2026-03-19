@@ -17,6 +17,10 @@ const enrollmentSchema = z.object({
   commune: z.string().optional(),
   previousExperience: z.string().max(1000).optional(),
   motivation: z.string().max(1000).optional(),
+  schoolType: z.string().min(1, 'Selecciona el tipo de establecimiento'),
+  selectedSchedules: z
+    .array(z.string())
+    .min(1, 'Debes seleccionar al menos un horario'),
 })
 
 export const GET: APIRoute = async ({ locals }) => {

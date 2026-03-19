@@ -33,6 +33,9 @@ export const courses = sqliteTable('courses', {
   status: text('status', { enum: ['open', 'closed'] })
     .default('closed')
     .notNull(),
+  availableSchedules: text('available_schedules', { mode: 'json' })
+    .$type<Array<{ id: string; day: string; timeRange: string }>>()
+    .default([]),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
@@ -87,10 +90,14 @@ export const enrollments = sqliteTable('enrollments', {
   gender: text('gender').notNull(),
   schoolYear: text('school_year').notNull(),
   schoolName: text('school_name'),
+  schoolType: text('school_type'),
   region: text('region'),
   commune: text('commune'),
   previousExperience: text('previous_experience'),
   motivation: text('motivation'),
+  selectedSchedules: text('selected_schedules', { mode: 'json' })
+    .$type<string[]>()
+    .default([]),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] })
     .default('pending')
     .notNull(),

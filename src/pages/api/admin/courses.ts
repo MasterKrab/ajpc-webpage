@@ -14,6 +14,16 @@ const courseSchema = z.object({
   status: z.enum(['open', 'closed']).optional(),
   enrollmentStartDate: z.string().optional().nullable(),
   enrollmentEndDate: z.string().optional().nullable(),
+  availableSchedules: z
+    .array(
+      z.object({
+        id: z.string(),
+        day: z.string(),
+        timeRange: z.string(),
+      }),
+    )
+    .optional()
+    .default([]),
 })
 
 export const GET: APIRoute = async ({ locals, url }) => {
