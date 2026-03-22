@@ -232,7 +232,7 @@
                 <small class="text-muted">{item.enrollment.email}</small>
               </td>
               <td class="table__cell">
-                <span 
+                <span
                   class="status-pill status--{item.enrollment.status}"
                   role="status"
                 >
@@ -275,8 +275,8 @@
                 {/if}
               </td>
               <td class="table__cell actions-cell">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onclick={() => openEnrollmentDetail(item)}
                   ariaLabel="Ver postulación de {item.enrollment.fullName}"
                 >

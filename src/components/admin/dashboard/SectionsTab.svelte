@@ -35,17 +35,21 @@
 
   let sectionsList = $state<Section[]>(initialSections)
   let sectionsLoading = $state(false)
-  let showSectionForm = $state(false)
+
+  // Unified Management Modal
+  let isManageModalOpen = $state(false)
+  let activeTab = $state<'general' | 'teachers' | 'students'>('general')
   let sectionFormLoading = $state(false)
   let editingSectionId = $state<string | null>(null)
+  let selectedSection = $state<Section | null>(null)
+
   let sectionForm = $state({
     name: '',
     teacherIds: [] as string[],
   })
 
-  let isStudentModalOpen = $state(false)
-  let assignmentSection = $state<Section | null>(null)
   let studentSearch = $state('')
+  let teacherSearch = $state('')
   let enrollmentsList = $state<any[]>([])
   let enrollmentLoading = $state(false)
 
@@ -55,12 +59,16 @@
       `/api/admin/inscripciones?courseId=${courseId}&status=approved&search=${studentSearch}&limit=100`,
     )
     const data = await response.json()
-    enrollmentsList = data.enrollments || []
+    if (response.ok) {
+      enrollmentsList = data.enrollments || []
+    } else {
+      toast.error('Error al cargar alumnos')
+    }
     enrollmentLoading = false
   }
 
   $effect(() => {
-    if (isStudentModalOpen) {
+    if (isManageModalOpen && activeTab === 'students') {
       fetchStudents()
     }
   })
@@ -68,7 +76,11 @@
   // Debounced search for students
   let searchTimeout: any
   $effect(() => {
-    if (isStudentModalOpen && studentSearch !== undefined) {
+    if (
+      isManageModalOpen &&
+      activeTab === 'students' &&
+      studentSearch !== undefined
+    ) {
       clearTimeout(searchTimeout)
       searchTimeout = setTimeout(() => {
         fetchStudents()
@@ -79,7 +91,11 @@
   async function fetchSections() {
     sectionsLoading = true
     const response = await fetch(`/api/admin/sections?courseId=${courseId}`)
-    sectionsList = await response.json()
+    if (response.ok) {
+      sectionsList = await response.json()
+    } else {
+      toast.error('Error al cargar paralelos')
+    }
     sectionsLoading = false
   }
 
@@ -102,12 +118,15 @@
 
     if (response.ok) {
       toast.success(
-        isEditing
-          ? 'Paralelo actualizado correctamente'
-          : 'Paralelo creado correctamente',
+        activeTab === 'teachers'
+          ? 'Lista de docentes actualizada'
+          : isEditing
+            ? 'Paralelo actualizado'
+            : 'Paralelo creado',
       )
-      showSectionForm = false
-      sectionForm = { name: '', teacherIds: [] }
+      // If creating new, close modal. If editing, we stay in the modal.
+      if (!isEditing) isManageModalOpen = false
+
       editingSectionId = null
       await fetchSections()
     } else {
@@ -122,20 +141,25 @@
 
   function openCreateSection() {
     editingSectionId = null
+    selectedSection = null
     sectionForm = { name: '', teacherIds: [] }
-    showSectionForm = true
+    activeTab = 'general'
+    isManageModalOpen = true
   }
 
-  function openEditSection(section: Section) {
+  function openManageSection(
+    section: Section,
+    tab: 'general' | 'teachers' | 'students' = 'general',
+  ) {
     editingSectionId = section.id
+    selectedSection = section
     sectionForm = {
       name: section.name,
       teacherIds: section.docentes.map((d) => d.id),
     }
-    showSectionForm = true
+    activeTab = tab
+    isManageModalOpen = true
   }
-
-
 
   async function deleteSection(id: string) {
     if (!confirm('¿Estás seguro de eliminar este paralelo?')) return
@@ -210,17 +234,17 @@
     <table class="table">
       <thead>
         <tr>
-          <th class="table__th">Nombre</th>
-          <th class="table__th">Docentes</th>
-          <th class="table__th">Alumnos</th>
-          <th class="table__th">Acciones</th>
+          <th class="table__header">Nombre</th>
+          <th class="table__header">Docentes</th>
+          <th class="table__header">Alumnos</th>
+          <th class="table__header">Acciones</th>
         </tr>
       </thead>
       <tbody>
         {#each sectionsList as section}
-          <tr>
-            <td class="table__td"><strong>{section.name}</strong></td>
-            <td class="table__td">
+          <tr class="table__row">
+            <td class="table__cell"><strong>{section.name}</strong></td>
+            <td class="table__cell">
               <div class="docentes-list">
                 {#each section.docentes as teacher}
                   <span class="docente-tag"
@@ -231,27 +255,24 @@
                 {/each}
               </div>
             </td>
-            <td class="table__td">
+            <td class="table__cell">
               {studentCounts[section.id] || 0}
             </td>
-            <td class="table__td">
+            <td class="table__cell">
               <div class="actions-row">
                 <Button
                   size="sm"
                   variant="secondary"
-                  onclick={() => {
-                    assignmentSection = section
-                    isStudentModalOpen = true
-                  }}
+                  onclick={() => openManageSection(section, 'students')}
                 >
-                  Gestionar Alumnos
+                  Alumnos
                 </Button>
                 <Button
                   size="sm"
                   variant="secondary"
-                  onclick={() => openEditSection(section)}
+                  onclick={() => openManageSection(section, 'general')}
                 >
-                  Editar
+                  Gestionar
                 </Button>
                 <Button
                   size="sm"
@@ -270,110 +291,207 @@
 {/if}
 
 <Modal
-  isOpen={showSectionForm}
-  title={editingSectionId ? 'Editar Paralelo' : 'Crear Nuevo Paralelo'}
-  onClose={() => (showSectionForm = false)}
+  isOpen={isManageModalOpen}
+  title={editingSectionId
+    ? `Gestionar Paralelo - ${sectionForm.name}`
+    : 'Crear Nuevo Paralelo'}
+  onClose={() => (isManageModalOpen = false)}
+  size={activeTab === 'students' ? 'lg' : 'md'}
 >
-  <form
-    class="edit-form"
-    onsubmit={(e) => {
-      e.preventDefault()
-      saveSection()
-    }}
+  {#if editingSectionId}
+    <div class="tabs-header">
+      <button
+        class="tab-btn"
+        class:tab-btn--active={activeTab === 'general'}
+        onclick={() => (activeTab = 'general')}
+      >
+        ⚙️ Configuración
+      </button>
+      <button
+        class="tab-btn"
+        class:tab-btn--active={activeTab === 'teachers'}
+        onclick={() => (activeTab = 'teachers')}
+      >
+        🎓 Docentes
+      </button>
+      <button
+        class="tab-btn"
+        class:tab-btn--active={activeTab === 'students'}
+        onclick={() => (activeTab = 'students')}
+      >
+        👥 Estudiantes ({studentCounts[editingSectionId] || 0})
+      </button>
+    </div>
+  {/if}
+
+  <div
+    class="modal-content"
+    class:modal-content--students={activeTab === 'students'}
   >
-    <div class="form-group">
-      <label for="sectionName">Nombre del Paralelo *</label>
-      <input
-        id="sectionName"
-        class="form-input"
-        bind:value={sectionForm.name}
-        required
-        placeholder="Ej: Paralelo 1"
-      />
-    </div>
-    <div class="form-group">
-      <label for="teacherSelector">Docentes Asignados (opcional)</label>
-      <MultiSelect
-        id="teacherSelector"
-        options={teachersList.map((teacher) => ({
-          value: teacher.id,
-          label: teacher.name || teacher.discordUsername,
-          sublabel: teacher.name ? `@${teacher.discordUsername}` : undefined,
-        }))}
-        bind:value={sectionForm.teacherIds}
-        placeholder="Seleccionar docentes"
-        searchable={true}
-      />
-    </div>
-    <div class="modal-actions">
-      <Button
-        type="button"
-        variant="secondary"
-        onclick={() => (showSectionForm = false)}
+    {#if activeTab === 'general'}
+      <form
+        class="manage-form"
+        onsubmit={(event) => {
+          event.preventDefault()
+          saveSection()
+        }}
       >
-        Cancelar
-      </Button>
-      <Button
-        type="submit"
-        loading={sectionFormLoading}
-        loadingText="Procesando..."
-      >
-        {editingSectionId ? 'Guardar Cambios' : 'Crear Paralelo'}
-      </Button>
-    </div>
-  </form>
-</Modal>
+        <div class="form-group">
+          <label class="form-label" for="sectionName"
+            >Nombre del Paralelo *</label
+          >
+          <input
+            id="sectionName"
+            class="form-input"
+            bind:value={sectionForm.name}
+            required
+            placeholder="Ej: Paralelo 1"
+          />
+        </div>
 
-<Modal
-  isOpen={isStudentModalOpen}
-  title={`Gestionar Alumnos - ${assignmentSection?.name}`}
-  onClose={() => (isStudentModalOpen = false)}
->
-  <div class="student-management">
-    <div class="search-bar">
-      <SearchBox
-        bind:value={studentSearch}
-        placeholder="Buscar alumnos..."
-        fullWidth
-      />
-    </div>
-
-    {#if enrollmentLoading}
-      <Loader label="Cargando alumnos..." />
-    {:else if enrollmentsList.length === 0}
-      <div class="empty-state">
-        <p>No se encontraron alumnos aprobados para este curso.</p>
-      </div>
-    {:else}
-      <div class="student-list">
-        {#each enrollmentsList as item}
-          {@const isAssigned =
-            item.enrollment.sectionId === assignmentSection?.id}
-          <div class="student-item">
-            <div class="student-info">
-              <strong>{item.enrollment.fullName}</strong>
-              <small class="text-muted">@{item.discordUsername}</small>
-              {#if item.enrollment.sectionId && !isAssigned}
-                <span class="other-section-tag">
-                  En: {sectionsList.find(
-                    (s) => s.id === item.enrollment.sectionId,
-                  )?.name || 'Otro'}
-                </span>
-              {/if}
-            </div>
-            <Button
-              size="sm"
-              variant={isAssigned ? 'danger' : 'primary'}
-              onclick={() =>
-                assignSectionToStudent(
-                  item.enrollment.id,
-                  isAssigned ? '' : assignmentSection?.id || '',
-                )}
-            >
-              {isAssigned ? 'Quitar' : 'Asignar'}
-            </Button>
+        {#if !editingSectionId}
+          <div class="form-group">
+            <span class="form-label">Docentes</span>
+            <p class="text-muted">
+              Podrás gestionar los docentes después de crear el paralelo.
+            </p>
           </div>
-        {/each}
+        {/if}
+
+        <div class="modal-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onclick={() => (isManageModalOpen = false)}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            loading={sectionFormLoading}
+            loadingText="Procesando..."
+          >
+            {editingSectionId ? 'Guardar Cambios' : 'Crear Paralelo'}
+          </Button>
+        </div>
+      </form>
+    {:else if activeTab === 'teachers'}
+      <div class="teacher-management">
+        <div class="search-bar">
+          <SearchBox
+            bind:value={teacherSearch}
+            placeholder="Buscar docentes..."
+            fullWidth
+          />
+        </div>
+
+        <div class="teacher-list">
+          {#each teachersList.filter((t) => !teacherSearch || t.name
+                ?.toLowerCase()
+                .includes(teacherSearch.toLowerCase()) || t.discordUsername
+                .toLowerCase()
+                .includes(teacherSearch.toLowerCase())) as teacher}
+            {@const isAssigned = sectionForm.teacherIds.includes(teacher.id)}
+            <div class="teacher-item" class:teacher-item--assigned={isAssigned}>
+              <div class="teacher-info">
+                <span class="teacher-info__name"
+                  >{teacher.name || teacher.discordUsername}</span
+                >
+                {#if teacher.name}
+                  <small class="teacher-info__discord"
+                    >@{teacher.discordUsername}</small
+                  >
+                {/if}
+              </div>
+              <Button
+                size="sm"
+                variant={isAssigned ? 'danger' : 'primary'}
+                onclick={() => {
+                  if (isAssigned) {
+                    sectionForm.teacherIds = sectionForm.teacherIds.filter(
+                      (id) => id !== teacher.id,
+                    )
+                  } else {
+                    sectionForm.teacherIds = [
+                      ...sectionForm.teacherIds,
+                      teacher.id,
+                    ]
+                  }
+                }}
+              >
+                {isAssigned ? 'Quitar' : 'Asignar'}
+              </Button>
+            </div>
+          {/each}
+        </div>
+
+        <div class="modal-actions">
+          <Button
+            onclick={saveSection}
+            loading={sectionFormLoading}
+            loadingText="Guardando..."
+          >
+            Guardar Cambios
+          </Button>
+        </div>
+      </div>
+    {:else if activeTab === 'students'}
+      <div class="student-management">
+        <div class="search-bar">
+          <SearchBox
+            bind:value={studentSearch}
+            placeholder="Buscar alumnos por nombre o discord..."
+            fullWidth
+          />
+        </div>
+
+        {#if enrollmentLoading}
+          <div class="loader-container">
+            <Loader label="Cargando alumnos..." />
+          </div>
+        {:else if enrollmentsList.length === 0}
+          <div class="empty-state">
+            <p>No se encontraron alumnos aprobados para este curso.</p>
+          </div>
+        {:else}
+          <div class="student-list">
+            {#each enrollmentsList as item}
+              {@const isAssigned =
+                item.enrollment.sectionId === editingSectionId}
+              <div
+                class="student-item"
+                class:student-item--assigned={isAssigned}
+              >
+                <div class="student-info">
+                  <span class="student-info__name"
+                    >{item.enrollment.fullName}</span
+                  >
+                  <small class="student-info__discord"
+                    >@{item.discordUsername}</small
+                  >
+                  {#if item.enrollment.sectionId && !isAssigned}
+                    <span class="other-section-tag">
+                      En: {sectionsList.find(
+                        (s) => s.id === item.enrollment.sectionId,
+                      )?.name || 'Otro'}
+                    </span>
+                  {/if}
+                </div>
+                <Button
+                  size="sm"
+                  variant={isAssigned ? 'danger' : 'primary'}
+                  onclick={() =>
+                    assignSectionToStudent(
+                      item.enrollment.id,
+                      isAssigned ? '' : editingSectionId || '',
+                    )}
+                >
+                  {isAssigned ? 'Quitar' : 'Asignar'}
+                </Button>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -387,26 +505,40 @@
     margin-bottom: 2rem;
   }
 
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
   .table {
     width: 100%;
     border-collapse: collapse;
   }
 
-  .table__th,
-  .table__td {
+  .table__header,
+  .table__cell {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);
   }
 
+  .table__cell {
+    font-size: 0.9375rem;
+  }
+
+  .docentes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
   .docente-tag {
     background: rgba(var(--brand-primary-rgb), 0.1);
     color: var(--brand-primary);
-    padding: 0.15rem 0.4rem;
-    border-radius: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.375rem;
     font-size: 0.75rem;
     font-weight: 600;
-    margin-right: 0.25rem;
+    border: 1px solid rgba(var(--brand-primary-rgb), 0.2);
   }
 
   .actions-row {
@@ -415,7 +547,51 @@
     flex-wrap: wrap;
   }
 
-  .edit-form {
+  /* Tabs UI */
+  .tabs-header {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.25rem;
+  }
+
+  .tab-btn {
+    padding: 0.625rem 1rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    border-radius: 0.375rem 0.375rem 0 0;
+  }
+
+  .tab-btn:hover {
+    color: var(--brand-primary);
+    background: var(--border-color-light);
+  }
+
+  .tab-btn--active {
+    color: var(--brand-primary);
+    border-bottom-color: var(--brand-primary);
+    background: rgba(var(--brand-primary-rgb), 0.05);
+  }
+
+  /* Form & Content */
+  .modal-content {
+    min-height: 25rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-content--students {
+    min-height: 40rem;
+  }
+
+  .manage-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -427,12 +603,26 @@
     gap: 0.5rem;
   }
 
+  .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-primary);
+  }
+
   .form-input {
-    padding: 0.5rem;
-    border: 1px solid rgba(128, 128, 128, 0.2);
-    border-radius: 0.375rem;
+    padding: 0.625rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
     background: var(--foreground-color);
     color: var(--text-color-primary);
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px rgba(var(--brand-primary-rgb), 0.1);
   }
 
   .modal-actions {
@@ -440,52 +630,113 @@
     gap: 1rem;
     justify-content: flex-end;
     margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color-light);
   }
 
   .empty-state {
-    padding: 3rem;
+    padding: 4rem 2rem;
     text-align: center;
     color: var(--text-color-secondary);
+    background: var(--foreground-color);
+    border-radius: 0.75rem;
+    border: 1px dashed var(--border-color);
   }
 
+  /* Student Management */
   .student-management {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    max-height: 70vh;
+    gap: 1.25rem;
+    max-height: 60vh;
+  }
+
+  .search-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--foreground-color);
+  }
+
+  .loader-container {
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
   }
 
   .student-list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     overflow-y: auto;
     padding-right: 0.5rem;
   }
 
-  .student-item {
+  .student-item--assigned,
+  .teacher-item--assigned {
+    border-left: 4px solid var(--brand-primary);
+    background: rgba(var(--brand-primary-rgb), 0.02);
+  }
+
+  .student-info,
+  .teacher-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .student-info__name,
+  .teacher-info__name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+
+  .student-info__discord,
+  .teacher-info__discord {
+    color: var(--text-color-secondary);
+    font-size: 0.8125rem;
+  }
+
+  .teacher-management {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-height: 60vh;
+  }
+
+  .teacher-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+
+  .teacher-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
     background: var(--foreground-color);
+    transition: all 0.2s;
   }
 
-  .student-info {
-    display: flex;
-    flex-direction: column;
+  .teacher-item:hover {
+    border-color: var(--brand-primary);
+    background: rgba(var(--brand-primary-rgb), 0.02);
   }
 
   .other-section-tag {
     font-size: 0.7rem;
-    color: var(--text-color-secondary);
-    background: rgba(128, 128, 128, 0.1);
-    padding: 0.1rem 0.3rem;
-    border-radius: 0.2rem;
+    color: var(--color-warning-text);
+    background: var(--color-warning-bg);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
     width: fit-content;
-    margin-top: 0.25rem;
+    margin-top: 0.375rem;
+    font-weight: 600;
   }
 
   .text-muted {

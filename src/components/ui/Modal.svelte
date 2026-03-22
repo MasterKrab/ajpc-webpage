@@ -4,10 +4,11 @@
     isOpen: boolean
     title: string
     onClose: () => void
+    size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
     children: any
   }
 
-  let { isOpen, title, onClose, children }: Props = $props()
+  let { isOpen, title, onClose, size = 'md', children }: Props = $props()
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -39,12 +40,12 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div class="modal-overlay" use:portal onclick={onClose} role="presentation">
     <div
-      class="modal"
+      class="modal modal--{size}"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       tabindex="-1"
-      onclick={(e) => e.stopPropagation()}
+      onclick={(event) => event.stopPropagation()}
       onkeydown={handleKeydown}
     >
       <header class="modal__header">
@@ -84,14 +85,29 @@
     background-color: var(--foreground-color);
     padding: 1.5rem;
     width: 100%;
-    max-width: 60rem;
-    max-height: 100vh;
-    overflow-y: auto;
+    max-height: 90vh;
+    overflow-y: hidden;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(128, 128, 128, 0.15);
     animation: slideUp 0.2s ease-out;
     display: flex;
     flex-direction: column;
+  }
+
+  .modal--sm {
+    max-width: 30rem;
+  }
+  .modal--md {
+    max-width: 45rem;
+  }
+  .modal--lg {
+    max-width: 60rem;
+  }
+  .modal--xl {
+    max-width: 80rem;
+  }
+  .modal--full {
+    max-width: 95%;
   }
 
   @media screen and (min-width: 30rem) {
