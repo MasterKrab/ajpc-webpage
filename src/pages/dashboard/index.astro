@@ -23,10 +23,12 @@ const userEnrollments = await db
     commune: enrollments.commune,
     previousExperience: enrollments.previousExperience,
     motivation: enrollments.motivation,
+    selectedSchedules: enrollments.selectedSchedules,
     status: enrollments.status,
     feedback: enrollments.feedback,
     courseName: courses.name,
     courseLevel: courses.level,
+    availableSchedules: courses.availableSchedules,
   })
   .from(enrollments)
   .innerJoin(courses, eq(enrollments.courseId, courses.id))

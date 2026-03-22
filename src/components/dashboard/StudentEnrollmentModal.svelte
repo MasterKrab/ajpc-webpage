@@ -21,6 +21,8 @@
       commune: string | null
       previousExperience: string | null
       motivation: string | null
+      selectedSchedules?: string[] | null
+      availableSchedules?: { id: string; day: string; timeRange: string }[] | null
     }
   }
 
@@ -94,54 +96,72 @@
       </div>
     {/if}
 
-    <div class="enrollment-modal__fields">
+    <dl class="enrollment-modal__fields">
       <div class="enrollment-modal__field">
-        <span class="enrollment-modal__label">Nombre</span>
-        <p class="enrollment-modal__value">{enrollment.fullName}</p>
+        <dt class="enrollment-modal__label">Nombre</dt>
+        <dd class="enrollment-modal__value">{enrollment.fullName}</dd>
       </div>
 
       <div class="enrollment-modal__field">
-        <span class="enrollment-modal__label">Email</span>
-        <p class="enrollment-modal__value">{enrollment.email}</p>
+        <dt class="enrollment-modal__label">Email</dt>
+        <dd class="enrollment-modal__value">{enrollment.email}</dd>
       </div>
 
       <div class="enrollment-modal__field">
-        <span class="enrollment-modal__label">Edad / Género</span>
-        <p class="enrollment-modal__value">
+        <dt class="enrollment-modal__label">Edad / Género</dt>
+        <dd class="enrollment-modal__value">
           {enrollment.age} años · {genderLabel(enrollment.gender)}
-        </p>
+        </dd>
       </div>
 
       <div class="enrollment-modal__field">
-        <span class="enrollment-modal__label">Escuela / Año</span>
-        <p class="enrollment-modal__value">
+        <dt class="enrollment-modal__label">Escuela / Año</dt>
+        <dd class="enrollment-modal__value">
           {enrollment.schoolName || 'N/A'} ({enrollment.schoolYear})
-        </p>
+        </dd>
       </div>
 
       <div class="enrollment-modal__field">
-        <span class="enrollment-modal__label">Ubicación</span>
-        <p class="enrollment-modal__value">
+        <dt class="enrollment-modal__label">Ubicación</dt>
+        <dd class="enrollment-modal__value">
           {enrollment.commune || ''}{enrollment.commune && enrollment.region
             ? ', '
             : ''}{enrollment.region || 'No especificada'}
-        </p>
+        </dd>
       </div>
 
       <div class="enrollment-modal__field enrollment-modal__field--full">
-        <span class="enrollment-modal__label">Experiencia</span>
-        <p class="enrollment-modal__value enrollment-modal__value--block">
+        <dt class="enrollment-modal__label">Experiencia</dt>
+        <dd class="enrollment-modal__value enrollment-modal__value--block">
           {experienceLabel(enrollment.previousExperience)}
-        </p>
+        </dd>
       </div>
 
       <div class="enrollment-modal__field enrollment-modal__field--full">
-        <span class="enrollment-modal__label">Motivación</span>
-        <p class="enrollment-modal__value enrollment-modal__value--block">
+        <dt class="enrollment-modal__label">Motivación</dt>
+        <dd class="enrollment-modal__value enrollment-modal__value--block">
           {enrollment.motivation || 'Sin motivación especificada'}
-        </p>
+        </dd>
       </div>
-    </div>
+
+      {#if enrollment.selectedSchedules && enrollment.selectedSchedules.length > 0}
+        <div class="enrollment-modal__field enrollment-modal__field--full">
+          <dt class="enrollment-modal__label">Horarios Seleccionados</dt>
+          <dd class="enrollment-modal__schedules">
+            {#each enrollment.selectedSchedules as scheduleId}
+              {@const schedule = enrollment.availableSchedules?.find(
+                (schedule) => sc.id === scheduleId,
+              )}
+              {#if schedule}
+                <span class="enrollment-modal__schedule-badge">
+                  {schedule.day}: {schedule.timeRange}
+                </span>
+              {/if}
+            {/each}
+          </dd>
+        </div>
+      {/if}
+    </dl>
   </div>
 </Modal>
 
@@ -216,6 +236,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
     gap: 1.25rem;
+    margin: 0;
   }
 
   .enrollment-modal__field--full {
@@ -241,5 +262,22 @@
     padding: 0.75rem;
     border-radius: 0.5rem;
     white-space: pre-wrap;
+  }
+  
+  .enrollment-modal__schedules {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    margin-left: 0;
+  }
+  
+  .enrollment-modal__schedule-badge {
+    background-color: var(--brand-primary);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
   }
 </style>
