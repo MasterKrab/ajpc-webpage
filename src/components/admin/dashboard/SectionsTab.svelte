@@ -4,6 +4,7 @@
   import Loader from '@components/ui/Loader.svelte'
   import SearchBox from '@components/ui/SearchBox.svelte'
   import Button from '@components/ui/Button.svelte'
+  import MultiSelect from '@components/ui/MultiSelect.svelte'
 
   type Teacher = {
     id: string
@@ -134,15 +135,7 @@
     showSectionForm = true
   }
 
-  function toggleTeacherInForm(teacherId: string) {
-    if (sectionForm.teacherIds.includes(teacherId)) {
-      sectionForm.teacherIds = sectionForm.teacherIds.filter(
-        (id) => id !== teacherId,
-      )
-    } else {
-      sectionForm.teacherIds = [...sectionForm.teacherIds, teacherId]
-    }
-  }
+
 
   async function deleteSection(id: string) {
     if (!confirm('¿Estás seguro de eliminar este paralelo?')) return
@@ -299,19 +292,18 @@
       />
     </div>
     <div class="form-group">
-      <p>Docentes Asignados (opcional)</p>
-      <div class="teacher-selector">
-        {#each teachersList as t}
-          <label class="teacher-checkbox">
-            <input
-              type="checkbox"
-              checked={sectionForm.teacherIds.includes(t.id)}
-              onchange={() => toggleTeacherInForm(t.id)}
-            />
-            {t.name || t.discordUsername}
-          </label>
-        {/each}
-      </div>
+      <label for="teacherSelector">Docentes Asignados (opcional)</label>
+      <MultiSelect
+        id="teacherSelector"
+        options={teachersList.map((teacher) => ({
+          value: teacher.id,
+          label: teacher.name || teacher.discordUsername,
+          sublabel: teacher.name ? `@${teacher.discordUsername}` : undefined,
+        }))}
+        bind:value={sectionForm.teacherIds}
+        placeholder="Seleccionar docentes"
+        searchable={true}
+      />
     </div>
     <div class="modal-actions">
       <Button
@@ -441,25 +433,6 @@
     border-radius: 0.375rem;
     background: var(--foreground-color);
     color: var(--text-color-primary);
-  }
-
-  .teacher-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 200px;
-    overflow-y: auto;
-    padding: 0.5rem;
-    border: 1px solid rgba(128, 128, 128, 0.1);
-    border-radius: 0.375rem;
-  }
-
-  .teacher-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    cursor: pointer;
   }
 
   .modal-actions {

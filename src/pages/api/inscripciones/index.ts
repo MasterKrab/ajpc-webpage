@@ -7,21 +7,22 @@ import { generateId } from '@lib/auth'
 import { sendEmail } from '@lib/email'
 import { wrapTemplate } from '@lib/email-shared'
 
-const enrollmentSchema = z.object({
-  courseId: z.string().min(1),
-  age: z.number().int().min(8).max(25),
-  gender: z.string().min(1),
-  schoolYear: z.string().min(1),
-  schoolName: z.string().optional(),
-  region: z.string().optional(),
-  commune: z.string().optional(),
-  previousExperience: z.string().max(1000).optional(),
-  motivation: z.string().max(1000).optional(),
-  schoolType: z.string().min(1, 'Selecciona el tipo de establecimiento'),
-  selectedSchedules: z
-    .array(z.string())
-    .min(1, 'Debes seleccionar al menos un horario'),
-})
+const enrollmentSchema = z
+  .object({
+    courseId: z.string().min(1),
+    age: z.number().int().min(8).max(25),
+    gender: z.string().min(1),
+    schoolYear: z.string().min(1),
+    schoolName: z.string().optional(),
+    region: z.string().optional(),
+    commune: z.string().optional(),
+    previousExperience: z.string().max(1000).optional(),
+    motivation: z.string().max(1000).optional(),
+    schoolType: z.string().min(1, 'Selecciona el tipo de establecimiento'),
+    selectedSchedules: z.array(z.string()),
+    acceptTerms: z.literal(true),
+    acceptConduct: z.literal(true),
+  })
 
 export const GET: APIRoute = async ({ locals }) => {
   const user = locals.user!

@@ -92,11 +92,16 @@ export const PATCH: APIRoute = async ({ locals, request, url }) => {
     updatedAt: new Date(),
   }
 
-  if (parsed.data.status !== undefined) updateData.status = parsed.data.status
+  if (parsed.data.status !== undefined) {
+    updateData.status = parsed.data.status
+    updateData.notifiedAt = null
+  }
   if (parsed.data.adminNotes !== undefined)
     updateData.adminNotes = parsed.data.adminNotes
+ 
   if (parsed.data.feedback !== undefined)
     updateData.feedback = parsed.data.feedback
+ 
   if (parsed.data.sectionId !== undefined)
     updateData.sectionId = parsed.data.sectionId
 

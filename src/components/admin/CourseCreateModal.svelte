@@ -14,8 +14,7 @@
     level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
     year: new Date().getFullYear(),
     maxStudents: undefined as number | undefined,
-    enrollmentStartDate: '',
-    enrollmentEndDate: '',
+    status: 'closed' as const,
     availableSchedules: [] as { id: string; day: string; timeRange: string }[],
   })
 
@@ -26,8 +25,7 @@
       level: 'beginner',
       year: new Date().getFullYear(),
       maxStudents: undefined,
-      enrollmentStartDate: '',
-      enrollmentEndDate: '',
+      status: 'closed',
       availableSchedules: [],
     }
   }
@@ -39,8 +37,8 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
-        enrollmentStartDate: form.enrollmentStartDate || null,
-        enrollmentEndDate: form.enrollmentEndDate || null,
+        maxStudents: form.maxStudents ? Number(form.maxStudents) : null,
+        status: form.status,
       }),
     })
 
@@ -119,31 +117,6 @@
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="{formId}-startDate"
-          >Inicio inscripciones</label
-        >
-        <input
-          class="form-input"
-          type="datetime-local"
-          id="{formId}-startDate"
-          bind:value={form.enrollmentStartDate}
-        />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="{formId}-endDate"
-          >Fin inscripciones</label
-        >
-        <input
-          class="form-input"
-          type="datetime-local"
-          id="{formId}-endDate"
-          bind:value={form.enrollmentEndDate}
-        />
-      </div>
-    </div>
-
     <div class="form-group">
       <label class="form-label" for="{formId}-courseDesc">Descripción</label>
       <textarea
@@ -182,7 +155,11 @@
             <button
               class="remove-button"
               type="button"
-              onclick={() => form.availableSchedules.splice(i, 1)}
+              onclick={() => {
+                form.availableSchedules = form.availableSchedules.filter(
+                  (_, index) => index !== i,
+                )
+              }}
             >
               &times;
             </button>
@@ -191,12 +168,18 @@
         <button
           type="button"
           class="add-schedule-button"
-          onclick={() =>
-            form.availableSchedules.push({
-              id: Math.random().toString(36).substr(2, 9),
-              day: 'Lunes',
-              timeRange: '',
-            })}
+          onclick={(event) => {
+            event.preventDefault()
+
+            form.availableSchedules = [
+              ...form.availableSchedules,
+              {
+                id: nanoid(6),
+                day: 'Lunes',
+                timeRange: '',
+              },
+            ]
+          }}
         >
           + Agregar horario
         </button>

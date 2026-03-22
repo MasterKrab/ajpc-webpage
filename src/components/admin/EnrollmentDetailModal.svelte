@@ -16,6 +16,7 @@
     status: string
     adminNotes: string | null
     feedback: string | null
+    selectedSchedules: string[] | null
     courseName?: string
     discordUsername?: string
   }
@@ -23,6 +24,7 @@
   interface Props {
     enrollment: EnrollmentType
     isOpen: boolean
+    availableSchedules: Array<{ id: string; day: string; timeRange: string }>
     onClose: () => void
     onStatusChange: (
       id: string,
@@ -32,7 +34,13 @@
     ) => Promise<void>
   }
 
-  let { enrollment, isOpen, onClose, onStatusChange }: Props = $props()
+  let {
+    enrollment,
+    isOpen,
+    availableSchedules,
+    onClose,
+    onStatusChange,
+  }: Props = $props()
 
   let notes = $state(enrollment.adminNotes || '')
   let feedback = $state(enrollment.feedback || '')
@@ -84,87 +92,110 @@
 </script>
 
 <Modal {isOpen} title="Detalle de Postulación" {onClose}>
-  <div class="detail-grid">
-    <div class="field-group full-width header-info">
-      <h4>{enrollment.fullName}</h4>
+  <div class="detail-container">
+    <div class="header-info">
+      <h4 class="detail-container__title">{enrollment.fullName}</h4>
       <p class="subtitle">
         {enrollment.courseName ? `${enrollment.courseName} · ` : ''}
         @{enrollment.discordUsername || 'Usuario'}
       </p>
-      <span class="status-badge status--{enrollment.status}">
+      <span class="status-badge status--{enrollment.status}" role="status">
         {statusLabel(enrollment.status)}
       </span>
     </div>
 
-    <div class="field-group">
-      <span class="label-text">Email</span>
-      <p>{enrollment.email}</p>
-    </div>
+    <dl class="detail-grid">
+      <div class="field-group">
+        <dt class="detail-grid__label">Email</dt>
+        <dd class="detail-grid__value">{enrollment.email}</dd>
+      </div>
 
-    <div class="field-group">
-      <span class="label-text">Edad / Género</span>
-      <p>{enrollment.age} años · {genderLabel(enrollment.gender)}</p>
-    </div>
+      <div class="field-group">
+        <dt class="detail-grid__label">Edad / Género</dt>
+        <dd class="detail-grid__value">{enrollment.age} años · {genderLabel(enrollment.gender)}</dd>
+      </div>
 
-    <div class="field-group">
-      <span class="label-text">Escuela / Año</span>
-      <p>{enrollment.schoolName || 'N/A'} ({enrollment.schoolYear})</p>
-    </div>
+      <div class="field-group">
+        <dt class="detail-grid__label">Escuela / Año</dt>
+        <dd class="detail-grid__value">{enrollment.schoolName || 'N/A'} ({enrollment.schoolYear})</dd>
+      </div>
 
-    <div class="field-group">
-      <span class="label-text">Ubicación</span>
-      <p>
-        {enrollment.commune || ''}{enrollment.commune && enrollment.region
-          ? ', '
-          : ''}{enrollment.region || 'No especificada'}
-      </p>
-    </div>
+      <div class="field-group">
+        <dt class="detail-grid__label">Ubicación</dt>
+        <dd class="detail-grid__value">
+          {enrollment.commune || ''}{enrollment.commune && enrollment.region
+            ? ', '
+            : ''}{enrollment.region || 'No especificada'}
+        </dd>
+      </div>
 
-    <div class="field-group full-width">
-      <span class="label-text">Experiencia</span>
-      <p class="text-block">
-        {enrollment.previousExperience || 'Sin experiencia especificada'}
-      </p>
-    </div>
+      <div class="field-group full-width">
+        <dt class="detail-grid__label">Experiencia</dt>
+        <dd class="detail-grid__value text-block">
+          {enrollment.previousExperience || 'Sin experiencia especificada'}
+        </dd>
+      </div>
 
-    <div class="field-group full-width">
-      <span class="label-text">Motivación</span>
-      <p class="text-block">
-        {enrollment.motivation || 'Sin motivación especificada'}
-      </p>
-    </div>
+      <div class="field-group full-width">
+        <dt class="detail-grid__label">Motivación</dt>
+        <dd class="detail-grid__value text-block">
+          {enrollment.motivation || 'Sin motivación especificada'}
+        </dd>
+      </div>
 
-    <div class="field-group full-width">
-      <label for="feedback">Nota al estudiante (Feedback)</label>
-      <p class="hint">
-        Opcional. Se enviará por correo junto con el resultado
-        (Aprobada/Rechazada).
-      </p>
-      <textarea
-        id="feedback"
-        class="notes-area"
-        bind:value={feedback}
-        placeholder="Escribe una razón o feedback para el estudiante..."
-        rows="3"
-      ></textarea>
-    </div>
+      {#if enrollment.selectedSchedules && enrollment.selectedSchedules.length > 0}
+        <div class="field-group full-width">
+          <dt class="detail-grid__label">Horarios Seleccionados</dt>
+          <dd class="detail-grid__value schedules-badges">
+            {#each enrollment.selectedSchedules as scheduleId}
+              {@const schedule = availableSchedules.find(
+                (schedule) => schedule.id === scheduleId,
+              )}
+              {#if schedule}
+                <span class="schedule-badge">
+                  {schedule.day} · {schedule.timeRange}
+                </span>
+              {/if}
+            {/each}
+          </dd>
+        </div>
+      {/if}
+    </dl>
 
-    <div class="field-group full-width">
-      <label for="admin-notes">Notas de administración (Interno)</label>
-      <textarea
-        id="admin-notes"
-        class="notes-area"
-        bind:value={notes}
-        placeholder="Escribe una nota interna..."
-        rows="3"
-      ></textarea>
+    <div class="form-section">
+      <div class="field-group full-width">
+        <label class="form-section__label" for="feedback">Nota al estudiante (Feedback)</label>
+        <p class="form-section__hint" id="feedback-hint">
+          Opcional. Se enviará por correo junto con el resultado
+          (Aprobada/Rechazada).
+        </p>
+        <textarea
+          id="feedback"
+          class="notes-area"
+          bind:value={feedback}
+          placeholder="Escribe una razón o feedback para el estudiante..."
+          rows="3"
+          aria-describedby="feedback-hint"
+        ></textarea>
+      </div>
+
+      <div class="field-group full-width">
+        <label class="form-section__label" for="admin-notes">Notas de administración (Interno)</label>
+        <textarea
+          id="admin-notes"
+          class="notes-area"
+          bind:value={notes}
+          placeholder="Escribe una nota interna..."
+          rows="3"
+        ></textarea>
+      </div>
     </div>
   </div>
 
   <div class="actions">
     <button
       class="button button--pending"
-      disabled={isLoading || enrollment.status === 'pending'}
+      disabled={isLoading}
       onclick={() => handleAction('pending')}
     >
       Dejar Pendiente
@@ -173,14 +204,14 @@
     <div class="right-actions">
       <button
         class="button button--reject"
-        disabled={isLoading || enrollment.status === 'rejected'}
+        disabled={isLoading}
         onclick={() => handleAction('rejected')}
       >
         Rechazar
       </button>
       <button
         class="button button--approve"
-        disabled={isLoading || enrollment.status === 'approved'}
+        disabled={isLoading}
         onclick={() => handleAction('approved')}
       >
         Aprobar
@@ -194,56 +225,80 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.25rem;
+    margin-bottom: 2rem;
+    padding: 0;
+  }
+
+  .header-info {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
     margin-bottom: 1.5rem;
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
   }
 
   .full-width {
     grid-column: 1 / -1;
   }
 
-  .header-info {
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  h4 {
+  .detail-container__title {
     margin: 0 0 0.25rem;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
+    color: var(--text-color-primary);
   }
 
   .subtitle {
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.75rem;
     color: var(--text-color-secondary);
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
   }
 
-  label,
-  .label-text {
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-section__label,
+  .detail-grid__label {
     display: block;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     color: var(--text-color-secondary);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.125rem;
+    letter-spacing: 0.025em;
   }
 
-  p {
+  .detail-grid__value,
+  .subtitle,
+  .form-section__hint {
     margin: 0;
-    font-size: 0.9375rem;
+    font-size: 1rem;
+    color: var(--text-color-primary);
   }
 
   .text-block {
     background: var(--border-color-light);
-    padding: 0.75rem;
-    border-radius: 0.5rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
     white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: 0.9375rem;
   }
 
-  .hint {
+  .form-section__hint {
     margin: 0 0 0.5rem;
     font-size: 0.8125rem;
     color: var(--text-color-secondary);
+    line-height: 1.4;
   }
 
   .status-badge {
@@ -265,6 +320,22 @@
   .status--pending {
     background: var(--color-warning-bg);
     color: var(--color-warning-text);
+  }
+
+  .schedules-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .schedule-badge {
+    background: var(--brand-primary);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
   }
 
   .notes-area {

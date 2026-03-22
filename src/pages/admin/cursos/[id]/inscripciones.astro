@@ -62,6 +62,7 @@ const sectionsList = await db
       courseId={id}
       initialEnrollments={enrollmentData}
       sectionsList={sectionsList}
+      availableSchedules={course.availableSchedules ?? []}
     />
   </main>
 </DashboardLayout>

@@ -11,7 +11,7 @@ import {
   sections,
   sectionDocentes,
 } from '@db/schema'
-import { eq, count } from 'drizzle-orm'
+import { eq, count, ne } from 'drizzle-orm'
 
 const user = Astro.locals.user
 if (!user || !isAdmin(user)) return Astro.redirect('/login')
@@ -59,7 +59,7 @@ const teachersList = await db
     name: users.name,
   })
   .from(users)
-  .where(eq(users.role, 'docente'))
+  .where(ne(users.role, 'student'))
 
 // Fetch student counts
 const countsResult = await db

@@ -12,8 +12,6 @@ const courseSchema = z.object({
   year: z.number().int().min(2024).max(2100),
   maxStudents: z.number().int().positive().optional().nullable(),
   status: z.enum(['open', 'closed']).optional(),
-  enrollmentStartDate: z.string().optional().nullable(),
-  enrollmentEndDate: z.string().optional().nullable(),
   availableSchedules: z
     .array(
       z.object({
@@ -69,12 +67,6 @@ export const POST: APIRoute = async ({ locals, request }) => {
     ...parsed.data,
     maxStudents: parsed.data.maxStudents ?? null,
     status: parsed.data.status ?? 'closed',
-    enrollmentStartDate: parsed.data.enrollmentStartDate
-      ? new Date(parsed.data.enrollmentStartDate)
-      : null,
-    enrollmentEndDate: parsed.data.enrollmentEndDate
-      ? new Date(parsed.data.enrollmentEndDate)
-      : null,
   })
 
   return Response.json({ id }, { status: 201 })
@@ -113,16 +105,6 @@ export const PATCH: APIRoute = async ({ locals, request, url }) => {
     .set({
       ...parsed.data,
       maxStudents: parsed.data.maxStudents ?? null,
-      enrollmentStartDate: parsed.data.enrollmentStartDate
-        ? new Date(parsed.data.enrollmentStartDate)
-        : parsed.data.enrollmentStartDate === null
-          ? null
-          : undefined,
-      enrollmentEndDate: parsed.data.enrollmentEndDate
-        ? new Date(parsed.data.enrollmentEndDate)
-        : parsed.data.enrollmentEndDate === null
-          ? null
-          : undefined,
     })
     .where(eq(courses.id, courseId))
 

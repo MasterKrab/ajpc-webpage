@@ -27,7 +27,6 @@ const userEnrollments = await db
     feedback: enrollments.feedback,
     courseName: courses.name,
     courseLevel: courses.level,
-    enrollmentEndDate: courses.enrollmentEndDate,
   })
   .from(enrollments)
   .innerJoin(courses, eq(enrollments.courseId, courses.id))
@@ -38,18 +37,7 @@ const openCourses = await db
   .from(courses)
   .where(eq(courses.status, 'open'))
 
-const now = new Date()
-
-const availableCourses = openCourses.filter((course) => {
-  const start = course.enrollmentStartDate
-  const end = course.enrollmentEndDate
-
-  if (start === null && end === null) return true
-
-  if (start && now < start) return false
-  if (end && now > end) return false
-  return true
-})
+const availableCourses = openCourses
 ---
 
 <DashboardLayout
@@ -145,15 +133,6 @@ const availableCourses = openCourses.filter((course) => {
 
                 <div class="enrollment-card__footer">
                   <div class="enrollment-card__info">
-                    <p class="enrollment-card__date">
-                      Cierre postulaciones:{' '}
-                      {data.enrollmentEndDate
-                        ? new Date(data.enrollmentEndDate).toLocaleDateString(
-                            'es-CL',
-                            { day: 'numeric', month: 'long' },
-                          )
-                        : 'Sin fecha'}
-                    </p>
                   </div>
                   <StudentEnrollmentModal enrollment={data} client:idle />
                 </div>
@@ -191,15 +170,6 @@ const availableCourses = openCourses.filter((course) => {
                     </span>
                   </div>
 
-                  <p class="course-card__date">
-                    Cierre postulaciones:{' '}
-                    {course.enrollmentEndDate
-                      ? new Date(course.enrollmentEndDate).toLocaleDateString(
-                          'es-CL',
-                          { day: 'numeric', month: 'long' },
-                        )
-                      : 'Sin fecha'}
-                  </p>
                   {course.description && (
                     <p class="course-card__description">{course.description}</p>
                   )}

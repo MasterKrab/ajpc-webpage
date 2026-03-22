@@ -28,8 +28,6 @@ export const courses = sqliteTable('courses', {
   }).notNull(),
   year: integer('year').notNull(),
   maxStudents: integer('max_students'),
-  enrollmentStartDate: integer('enrollment_start_date', { mode: 'timestamp' }),
-  enrollmentEndDate: integer('enrollment_end_date', { mode: 'timestamp' }),
   status: text('status', { enum: ['open', 'closed'] })
     .default('closed')
     .notNull(),

@@ -29,9 +29,15 @@
     courseId: string
     initialEnrollments: EnrollmentItem[]
     sectionsList: Section[]
+    availableSchedules: Array<{ id: string; day: string; timeRange: string }>
   }
 
-  let { courseId, initialEnrollments, sectionsList }: Props = $props()
+  let {
+    courseId,
+    initialEnrollments,
+    sectionsList,
+    availableSchedules,
+  }: Props = $props()
 
   let enrollmentsList = $state<EnrollmentItem[]>(initialEnrollments)
   let enrollmentTotal = $state(initialEnrollments.length)
@@ -203,43 +209,50 @@
   {:else}
     <div class="table-wrapper">
       <table class="table">
+        <caption class="sr-only">Lista de inscripciones al curso</caption>
         <thead>
           <tr>
-            <th>Estudiante</th>
-            <th>Info</th>
-            <th>Estado</th>
-            <th>Paralelo</th>
-            <th>Notificación</th>
-            <th>Acciones</th>
+            <th class="table__header">Estudiante</th>
+            <th class="table__header">Info</th>
+            <th class="table__header">Estado</th>
+            <th class="table__header">Paralelo</th>
+            <th class="table__header">Notificación</th>
+            <th class="table__header">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {#each enrollmentsList as item}
-            <tr>
-              <td>
+            <tr class="table__row">
+              <td class="table__cell">
                 <strong>{item.enrollment.fullName}</strong><br />
                 <small class="text-muted">@{item.discordUsername}</small>
               </td>
-              <td>
+              <td class="table__cell">
                 {item.enrollment.age} años<br />
                 <small class="text-muted">{item.enrollment.email}</small>
               </td>
-              <td>
-                <span class="status-pill status--{item.enrollment.status}">
+              <td class="table__cell">
+                <span 
+                  class="status-pill status--{item.enrollment.status}"
+                  role="status"
+                >
                   {statusLabel(item.enrollment.status)}
                 </span>
               </td>
-              <td>
+              <td class="table__cell">
                 <Select
                   options={sectionOptions}
                   value={item.enrollment.sectionId || ''}
                   onChange={(value) =>
                     assignSectionToStudent(item.enrollment.id, value)}
+                  disabled={item.enrollment.status !== 'approved'}
                   extraClass="section-select"
                   placeholder=""
+                  searchable={true}
+                  aria-label="Asignar paralelo a {item.enrollment.fullName}"
                 />
               </td>
-              <td>
+              <td class="table__cell">
                 {#if item.enrollment.notifiedAt}
                   <span class="notified-at">
                     📩 {new Date(
@@ -253,6 +266,7 @@
                     loading={actionLoading === item.enrollment.id}
                     loadingText="..."
                     onclick={() => notify(item.enrollment.id)}
+                    ariaLabel="Notificar a {item.enrollment.fullName}"
                   >
                     Notificar
                   </Button>
@@ -260,8 +274,12 @@
                   <span class="text-muted">—</span>
                 {/if}
               </td>
-              <td class="actions-cell">
-                <Button size="sm" onclick={() => openEnrollmentDetail(item)}>
+              <td class="table__cell actions-cell">
+                <Button 
+                  size="sm" 
+                  onclick={() => openEnrollmentDetail(item)}
+                  ariaLabel="Ver postulación de {item.enrollment.fullName}"
+                >
                   Ver postulación
                 </Button>
               </td>
@@ -289,6 +307,7 @@
   <EnrollmentDetailModal
     isOpen={isDetailModalOpen}
     enrollment={selectedEnrollment}
+    {availableSchedules}
     onClose={() => {
       isDetailModalOpen = false
       selectedEnrollment = null
@@ -307,8 +326,8 @@
     border-collapse: collapse;
   }
 
-  .table th,
-  .table td {
+  .table__header,
+  .table__cell {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid rgba(128, 128, 128, 0.1);

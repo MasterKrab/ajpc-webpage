@@ -16,12 +16,6 @@ const [course] = await db
 
 if (!course) return Astro.redirect('/dashboard')
 
-const now = new Date()
-if (course.enrollmentStartDate && now < course.enrollmentStartDate) 
-  return Astro.redirect('/dashboard')
-
-if (course.enrollmentEndDate && now > course.enrollmentEndDate) 
-  return Astro.redirect('/dashboard')
 
 ---
 
@@ -36,7 +30,7 @@ if (course.enrollmentEndDate && now > course.enrollmentEndDate)
     client:load
     courseId={course.id}
     courseName={course.name}
-    courseSchedules={course.availableSchedules}
+    courseSchedules={course.availableSchedules ?? []}
   />
 </EnrollmentLayout>
 

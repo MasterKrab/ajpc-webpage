@@ -2,6 +2,8 @@
   import { z } from 'zod'
   import { nanoid } from 'nanoid'
   import Button from '@components/ui/Button.svelte'
+  import Select from '@components/ui/Select.svelte'
+  import MultiSelect from '@components/ui/MultiSelect.svelte'
   import { REGIONS, COMMUNES_BY_REGION, SCHOOL_TYPES } from '@lib/chileData'
 
   interface Props {
@@ -32,36 +34,49 @@
   let previousExperience = $state('')
   let motivation = $state('')
   let selectedSchedules = $state<string[]>([])
-  let acceptCommitments = $state(false)
-  let isSchedulesOpen = $state(false)
+  let acceptTerms = $state(false)
+  let acceptConduct = $state(false)
 
   let loading = $state(false)
   let success = $state(false)
   let errorMessage = $state('')
   let fieldErrors = $state<Record<string, string[]>>({})
 
-  const schema = z.object({
-    courseId: z.string().min(1),
-    age: z
-      .number({ invalid_type_error: 'Ingresa tu edad' })
-      .int()
-      .min(8, 'Edad mínima: 8')
-      .max(25, 'Edad máxima: 25'),
-    gender: z.string().min(1, 'Selecciona tu género'),
-    schoolYear: z.string().min(1, 'Selecciona tu año de estudio'),
-    schoolType: z.string().min(1, 'Selecciona el tipo de establecimiento'),
-    schoolName: z.string().optional(),
-    region: z.string().optional(),
-    commune: z.string().optional(),
-    previousExperience: z.string().max(1000).optional(),
-    motivation: z.string().max(1000).optional(),
-    selectedSchedules: z
-      .array(z.string())
-      .min(1, 'Debes seleccionar al menos un horario'),
-    acceptCommitments: z.literal(true, {
-      errorMap: () => ({ message: 'Debes aceptar los compromisos' }),
-    }),
-  })
+  const schema = z
+    .object({
+      courseId: z.string().min(1),
+      age: z
+        .number({ invalid_type_error: 'Ingresa tu edad' })
+        .int()
+        .min(8, 'Edad mínima: 8')
+        .max(25, 'Edad máxima: 25'),
+      gender: z.string().min(1, 'Selecciona tu género'),
+      schoolYear: z.string().min(1, 'Selecciona tu año de estudio'),
+      schoolType: z.string().min(1, 'Selecciona el tipo de establecimiento'),
+      schoolName: z.string().optional(),
+      region: z.string().optional(),
+      commune: z.string().optional(),
+      previousExperience: z.string().max(1000).optional(),
+      motivation: z.string().max(1000).optional(),
+      selectedSchedules: z.array(z.string()),
+      acceptTerms: z.boolean().refine((val) => val === true, {
+        message: 'Debes aceptar los términos y condiciones',
+      }),
+      acceptConduct: z.boolean().refine((val) => val === true, {
+        message: 'Debes aceptar el reglamento de convivencia',
+      }),
+    })
+    .refine(
+      (data) => {
+        if (courseSchedules && courseSchedules.length > 0)
+          return data.selectedSchedules.length > 0
+        return true
+      },
+      {
+        message: 'Debes seleccionar al menos un horario',
+        path: ['selectedSchedules'],
+      },
+    )
 
   const handleSubmit = async () => {
     errorMessage = ''
@@ -79,7 +94,8 @@
       previousExperience: previousExperience || undefined,
       motivation: motivation || undefined,
       selectedSchedules,
-      acceptCommitments,
+      acceptTerms,
+      acceptConduct,
     }
 
     const parsed = schema.safeParse(data)
@@ -143,237 +159,333 @@
       <div class="form-error" role="alert">{errorMessage}</div>
     {/if}
 
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="{formId}-age">Edad *</label>
-        <input
-          class="form-input"
-          class:form-input--error={getError('age')}
-          type="number"
-          id="{formId}-age"
-          bind:value={age}
-          min="8"
-          max="25"
-          required
-        />
-        {#if getError('age')}
-          <span class="form-hint" role="alert">{getError('age')}</span>
-        {/if}
+    <fieldset class="form-section">
+      <legend class="form-section__title">Información del Estudiante</legend>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="{formId}-age">Edad *</label>
+          <input
+            class="form-input"
+            class:form-input--error={getError('age')}
+            type="number"
+            id="{formId}-age"
+            bind:value={age}
+            min="8"
+            max="25"
+            required
+            aria-required="true"
+            aria-invalid={!!getError('age')}
+            aria-describedby={getError('age')
+              ? `${formId}-age-error`
+              : undefined}
+          />
+          {#if getError('age')}
+            <span class="form-hint" id="{formId}-age-error" role="alert"
+              >{getError('age')}</span
+            >
+          {/if}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{formId}-gender">Género *</label>
+          <select
+            class="form-input"
+            class:form-input--error={getError('gender')}
+            id="{formId}-gender"
+            bind:value={gender}
+            required
+            aria-required="true"
+            aria-invalid={!!getError('gender')}
+            aria-describedby={getError('gender')
+              ? `${formId}-gender-error`
+              : undefined}
+          >
+            <option value="" disabled>Seleccionar...</option>
+            <option value="female">Femenino</option>
+            <option value="male">Masculino</option>
+            <option value="non-binary">No binario</option>
+            <option value="other">Otro</option>
+            <option value="prefer-not-to-say">Prefiero no decir</option>
+          </select>
+          {#if getError('gender')}
+            <span class="form-hint" id="{formId}-gender-error" role="alert"
+              >{getError('gender')}</span
+            >
+          {/if}
+        </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="{formId}-gender">Género *</label>
+        <label class="form-label" for="{formId}-schoolYear"
+          >Año de estudio *</label
+        >
         <select
           class="form-input"
-          class:form-input--error={getError('gender')}
-          id="{formId}-gender"
-          bind:value={gender}
+          class:form-input--error={getError('schoolYear')}
+          id="{formId}-schoolYear"
+          bind:value={schoolYear}
           required
+          aria-required="true"
+          aria-invalid={!!getError('schoolYear')}
+          aria-describedby={getError('schoolYear')
+            ? `${formId}-schoolYear-error`
+            : undefined}
         >
           <option value="" disabled>Seleccionar...</option>
-          <option value="female">Femenino</option>
-          <option value="male">Masculino</option>
-          <option value="non-binary">No binario</option>
-          <option value="other">Otro</option>
-          <option value="prefer-not-to-say">Prefiero no decir</option>
-        </select>
-        {#if getError('gender')}
-          <span class="form-hint" role="alert">{getError('gender')}</span>
-        {/if}
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="{formId}-schoolYear">Año de estudio *</label>
-      <select
-        class="form-input"
-        class:form-input--error={getError('schoolYear')}
-        id="{formId}-schoolYear"
-        bind:value={schoolYear}
-        required
-      >
-        <option value="" disabled>Seleccionar...</option>
-        {#each schoolYears as year}
-          <option value={year}>{year}</option>
-        {/each}
-      </select>
-      {#if getError('schoolYear')}
-        <span class="form-hint" role="alert">{getError('schoolYear')}</span>
-      {/if}
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="{formId}-schoolType"
-        >Tipo de establecimiento *</label
-      >
-      <select
-        class="form-input"
-        class:form-input--error={getError('schoolType')}
-        id="{formId}-schoolType"
-        bind:value={schoolType}
-        required
-      >
-        <option value="" disabled>Seleccionar...</option>
-        {#each SCHOOL_TYPES as type}
-          <option value={type}>{type}</option>
-        {/each}
-      </select>
-      {#if getError('schoolType')}
-        <span class="form-hint" role="alert">{getError('schoolType')}</span>
-      {/if}
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="{formId}-schoolName">Nombre del colegio</label>
-      <input
-        class="form-input"
-        type="text"
-        id="{formId}-schoolName"
-        bind:value={schoolName}
-        autocomplete="organization"
-      />
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="{formId}-region">Región</label>
-        <select
-          class="form-input"
-          id="{formId}-region"
-          bind:value={region}
-          onchange={() => (commune = '')}
-        >
-          <option value="">Seleccionar...</option>
-          {#each REGIONS as r}
-            <option value={r}>{r}</option>
+          {#each schoolYears as year}
+            <option value={year}>{year}</option>
           {/each}
         </select>
+        {#if getError('schoolYear')}
+          <span class="form-hint" id="{formId}-schoolYear-error" role="alert"
+            >{getError('schoolYear')}</span
+          >
+        {/if}
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="{formId}-commune">Comuna</label>
-        <select class="form-input" id="{formId}-commune" bind:value={commune}>
-          {#if !region}
-            <option value="">Selecciona una región primero</option>
-          {:else}
-            <option value="">Seleccionar...</option>
-            {#if COMMUNES_BY_REGION[region]}
-              {#each COMMUNES_BY_REGION[region] as commune}
-                <option value={commune}>{commune}</option>
-              {/each}
-            {/if}
-          {/if}
+        <label class="form-label" for="{formId}-schoolType"
+          >Tipo de establecimiento *</label
+        >
+        <select
+          class="form-input"
+          class:form-input--error={getError('schoolType')}
+          id="{formId}-schoolType"
+          bind:value={schoolType}
+          required
+          aria-required="true"
+          aria-invalid={!!getError('schoolType')}
+          aria-describedby={getError('schoolType')
+            ? `${formId}-schoolType-error`
+            : undefined}
+        >
+          <option value="" disabled>Seleccionar...</option>
+          {#each SCHOOL_TYPES as type}
+            <option value={type}>{type}</option>
+          {/each}
         </select>
+        {#if getError('schoolType')}
+          <span class="form-hint" id="{formId}-schoolType-error" role="alert"
+            >{getError('schoolType')}</span
+          >
+        {/if}
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="form-label" for="{formId}-previousExperience"
-        >Experiencia previa en programación</label
-      >
-      <div class="form-hint-info">
-        Opcional. Cuéntanos con qué lenguajes has trabajado y qué tipo de
-        proyectos o problemas has resuelto.
+      <div class="form-group">
+        <label class="form-label" for="{formId}-schoolName"
+          >Nombre del colegio</label
+        >
+        <input
+          class="form-input"
+          type="text"
+          id="{formId}-schoolName"
+          bind:value={schoolName}
+          autocomplete="organization"
+        />
       </div>
-      <textarea
-        class="form-input form-textarea"
-        id="{formId}-previousExperience"
-        bind:value={previousExperience}
-        rows="3"
-        placeholder="Cuéntanos si has programado antes..."
-      ></textarea>
-      <span class="form-counter">{previousExperience.length}/1000</span>
-    </div>
+    </fieldset>
 
-    <div class="form-group">
-      <label class="form-label" for="{formId}-motivation"
-        >¿Por qué quieres participar?</label
-      >
-      <div class="form-hint-info">
-        Explayate sobre cuáles son tus intereses, qué esperas aprender con
-        nosotros y cualquier otro detalle que quieras destacar.
+    <fieldset class="form-section">
+      <legend class="form-section__title">Ubicación</legend>
+
+      <div class="form-group">
+        <Select
+          label="Región"
+          name="{formId}-region"
+          options={REGIONS.map((region) => ({ value: region, label: region }))}
+          bind:value={region}
+          searchable={true}
+          searchPlaceholder="Buscar región..."
+          placeholder="Seleccionar región"
+          extraClass={getError('region') ? 'form-input--error' : ''}
+          aria-describedby={getError('region')
+            ? `${formId}-region-error`
+            : undefined}
+          onChange={() => (commune = '')}
+        />
+        {#if getError('region')}
+          <span class="form-hint" id="{formId}-region-error" role="alert"
+            >{getError('region')}</span
+          >
+        {/if}
       </div>
-      <textarea
-        class="form-input form-textarea"
-        id="{formId}-motivation"
-        bind:value={motivation}
-        rows="4"
-        maxlength="1000"
-      ></textarea>
-      <span class="form-counter">{motivation.length}/1000</span>
-    </div>
+
+      <div class="form-group">
+        <Select
+          label="Comuna"
+          name="{formId}-commune"
+          options={region && COMMUNES_BY_REGION[region]
+            ? COMMUNES_BY_REGION[region].map((commune) => ({
+                value: commune,
+                label: commune,
+              }))
+            : []}
+          bind:value={commune}
+          searchable={true}
+          searchPlaceholder="Buscar comuna..."
+          placeholder={region
+            ? 'Seleccionar comuna'
+            : 'Selecciona una región primero'}
+          disabled={!region}
+          extraClass={getError('commune') ? 'form-input--error' : ''}
+          aria-describedby={getError('commune')
+            ? `${formId}-commune-error`
+            : undefined}
+        />
+        {#if getError('commune')}
+          <span class="form-hint" id="{formId}-commune-error" role="alert"
+            >{getError('commune')}</span
+          >
+        {/if}
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend class="form-section__title">Experiencia y Motivación</legend>
+
+      <div class="form-group">
+        <label class="form-label" for="{formId}-previousExperience"
+          >Experiencia previa en programación</label
+        >
+        <div class="form-hint-info" id="{formId}-prevExp-hint">
+          Opcional. Cuéntanos con qué lenguajes has trabajado y qué tipo de
+          proyectos o problemas has resuelto.
+        </div>
+        <textarea
+          class="form-input form-textarea"
+          id="{formId}-previousExperience"
+          bind:value={previousExperience}
+          rows="3"
+          placeholder="Cuéntanos si has programado antes..."
+          aria-describedby="{formId}-prevExp-hint"
+        ></textarea>
+        <span class="form-counter" aria-hidden="true"
+          >{previousExperience.length}/1000</span
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="{formId}-motivation"
+          >¿Por qué quieres participar?</label
+        >
+        <div class="form-hint-info" id="{formId}-motivation-hint">
+          Explayate sobre cuáles son tus intereses, qué esperas aprender con
+          nosotros y cualquier otro detalle que quieras destacar.
+        </div>
+        <textarea
+          class="form-input form-textarea"
+          id="{formId}-motivation"
+          bind:value={motivation}
+          rows="4"
+          maxlength="1000"
+          aria-describedby="{formId}-motivation-hint"
+        ></textarea>
+        <span class="form-counter" aria-hidden="true"
+          >{motivation.length}/1000</span
+        >
+      </div>
+    </fieldset>
 
     {#if courseSchedules && courseSchedules.length > 0}
-      <fieldset class="form-group" style="border: none; padding: 0; margin: 0;">
-        <legend class="form-label">Horarios disponibles *</legend>
+      <fieldset class="form-section">
+        <legend class="form-section__title">Horarios disponibles *</legend>
 
-        <div class="form-hint-info">
+        <div class="form-hint-info" id="{formId}-schedules-hint">
           Selecciona todos los horarios en los que tendrías disponibilidad para
           asistir a clases.
         </div>
-        <div
-          class="schedules-dropdown"
-          class:schedules-dropdown--open={isSchedulesOpen}
-        >
-          <button
-            type="button"
-            class="schedules-toggle"
-            class:form-input--error={getError('selectedSchedules')}
-            onclick={() => (isSchedulesOpen = !isSchedulesOpen)}
-          >
-            {selectedSchedules.length === 0
-              ? 'Selecciona tus horarios disponibles'
-              : `${selectedSchedules.length} horario(s) seleccionado(s)`}
-            <span class="chevron">▼</span>
-          </button>
-          {#if isSchedulesOpen}
-            <div class="schedules-menu">
-              {#each courseSchedules as schedule}
-                <label class="schedule-checkbox" for="schedule-{formId}-{schedule.id}">
-                  <input
-                    id="schedule-{formId}-{schedule.id}"
-                    type="checkbox"
-                    value={schedule.id}
-                    bind:group={selectedSchedules}
-                  />
-                  <span class="schedule-text">
-                    <strong>{schedule.day}</strong>
-                    {schedule.timeRange}
-                  </span>
-                </label>
-              {/each}
-            </div>
-          {/if}
+        <div>
+          <MultiSelect
+            id="{formId}-schedules"
+            options={courseSchedules.map((schedule) => ({
+              value: schedule.id,
+              label: schedule.day,
+              sublabel: schedule.timeRange,
+            }))}
+            bind:value={selectedSchedules}
+            placeholder="Selecciona tus horarios disponibles"
+            error={!!getError('selectedSchedules')}
+            aria-describedby={getError('selectedSchedules')
+              ? `${formId}-schedules-error ${formId}-schedules-hint`
+              : `${formId}-schedules-hint`}
+          />
         </div>
         {#if getError('selectedSchedules')}
-          <span class="form-hint" role="alert"
+          <span class="form-hint" id="{formId}-schedules-error" role="alert"
             >{getError('selectedSchedules')}</span
           >
         {/if}
       </fieldset>
     {/if}
 
-    <div class="form-group checkbox-group">
-      <label
-        class="checkbox-label"
-        class:text-error={getError('acceptCommitments')}
-        for="{formId}-acceptCommitments"
-      >
-        <input id="{formId}-acceptCommitments" type="checkbox" bind:checked={acceptCommitments} required />
-        <span>
-          Acepto los <a
-            href="/compromisos"
-            target="_blank"
-            rel="noopener noreferrer">Compromisos de Participación en la AJPC</a
-          > *
-        </span>
-      </label>
-      {#if getError('acceptCommitments')}
-        <span class="form-hint" role="alert"
-          >{getError('acceptCommitments')}</span
+    <fieldset class="form-section">
+      <legend class="form-section__title">Acuerdos Legales</legend>
+
+      <div class="form-group">
+        <label
+          class="checkbox-label"
+          class:text-error={getError('acceptTerms')}
+          for="{formId}-acceptTerms"
         >
-      {/if}
-    </div>
+          <input
+            id="{formId}-acceptTerms"
+            type="checkbox"
+            bind:checked={acceptTerms}
+            required
+            aria-required="true"
+            aria-invalid={!!getError('acceptTerms')}
+            aria-describedby={getError('acceptTerms')
+              ? `${formId}-acceptTerms-error`
+              : undefined}
+          />
+          <span>
+            He leído y acepto los <a
+              href="/terminos"
+              target="_blank"
+              rel="noopener noreferrer">Términos y Condiciones</a
+            > *
+          </span>
+        </label>
+        {#if getError('acceptTerms')}
+          <span class="form-hint" id="{formId}-acceptTerms-error" role="alert"
+            >{getError('acceptTerms')}</span
+          >
+        {/if}
+      </div>
+
+      <div class="form-group">
+        <label
+          class="checkbox-label"
+          class:text-error={getError('acceptConduct')}
+          for="{formId}-acceptConduct"
+        >
+          <input
+            id="{formId}-acceptConduct"
+            type="checkbox"
+            bind:checked={acceptConduct}
+            required
+            aria-required="true"
+            aria-invalid={!!getError('acceptConduct')}
+            aria-describedby={getError('acceptConduct')
+              ? `${formId}-acceptConduct-error`
+              : undefined}
+          />
+          <span>
+            He leído y acepto el <a
+              href="/reglamento"
+              target="_blank"
+              rel="noopener noreferrer">Reglamento de Convivencia</a
+            > *
+          </span>
+        </label>
+        {#if getError('acceptConduct')}
+          <span class="form-hint" id="{formId}-acceptConduct-error" role="alert"
+            >{getError('acceptConduct')}</span
+          >
+        {/if}
+      </div>
+    </fieldset>
 
     <Button type="submit" size="lg" {loading} loadingText="Enviando...">
       Enviar inscripción
@@ -386,12 +498,32 @@
     max-width: 40rem;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 2rem;
   }
 
   .enrollment-form__title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     margin: 0;
+    color: var(--text-color-primary);
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .form-section__title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color-light);
+    width: 100%;
   }
 
   .form-group {
@@ -403,7 +535,7 @@
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   @media screen and (max-width: 480px) {
@@ -496,77 +628,6 @@
     color: var(--text-color-secondary);
     margin-bottom: 0.25rem;
     line-height: 1.4;
-  }
-
-  .schedules-dropdown {
-    position: relative;
-    width: 100%;
-  }
-
-  .schedules-toggle {
-    width: 100%;
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
-    border: 2px solid rgba(128, 128, 128, 0.2);
-    border-radius: 0.5rem;
-    background-color: var(--foreground-color);
-    color: var(--text-color-primary);
-    font-size: 1rem;
-    cursor: pointer;
-    font-family: inherit;
-    transition: border-color 0.2s;
-  }
-
-  .schedules-dropdown--open .schedules-toggle {
-    border-color: var(--brand-primary);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-
-  .schedules-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--foreground-color);
-    border: 2px solid var(--brand-primary);
-    border-top: none;
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
-    z-index: 10;
-    max-height: 200px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-
-  .schedule-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    cursor: pointer;
-    transition: background-color 0.1s;
-    margin: 0;
-  }
-
-  .schedule-checkbox:hover {
-    background-color: rgba(128, 128, 128, 0.05);
-  }
-
-  .schedule-checkbox input {
-    margin: 0;
-  }
-
-  .checkbox-group {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
   }
 
   .checkbox-label {

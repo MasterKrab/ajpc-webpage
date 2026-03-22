@@ -13,8 +13,6 @@
     year: number
     maxStudents: number | null
     status: string
-    enrollmentStartDate: Date | null
-    enrollmentEndDate: Date | null
     availableSchedules?: { id: string; day: string; timeRange: string }[]
   }
 
@@ -28,21 +26,14 @@
   let updateLoading = $state(false)
   let isDeleteModalOpen = $state(false)
 
-  const formatDateForInput = (date: any) => {
-    if (!date) return ''
-    return new Date(date).toISOString().slice(0, 16)
-  }
-
   let editForm = $state({
-    name: course.name,
-    description: course.description || '',
-    level: course.level,
-    year: course.year,
-    maxStudents: course.maxStudents,
-    status: course.status,
-    enrollmentStartDate: formatDateForInput(course.enrollmentStartDate),
-    enrollmentEndDate: formatDateForInput(course.enrollmentEndDate),
-    availableSchedules: course.availableSchedules
+    name: course?.name || '',
+    description: course?.description || '',
+    level: course?.level || 'beginner',
+    year: course?.year || new Date().getFullYear(),
+    maxStudents: course?.maxStudents,
+    status: course?.status || 'closed',
+    availableSchedules: course?.availableSchedules
       ? [...course.availableSchedules]
       : [],
   })
@@ -51,8 +42,6 @@
     updateLoading = true
     let payload = {
       ...editForm,
-      enrollmentStartDate: editForm.enrollmentStartDate || null,
-      enrollmentEndDate: editForm.enrollmentEndDate || null,
     }
 
     const res = await fetch(`/api/admin/courses?id=${course.id}`, {
@@ -65,12 +54,6 @@
       course = {
         ...course,
         ...editForm,
-        enrollmentStartDate: payload.enrollmentStartDate
-          ? new Date(payload.enrollmentStartDate)
-          : null,
-        enrollmentEndDate: payload.enrollmentEndDate
-          ? new Date(payload.enrollmentEndDate)
-          : null,
       }
       toast.success('Curso actualizado correctamente')
     } else {
@@ -96,14 +79,14 @@
     <h2 class="settings-section__title">Editar Curso</h2>
     <form
       class="edit-form"
-      onsubmit={(e) => {
-        e.preventDefault()
+      onsubmit={(event) => {
+        event.preventDefault()
         updateCourse()
       }}
     >
       <div class="form-grid">
         <div class="form-group">
-          <label for="{formId}-name">Nombre</label>
+          <label class="form-group__label" for="{formId}-name">Nombre</label>
           <input
             id="{formId}-name"
             class="form-input"
@@ -112,7 +95,7 @@
           />
         </div>
         <div class="form-group">
-          <label for="{formId}-year">Año</label>
+          <label class="form-group__label" for="{formId}-year">Año</label>
           <input
             id="{formId}-year"
             type="number"
@@ -122,7 +105,7 @@
           />
         </div>
         <div class="form-group">
-          <label for="{formId}-level">Nivel</label>
+          <label class="form-group__label" for="{formId}-level">Nivel</label>
           <Select
             name="{formId}-level"
             options={[
@@ -135,7 +118,9 @@
           />
         </div>
         <div class="form-group">
-          <label for="{formId}-maxStudents">Máx. Estudiantes</label>
+          <label class="form-group__label" for="{formId}-maxStudents"
+            >Máx. Estudiantes</label
+          >
           <input
             id="{formId}-maxStudents"
             type="number"
@@ -144,7 +129,7 @@
           />
         </div>
         <div class="form-group">
-          <label for="{formId}-status">Estado</label>
+          <label class="form-group__label" for="{formId}-status">Estado</label>
           <Select
             name="{formId}-status"
             options={[
@@ -155,28 +140,11 @@
             placeholder=""
           />
         </div>
-        <div class="form-group">
-          <label for="{formId}-startDate">Inicio inscripciones (opcional)</label
-          >
-          <input
-            id="{formId}-startDate"
-            type="datetime-local"
-            class="form-input"
-            bind:value={editForm.enrollmentStartDate}
-          />
-        </div>
-        <div class="form-group">
-          <label for="{formId}-endDate">Fin inscripciones (opcional)</label>
-          <input
-            id="{formId}-endDate"
-            type="datetime-local"
-            class="form-input"
-            bind:value={editForm.enrollmentEndDate}
-          />
-        </div>
       </div>
       <div class="form-group">
-        <label for="{formId}-description">Descripción</label>
+        <label class="form-group__label" for="{formId}-description"
+          >Descripción</label
+        >
         <textarea
           id="{formId}-description"
           class="form-input"
@@ -213,9 +181,14 @@
                 bind:value={schedule.timeRange}
               />
               <button
-                class="remove-btn"
+                class="remove-button"
                 type="button"
-                onclick={() => editForm.availableSchedules.splice(i, 1)}
+                onclick={() => {
+                  editForm.availableSchedules =
+                    editForm.availableSchedules.filter(
+                      (_, index) => index !== i,
+                    )
+                }}
               >
                 &times;
               </button>
@@ -223,13 +196,19 @@
           {/each}
           <button
             type="button"
-            class="add-schedule-btn"
-            onclick={() =>
-              editForm.availableSchedules.push({
-                id: Math.random().toString(36).substr(2, 9),
-                day: 'Lunes',
-                timeRange: '',
-              })}
+            class="add-schedule-button"
+            onclick={(e) => {
+              e.preventDefault()
+
+              editForm.availableSchedules = [
+                ...editForm.availableSchedules,
+                {
+                  id: nanoid(6),
+                  day: 'Lunes',
+                  timeRange: '',
+                },
+              ]
+            }}
           >
             + Agregar horario
           </button>
@@ -251,7 +230,7 @@
     <h2 class="settings-section__title settings-section--danger-zone">
       Zona de Peligro
     </h2>
-    <p>
+    <p class="settings-section__description">
       Eliminar este curso borrará permanentemente todas las inscripciones
       asociadas.
     </p>
@@ -318,10 +297,6 @@
     background: rgba(220, 53, 69, 0.05);
   }
 
-  .settings-section__title--danger-zone {
-    color: var(--button-danger-bg);
-  }
-
   .schedules-list {
     display: flex;
     flex-direction: column;
@@ -338,7 +313,7 @@
     align-items: center;
   }
 
-  .remove-btn {
+  .remove-button {
     background: transparent;
     border: none;
     color: var(--color-danger);
@@ -348,11 +323,11 @@
     padding: 0 0.25rem;
   }
 
-  .remove-btn:hover {
+  .remove-button:hover {
     color: var(--color-danger-text);
   }
 
-  .add-schedule-btn {
+  .add-schedule-button {
     align-self: flex-start;
     background: transparent;
     border: 1px solid var(--brand-primary);
@@ -364,7 +339,7 @@
     font-weight: 600;
   }
 
-  .add-schedule-btn:hover {
+  .add-schedule-button:hover {
     background: var(--brand-primary);
     color: white;
   }
