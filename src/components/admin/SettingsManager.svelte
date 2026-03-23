@@ -113,6 +113,48 @@
         </div>
       </article>
 
+      <!-- User Management Settings -->
+      {#if userRole === 'sudo'}
+        <article class="setting-card">
+          <div class="setting-card__header">
+            <div class="setting-card__info">
+              <h3 class="setting-card__title" id="account-deletion-title">
+                Eliminación de Cuentas
+              </h3>
+              <p class="setting-card__desc" id="account-deletion-desc">
+                Permitir que los usuarios eliminen permanentemente su cuenta y
+                todos sus datos asociados desde su perfil. (Solo SUDO)
+              </p>
+            </div>
+            <div class="toggle-switch">
+              <input
+                type="checkbox"
+                id="allow_account_deletion"
+                class="toggle-switch__input"
+                checked={settings['allow_account_deletion'] === 'true'}
+                disabled={updating}
+                aria-labelledby="account-deletion-title"
+                aria-describedby="account-deletion-desc"
+                onchange={({ currentTarget }) =>
+                  updateSetting(
+                    'allow_account_deletion',
+                    currentTarget.checked ? 'true' : 'false',
+                  )}
+              />
+              <label
+                for="allow_account_deletion"
+                class="toggle-switch__label"
+                aria-hidden="true"
+              >
+                <span class="toggle-switch__inner toggle-switch__inner--danger"
+                ></span>
+                <span class="toggle-switch__switch"></span>
+              </label>
+            </div>
+          </div>
+        </article>
+      {/if}
+
       <!-- Maintenance Settings -->
       <article class="setting-card">
         <div class="setting-card__header">

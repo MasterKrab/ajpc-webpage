@@ -150,7 +150,7 @@
           <dd class="enrollment-modal__schedules">
             {#each enrollment.selectedSchedules as scheduleId}
               {@const schedule = enrollment.availableSchedules?.find(
-                (schedule) => sc.id === scheduleId,
+                (schedule) => schedule.id === scheduleId,
               )}
               {#if schedule}
                 <span class="enrollment-modal__schedule-badge">

@@ -42,7 +42,12 @@ export const createSession = (cookies: AstroCookies, userId: string) => {
 }
 
 export const deleteSession = (cookies: AstroCookies) => {
-  cookies.delete(SESSION_COOKIE, { path: '/' })
+  cookies.delete(SESSION_COOKIE, {
+    path: '/',
+    httpOnly: true,
+    secure: import.meta.env.PROD,
+    sameSite: 'lax',
+  })
 }
 
 export const validateSession = async (

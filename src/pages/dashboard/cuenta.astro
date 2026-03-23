@@ -1,14 +1,20 @@
 ---
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import { db } from '@db/index'
-import { users } from '@db/schema'
+import { users, settings } from '@db/schema'
 import { eq } from 'drizzle-orm'
 import UserSettings from '@components/profile/UserSettings.svelte'
+import DeleteAccountButton from '@components/profile/DeleteAccountButton.svelte'
 import { isTeacher, isAdmin } from '@lib/auth'
 
 const user = Astro.locals.user!
 
 const [fullUser] = await db.select().from(users).where(eq(users.id, user.id))
+const [accountDeletionSetting] = await db
+  .select()
+  .from(settings)
+  .where(eq(settings.key, 'allow_account_deletion'))
+const canDeleteAccount = accountDeletionSetting?.value === 'true'
 
 if (!isTeacher(user)) return Astro.redirect('/dashboard')
 ---
@@ -85,6 +91,7 @@ if (!isTeacher(user)) return Astro.redirect('/dashboard')
       <a class="settings__danger-button" href="/api/auth/logout" role="button">
         Cerrar sesión
       </a>
+      {canDeleteAccount && <DeleteAccountButton client:load />}
     </section>
   </div>
 </DashboardLayout>
