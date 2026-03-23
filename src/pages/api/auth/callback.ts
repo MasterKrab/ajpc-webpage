@@ -17,7 +17,12 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
     return new Response('Invalid OAuth state', { status: 400 })
   }
 
-  cookies.delete('discord_oauth_state', { path: '/' })
+  cookies.delete('discord_oauth_state', {
+    path: '/',
+    httpOnly: true,
+    secure: import.meta.env.PROD,
+    sameSite: 'lax',
+  })
 
   try {
     const redirectUri = new URL('/api/auth/callback', request.url).toString()
@@ -103,7 +108,7 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
         discordId: discordUser.id,
         discordUsername: discordUser.username,
         discordAvatar: discordUser.avatar,
-        email: null,
+        email: discordUser.email ?? null,
         role: role,
         name: null,
       })

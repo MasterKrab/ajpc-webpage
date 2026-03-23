@@ -11,8 +11,6 @@ const user = Astro.locals.user!
 // Redirect if already has both name and email
 if (user.name && user.email) return Astro.redirect('/dashboard')
 
-if (!isTeacher(user)) return Astro.redirect('/dashboard')
-
 const [fullUser] = await db.select().from(users).where(eq(users.id, user.id))
 
 const isAdminUser = isAdmin(user)
