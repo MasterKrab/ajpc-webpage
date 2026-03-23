@@ -45,6 +45,7 @@
   let isOpen = $state(false)
   let searchQuery = $state('')
   let container: HTMLDivElement
+  let pos = $state({ top: 0, left: 0, width: 0 })
 
   const filteredOptions = $derived(
     searchable && searchQuery
@@ -56,26 +57,61 @@
     options.find((option) => option.value === value) || null,
   )
 
+  const updatePosition = () => {
+    if (!container) return
+    
+    const rect = container.getBoundingClientRect()
+    pos = {
+      top: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+    }
+  }
+
   const handleClickOutside = (event: MouseEvent) => {
     if (!container) return
-    if (container.contains(event.target as Node)) return
-    isOpen = false
+    // Check both the container and any portaled menu
+    const target = event.target as Node
+    const isInsideContainer = container.contains(target)
+    const isInsideMenu = target instanceof HTMLElement && target.closest('.select-menu')
+    
+    if (!isInsideContainer && !isInsideMenu) {
+      isOpen = false
+    }
   }
 
   $effect(() => {
     if (isOpen) {
+      updatePosition()
       document.addEventListener('click', handleClickOutside)
+      window.addEventListener('scroll', updatePosition, true)
+      window.addEventListener('resize', updatePosition)
     } else {
       document.removeEventListener('click', handleClickOutside)
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
       searchQuery = ''
     }
-    return () => document.removeEventListener('click', handleClickOutside)
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
+    }
   })
 
   function handleSelect(optionValue: any) {
     value = optionValue
     isOpen = false
     if (onChange) onChange(value)
+  }
+
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode) node.parentNode.removeChild(node)
+      },
+    }
   }
 </script>
 
@@ -120,7 +156,14 @@
     </button>
 
     {#if isOpen}
-      <div class="select-menu" role="listbox">
+      <div 
+        class="select-menu" 
+        role="listbox" 
+        use:portal 
+        style:top="{pos.top}px" 
+        style:left="{pos.left}px" 
+        style:width="{pos.width}px"
+      >
         {#if searchable}
           <div class="select-search">
             <SearchBox
@@ -238,21 +281,20 @@
   }
 
   .select-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    position: fixed;
     background: var(--foreground-color);
     border: 1px solid var(--brand-primary);
-    border-top: none;
-    border-bottom-left-radius: 0.5rem;
-    border-bottom-right-radius: 0.5rem;
-    z-index: 100;
+    border-radius: 0.5rem;
+    z-index: 200000;
     max-height: 250px;
     display: flex;
     flex-direction: column;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+  }
+
+  .select-menu:has(.select-search) {
+    min-width: 18rem;
   }
 
   .select-search {

@@ -130,9 +130,7 @@ export const DELETE: APIRoute = async ({ locals, url }) => {
     return Response.json({ error: 'Curso no encontrado' }, { status: 404 })
   }
 
-  // Delete enrollments first (manual cascade)
-  await db.delete(enrollments).where(eq(enrollments.courseId, courseId))
-  // Delete course
+  // Delete course (will cascade to sections, modules, enrollments, etc.)
   await db.delete(courses).where(eq(courses.id, courseId))
 
   return Response.json({ success: true })

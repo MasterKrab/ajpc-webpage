@@ -139,22 +139,11 @@ export const DELETE: APIRoute = async ({ locals, url }) => {
     return Response.json({ error: 'ID requerido' }, { status: 400 })
   }
 
-  const assigned = await db
-    .select()
-    .from(enrollments)
-    .where(eq(enrollments.sectionId, sectionId))
-    .limit(1)
-
-  if (assigned.length > 0) {
-    return Response.json(
-      { error: 'No se puede eliminar una sección con estudiantes asignados' },
-      { status: 400 },
-    )
-  }
-
   await db
-    .delete(sectionDocentes)
-    .where(eq(sectionDocentes.sectionId, sectionId))
+    .update(enrollments)
+    .set({ sectionId: null })
+    .where(eq(enrollments.sectionId, sectionId))
+
   await db.delete(sections).where(eq(sections.id, sectionId))
 
   return Response.json({ success: true })

@@ -46,7 +46,7 @@ export const sections = sqliteTable('sections', {
   id: text('id').primaryKey(),
   courseId: text('course_id')
     .notNull()
-    .references(() => courses.id),
+    .references(() => courses.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
@@ -77,11 +77,13 @@ export const enrollments = sqliteTable('enrollments', {
   id: text('id').primaryKey(),
   userId: text('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   courseId: text('course_id')
     .notNull()
-    .references(() => courses.id),
-  sectionId: text('section_id').references(() => sections.id),
+    .references(() => courses.id, { onDelete: 'cascade' }),
+  sectionId: text('section_id').references(() => sections.id, {
+    onDelete: 'set null',
+  }),
   fullName: text('full_name').notNull(),
   email: text('email').notNull(),
   age: integer('age').notNull(),
@@ -124,13 +126,13 @@ export const studentObservations = sqliteTable('student_observations', {
   id: text('id').primaryKey(),
   studentId: text('student_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   teacherId: text('teacher_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   courseId: text('course_id')
     .notNull()
-    .references(() => courses.id),
+    .references(() => courses.id, { onDelete: 'cascade' }),
   observation: text('observation').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
@@ -141,7 +143,7 @@ export const modules = sqliteTable('modules', {
   id: text('id').primaryKey(),
   courseId: text('course_id')
     .notNull()
-    .references(() => courses.id),
+    .references(() => courses.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   description: text('description'),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
@@ -156,7 +158,7 @@ export const moduleMaterials = sqliteTable('module_materials', {
   id: text('id').primaryKey(),
   moduleId: text('module_id')
     .notNull()
-    .references(() => modules.id),
+    .references(() => modules.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   url: text('url').notNull(),
   type: text('type').notNull().default('link'), // 'link', 'document', 'video', etc.
@@ -169,13 +171,13 @@ export const attendance = sqliteTable('attendance', {
   id: text('id').primaryKey(),
   moduleId: text('module_id')
     .notNull()
-    .references(() => modules.id),
+    .references(() => modules.id, { onDelete: 'cascade' }),
   studentId: text('student_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   sectionId: text('section_id')
     .notNull()
-    .references(() => sections.id),
+    .references(() => sections.id, { onDelete: 'cascade' }),
   status: text('status', { enum: ['present', 'absent', 'late', 'excused'] })
     .default('present')
     .notNull(),
@@ -192,8 +194,8 @@ export const inviteCodes = sqliteTable('invite_codes', {
   role: text('role', { enum: ['student', 'docente', 'admin'] }).notNull(),
   createdBy: text('created_by')
     .notNull()
-    .references(() => users.id),
-  usedBy: text('used_by').references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
+  usedBy: text('used_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
