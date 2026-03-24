@@ -42,6 +42,8 @@
   let errorMessage = $state('')
   let fieldErrors = $state<Record<string, string[]>>({})
 
+  const TEXTAREAS_MAX_LENGTH = 1000
+
   const schema = z
     .object({
       courseId: z.string().min(1),
@@ -56,8 +58,8 @@
       schoolName: z.string().optional(),
       region: z.string().optional(),
       commune: z.string().optional(),
-      previousExperience: z.string().max(1000).optional(),
-      motivation: z.string().max(1000).optional(),
+      previousExperience: z.string().max(TEXTAREAS_MAX_LENGTH).optional(),
+      motivation: z.string().max(TEXTAREAS_MAX_LENGTH).optional(),
       selectedSchedules: z.array(z.string()),
       acceptTerms: z.boolean().refine((val) => val === true, {
         message: 'Debes aceptar los términos y condiciones',
@@ -356,13 +358,14 @@
           class="form-input form-textarea"
           id="{formId}-previousExperience"
           bind:value={previousExperience}
+          maxlength={TEXTAREAS_MAX_LENGTH}
           rows="3"
           placeholder="Cuéntanos si has programado antes..."
           aria-describedby="{formId}-prevExp-hint"
         ></textarea>
-        <span class="form-counter" aria-hidden="true"
-          >{previousExperience.length}/1000</span
-        >
+        <p class="form-counter" aria-hidden="true">
+          {previousExperience.length}/{TEXTAREAS_MAX_LENGTH}
+        </p>
       </div>
 
       <div class="form-group">
@@ -377,13 +380,13 @@
           class="form-input form-textarea"
           id="{formId}-motivation"
           bind:value={motivation}
+          maxlength={TEXTAREAS_MAX_LENGTH}
           rows="4"
-          maxlength="1000"
           aria-describedby="{formId}-motivation-hint"
         ></textarea>
-        <span class="form-counter" aria-hidden="true"
-          >{motivation.length}/1000</span
-        >
+        <p class="form-counter" aria-hidden="true">
+          {motivation.length}/{TEXTAREAS_MAX_LENGTH}
+        </p>
       </div>
     </fieldset>
 
@@ -586,8 +589,10 @@
   }
 
   .form-counter {
+    margin-top: 0;
+    margin-bottom: 0;
     font-size: 0.75rem;
-    color: var(--text-color-tertiary);
+    color: var(--text-color-secondary);
     text-align: right;
   }
 
