@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Module } from '@types/modules'
+  import type { Module } from '@app-types/modules'
   import Button from '@components/ui/Button.svelte'
 
   import editIcon from '@assets/icons/edit.svg?raw'
@@ -26,12 +26,14 @@
   }: Props = $props()
 </script>
 
-<div class="module-card">
-  <div class="module-card__sidebar"></div>
+<article class="module-card" aria-labelledby={`module-title-${module.id}`}>
+  <div class="module-card__sidebar" aria-hidden="true"></div>
   <div class="module-card__content">
     <header class="module-card__header">
       <div class="module-card__info">
-        <h3 class="module-card__title">{module.title}</h3>
+        <h3 id={`module-title-${module.id}`} class="module-card__title">
+          {module.title}
+        </h3>
         {#if module.description}
           <p class="module-card__description">{module.description}</p>
         {/if}
@@ -64,8 +66,13 @@
       {/if}
     </header>
 
-    <div class="materials-section">
-      <h4 class="materials-section__title">Materiales y Recursos</h4>
+    <section
+      class="materials-section"
+      aria-labelledby={`materials-title-${module.id}`}
+    >
+      <h4 id={`materials-title-${module.id}`} class="materials-section__title">
+        Materiales y Recursos
+      </h4>
       {#if module.materials && module.materials.length > 0}
         <ul class="materials-list">
           {#each module.materials as mat}
@@ -150,9 +157,9 @@
           Agregar Material
         </Button>
       {/if}
-    </div>
+    </section>
   </div>
-</div>
+</article>
 
 <style>
   .module-card {

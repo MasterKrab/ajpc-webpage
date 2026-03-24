@@ -3,15 +3,13 @@ import DashboardLayout from '@layouts/DashboardLayout.astro'
 import PanelNavigation from '@components/ui/PanelNavigation.astro'
 import SectionAttendanceView from '@components/dashboard/SectionAttendanceView.svelte'
 import { isTeacher, isAdmin } from '@lib/auth'
+import { getSectionData, verifyTeacherAccess } from '@lib/sections'
 import { db } from '@db/index'
 import {
-  sections,
-  courses,
   enrollments,
   users,
   modules,
   moduleMaterials,
-  sectionDocentes,
 } from '@db/schema'
 import { eq, and, sql } from 'drizzle-orm'
 
@@ -20,27 +18,12 @@ if (!isTeacher(user)) return Astro.redirect('/dashboard')
 
 const { sectionId } = Astro.params
 
-const [sectionRow] = await db
-  .select({
-    id: sections.id,
-    name: sections.name,
-    courseId: sections.courseId,
-    courseName: courses.name,
-  })
-  .from(sections)
-  .innerJoin(courses, eq(sections.courseId, courses.id))
-  .where(eq(sections.id, sectionId!))
+const sectionRow = await getSectionData(sectionId!)
 
 if (!sectionRow) return Astro.redirect('/dashboard/docente')
 
-if (!isAdmin(user)) {
-  const [access] = await db
-    .select()
-    .from(sectionDocentes)
-    .where(eq(sectionDocentes.sectionId, sectionId!))
-
-  if (!access || access.teacherId !== user.id)
-    return Astro.redirect('/dashboard/docente')
+if (!(await verifyTeacherAccess(user, sectionId!))) {
+  return Astro.redirect('/dashboard/docente')
 }
 
 const [rawModules, studentsResult] = await Promise.all([

@@ -26,6 +26,7 @@ const userEnrollments = await db
     selectedSchedules: enrollments.selectedSchedules,
     status: enrollments.status,
     feedback: enrollments.feedback,
+    sectionId: enrollments.sectionId,
     courseName: courses.name,
     courseLevel: courses.level,
     availableSchedules: courses.availableSchedules,
@@ -135,6 +136,15 @@ const availableCourses = openCourses
 
                 <div class="enrollment-card__footer">
                   <div class="enrollment-card__info">
+                    {data.status === 'approved' && data.sectionId && (
+                      <a
+                        href={`/dashboard/curso/${data.sectionId}/modules`}
+                        class="go-to-course-button"
+                        data-astro-prefetch
+                      >
+                        Ir al curso →
+                      </a>
+                    )}
                   </div>
                   <StudentEnrollmentModal enrollment={data} client:idle />
                 </div>
@@ -385,11 +395,31 @@ const availableCourses = openCourses
     border-top: 1px solid var(--border-color-light);
   }
 
-  .enrollment-card__date,
   .course-card__date {
     font-size: 0.875rem;
     color: var(--text-color-secondary);
     margin: 0;
+  }
+
+  .go-to-course-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--brand-primary);
+    color: #fff;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition:
+      background-color 0.2s,
+      transform 0.15s;
+  }
+
+  .go-to-course-button:hover {
+    background-color: var(--brand-secondary);
+    transform: translateY(-1px);
   }
 
   .course-card__date {

@@ -12,9 +12,15 @@
     courseId: string
     isAdmin: boolean
     initialModules?: Module[]
+    readOnly?: boolean
   }
 
-  let { courseId, isAdmin, initialModules = [] }: Props = $props()
+  let {
+    courseId,
+    isAdmin,
+    initialModules = [],
+    readOnly = false,
+  }: Props = $props()
 
   let modulesList = $state<Module[]>(initialModules)
   let modulesLoading = $state(initialModules.length === 0)
@@ -110,7 +116,7 @@
 
   // Only fetch on client
   onMount(() => {
-    if (initialModules.length === 0) fetchModules()
+    if (!readOnly && initialModules.length === 0) fetchModules()
   })
 </script>
 
@@ -118,7 +124,7 @@
   {#if modulesLoading}
     <Loader label="Cargando módulos..." />
   {:else if modulesList.length === 0}
-    <div class="empty-state">
+    <div class="empty-state" aria-label="Sin módulos">
       <p>No hay módulos creados aún.</p>
     </div>
   {:else}
@@ -126,7 +132,7 @@
       {#each modulesList as mod}
         <ModuleCard
           module={mod}
-          {isAdmin}
+          isAdmin={isAdmin && !readOnly}
           onAddMaterial={() => {
             selectedModule = mod
             isMaterialModalOpen = true

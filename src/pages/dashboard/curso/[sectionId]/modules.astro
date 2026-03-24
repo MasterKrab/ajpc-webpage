@@ -2,31 +2,23 @@
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import PanelNavigation from '@components/ui/PanelNavigation.astro'
 import SectionModulesView from '@components/dashboard/SectionModulesView.svelte'
-import { isTeacher, isAdmin } from '@lib/auth'
-import { getSectionData, verifyTeacherAccess } from '@lib/sections'
+import { getSectionData, verifyStudentAccess } from '@lib/sections'
 import { db } from '@db/index'
-import {
-  modules,
-  moduleMaterials,
-} from '@db/schema'
+import { modules, moduleMaterials } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
 const user = Astro.locals.user!
-if (!isTeacher(user)) return Astro.redirect('/dashboard')
+if (!user) return Astro.redirect('/login')
 
 const { sectionId } = Astro.params
 
-// Load section + course
 const sectionRow = await getSectionData(sectionId!)
 
-if (!sectionRow) return Astro.redirect('/dashboard/docente')
+if (!sectionRow) return Astro.redirect('/dashboard')
 
-// Access check
-if (!(await verifyTeacherAccess(user, sectionId!))) {
-  return Astro.redirect('/dashboard/docente')
-}
+if (!(await verifyStudentAccess(user, sectionId!)))
+  return Astro.redirect('/dashboard')
 
-// SSR modules
 const rawModules = await db
   .select()
   .from(modules)
@@ -34,18 +26,18 @@ const rawModules = await db
   .orderBy(modules.createdAt)
 
 const initialModules = (await Promise.all(
-  rawModules.map(async (m) => {
+  rawModules.map(async (module) => {
     const materials = await db
       .select()
       .from(moduleMaterials)
-      .where(eq(moduleMaterials.moduleId, m.id))
+      .where(eq(moduleMaterials.moduleId, module.id))
     return {
-      ...m,
-      createdAt: m.createdAt?.toISOString() || null,
-      updatedAt: m.updatedAt?.toISOString() || null,
-      materials: materials.map((mat) => ({
-        ...mat,
-        createdAt: mat.createdAt?.toISOString() || null,
+      ...module,
+      createdAt: module.createdAt?.toISOString() || null,
+      updatedAt: module.updatedAt?.toISOString() || null,
+      materials: materials.map((material) => ({
+        ...material,
+        createdAt: material.createdAt?.toISOString() || null,
       })),
     }
   }),
@@ -54,21 +46,15 @@ const initialModules = (await Promise.all(
 const tabs = [
   {
     id: 'modules',
-    href: `/dashboard/docente/${sectionId}/modules`,
+    href: `/dashboard/curso/${sectionId}/modules`,
     label: 'Contenidos',
     icon: '📚',
   },
   {
     id: 'attendance',
-    href: `/dashboard/docente/${sectionId}/attendance`,
+    href: `/dashboard/curso/${sectionId}/attendance`,
     label: 'Asistencia',
     icon: '📝',
-  },
-  {
-    id: 'students',
-    href: `/dashboard/docente/${sectionId}/students`,
-    label: 'Alumnos',
-    icon: '👥',
   },
 ]
 ---
@@ -86,17 +72,16 @@ const tabs = [
     ariaLabel={`Secciones de ${sectionRow.name}`}
   >
     <Fragment slot="meta">
-      <a href="/dashboard/docente" data-astro-prefetch class="back-link"
-        >← Volver</a
-      >
+      <a href="/dashboard" data-astro-prefetch class="back-link">← Volver</a>
     </Fragment>
   </PanelNavigation>
 
   <SectionModulesView
     client:load
     courseId={sectionRow.courseId}
-    isAdmin={isAdmin(user)}
+    isAdmin={false}
     initialModules={initialModules}
+    readOnly={true}
   />
 </DashboardLayout>
 

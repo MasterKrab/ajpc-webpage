@@ -1,0 +1,96 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import PanelNavigation from '@components/ui/PanelNavigation.astro'
+import StudentAttendanceView from '@components/dashboard/StudentAttendanceView.svelte'
+import { getSectionData, verifyStudentAccess } from '@lib/sections'
+import { db } from '@db/index'
+import { modules, attendance } from '@db/schema'
+import { eq, and } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!user) return Astro.redirect('/login')
+
+const { sectionId } = Astro.params
+
+const sectionRow = await getSectionData(sectionId!)
+
+if (!sectionRow) return Astro.redirect('/dashboard')
+
+if (!(await verifyStudentAccess(user, sectionId!)))
+  return Astro.redirect('/dashboard')
+
+const rawModules = await db
+  .select()
+  .from(modules)
+  .where(eq(modules.courseId, sectionRow.courseId))
+  .orderBy(modules.createdAt)
+
+const userAttendance = await db
+  .select()
+  .from(attendance)
+  .where(
+    and(
+      eq(attendance.sectionId, sectionId!),
+      eq(attendance.studentId, user.id),
+    ),
+  )
+
+const attendanceRecords = userAttendance.reduce(
+  (accumulator, current) => {
+    accumulator[current.moduleId] = current.status
+    return accumulator
+  },
+  {} as Record<string, string>,
+)
+
+const tabs = [
+  {
+    id: 'modules',
+    href: `/dashboard/curso/${sectionId}/modules`,
+    label: 'Contenidos',
+    icon: '📚',
+  },
+  {
+    id: 'attendance',
+    href: `/dashboard/curso/${sectionId}/attendance`,
+    label: 'Asistencia',
+    icon: '📝',
+  },
+]
+---
+
+<DashboardLayout
+  metadata={{
+    title: `${sectionRow.name} — Mi Asistencia`,
+    description: sectionRow.courseName,
+  }}
+>
+  <PanelNavigation
+    title={`${sectionRow.name} · ${sectionRow.courseName}`}
+    {tabs}
+    activeTab="attendance"
+    ariaLabel={`Secciones de ${sectionRow.name}`}
+  >
+    <Fragment slot="meta">
+      <a href="/dashboard" class="back-link">← Volver</a>
+    </Fragment>
+  </PanelNavigation>
+
+  <StudentAttendanceView
+    client:load
+    modules={rawModules as any}
+    attendanceRecords={attendanceRecords as any}
+  />
+</DashboardLayout>
+
+<style>
+  .back-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    transition: color 0.15s;
+  }
+  .back-link:hover {
+    color: var(--brand-primary);
+  }
+</style>

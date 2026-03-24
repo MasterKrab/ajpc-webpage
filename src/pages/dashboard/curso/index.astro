@@ -1,0 +1,168 @@
+---
+import DashboardLayout from '@layouts/DashboardLayout.astro'
+import PanelNavigation from '@components/ui/PanelNavigation.astro'
+import { db } from '@db/index'
+import { sections, enrollments, courses } from '@db/schema'
+import { eq, and } from 'drizzle-orm'
+
+const user = Astro.locals.user!
+if (!user) return Astro.redirect('/login')
+
+const studentSections = await db
+  .select({
+    id: sections.id,
+    name: sections.name,
+    courseId: sections.courseId,
+    courseName: courses.name,
+  })
+  .from(enrollments)
+  .innerJoin(sections, eq(enrollments.sectionId, sections.id))
+  .innerJoin(courses, eq(sections.courseId, courses.id))
+  .where(
+    and(eq(enrollments.userId, user.id), eq(enrollments.status, 'approved')),
+  )
+---
+
+<DashboardLayout
+  metadata={{
+    title: 'Mis Cursos',
+    description: 'Panel de paralelos del estudiante',
+  }}
+>
+  <PanelNavigation
+    title="Mis Cursos 📚"
+    tabs={[]}
+    activeTab=""
+    ariaLabel="Panel de cursos"
+  />
+
+  {
+    studentSections.length === 0 ? (
+      <section class="empty-state" aria-labelledby="empty-curso-title">
+        <div class="empty-state__icon" aria-hidden="true">
+          📚
+        </div>
+        <h2 id="empty-curso-title" class="empty-state__title">
+          No tienes cursos asignados
+        </h2>
+        <p class="empty-state__text">
+          Aún no estás asignado a ningún paralelo o tus inscripciones están
+          pendientes.
+        </p>
+      </section>
+    ) : (
+      <div class="sections-grid">
+        {studentSections.map((section: any) => (
+          <a
+            href={`/dashboard/curso/${section.id}/modules`}
+            data-astro-prefetch
+            class="section-card"
+            aria-labelledby={`curso-title-${section.id}`}
+          >
+            <article class="section-card__content">
+              <h2 id={`curso-title-${section.id}`} class="section-card__name">
+                {section.name}
+              </h2>
+              <p class="section-card__course">{section.courseName}</p>
+            </article>
+            <div class="section-card__footer" aria-hidden="true">
+              <span class="card-arrow">→</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    )
+  }
+</DashboardLayout>
+
+<style>
+  .empty-state {
+    padding: 6rem 2rem;
+    text-align: center;
+    background: var(--foreground-color);
+    border-radius: 1.5rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .empty-state__icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  .empty-state__title {
+    margin: 0 0 1rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+  }
+  .empty-state__text {
+    color: var(--text-color-secondary);
+    max-width: 450px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .sections-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .section-card {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    background: var(--foreground-color);
+    border: 1px solid var(--border-color);
+    border-left: 6px solid var(--brand-secondary);
+    border-radius: 1.25rem;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .section-card:hover {
+    transform: translateX(8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .section-card__content {
+    flex: 1;
+  }
+
+  .section-card__name {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-color-primary);
+  }
+
+  .section-card__course {
+    color: var(--text-color-secondary);
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin: 0.25rem 0 0;
+  }
+
+  .section-card__footer {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding-left: 2rem;
+    border-left: 1px solid var(--border-color);
+  }
+
+  .card-arrow {
+    font-size: 1.5rem;
+    color: var(--brand-secondary);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s;
+  }
+
+  .section-card:hover .card-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+</style>

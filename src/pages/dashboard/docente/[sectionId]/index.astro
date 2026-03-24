@@ -1,9 +1,6 @@
 ---
-import { isTeacher } from '@lib/auth'
-import { db } from '@db/index'
-import { sections, sectionDocentes } from '@db/schema'
-import { eq, and } from 'drizzle-orm'
-import { isAdmin } from '@lib/auth'
+import { isTeacher, isAdmin } from '@lib/auth'
+import { getSectionData, verifyTeacherAccess } from '@lib/sections'
 
 const user = Astro.locals.user!
 if (!isTeacher(user)) return Astro.redirect('/dashboard')
@@ -11,24 +8,12 @@ if (!isTeacher(user)) return Astro.redirect('/dashboard')
 const { sectionId } = Astro.params
 
 // Validate access
-const [section] = await db
-  .select()
-  .from(sections)
-  .where(eq(sections.id, sectionId!))
+const section = await getSectionData(sectionId!)
+
 if (!section) return Astro.redirect('/dashboard/docente')
 
-if (!isAdmin(user)) {
-  const [access] = await db
-    .select()
-    .from(sectionDocentes)
-    .where(
-      and(
-        eq(sectionDocentes.sectionId, sectionId!),
-        eq(sectionDocentes.teacherId, user.id),
-      ),
-    )
-  if (!access) return Astro.redirect('/dashboard/docente')
-}
+if (!(await verifyTeacherAccess(user, sectionId!)))
+  return Astro.redirect('/dashboard/docente')
 
 return Astro.redirect(`/dashboard/docente/${sectionId}/modules`)
 ---
