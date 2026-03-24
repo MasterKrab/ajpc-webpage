@@ -48,7 +48,7 @@
     .object({
       courseId: z.string().min(1),
       age: z
-        .number({ invalid_type_error: 'Ingresa tu edad' })
+        .number({ error: 'Ingresa tu edad' })
         .int()
         .min(8, 'Edad mínima: 8')
         .max(25, 'Edad máxima: 25'),
