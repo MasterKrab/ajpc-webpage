@@ -16,7 +16,6 @@ const [accountDeletionSetting] = await db
   .where(eq(settings.key, 'allow_account_deletion'))
 const canDeleteAccount = accountDeletionSetting?.value === 'true'
 
-if (!isTeacher(user)) return Astro.redirect('/dashboard')
 ---
 
 <DashboardLayout
