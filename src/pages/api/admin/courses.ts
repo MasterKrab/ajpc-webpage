@@ -23,8 +23,20 @@ const courseSchema = z.object({
     .optional()
     .optional()
     .default([]),
-  discordGuildId: z.string().max(30).optional().nullable(),
-  discordRoleId: z.string().max(30).optional().nullable(),
+  discordGuildId: z
+    .string()
+    .max(30)
+    .trim()
+    .regex(/^\d+$/, 'ID de servidor inválido (debe ser numérico)')
+    .optional()
+    .nullable(),
+  discordRoleId: z
+    .string()
+    .max(30)
+    .trim()
+    .regex(/^\d+$/, 'ID de rol inválido (debe ser numérico)')
+    .optional()
+    .nullable(),
 })
 
 export const GET: APIRoute = async ({ locals, url }) => {

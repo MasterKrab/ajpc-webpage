@@ -44,6 +44,11 @@ export const addMemberToGuild = async (
   nickname?: string,
   roleId?: string,
 ): Promise<{ success: boolean; error?: string }> => {
+  guildId = guildId.trim()
+  userId = userId.trim()
+
+  if (roleId) roleId = roleId.trim()
+
   const botToken = import.meta.env.DISCORD_BOT_TOKEN
   if (!botToken) {
     console.warn('DISCORD_BOT_TOKEN is not set')
@@ -123,6 +128,7 @@ export const getGuildMembers = async (
   guildId: string,
   limit = 1000,
 ): Promise<DiscordGuildMember[]> => {
+  guildId = guildId.trim()
   const botToken = import.meta.env.DISCORD_BOT_TOKEN
   if (!botToken) {
     console.warn('DISCORD_BOT_TOKEN is not set')
@@ -151,6 +157,8 @@ export const isMemberInGuild = async (
   guildId: string,
   userId: string,
 ): Promise<boolean> => {
+  guildId = guildId.trim()
+  userId = userId.trim()
   const botToken = import.meta.env.DISCORD_BOT_TOKEN
   if (!botToken) {
     console.warn('DISCORD_BOT_TOKEN is not set')
@@ -169,12 +177,13 @@ export const isMemberInGuild = async (
   return response.ok
 }
 
-
 export const updateMemberNickname = async (
   guildId: string,
   userId: string,
   nickname: string,
 ): Promise<{ success: boolean; error?: string }> => {
+  guildId = guildId.trim()
+  userId = userId.trim()
   const botToken = import.meta.env.DISCORD_BOT_TOKEN
   if (!botToken) {
     console.warn('DISCORD_BOT_TOKEN is not set')
