@@ -22,7 +22,9 @@
       previousExperience: string | null
       motivation: string | null
       selectedSchedules?: string[] | null
-      availableSchedules?: { id: string; day: string; timeRange: string }[] | null
+      availableSchedules?:
+        | { id: string; day: string; timeRange: string }[]
+        | null
     }
   }
 
@@ -154,7 +156,9 @@
               )}
               {#if schedule}
                 <span class="enrollment-modal__schedule-badge">
-                  {schedule.day}: {schedule.timeRange}
+                  {#if schedule.timeRange}
+                    {schedule.day}: {schedule.timeRange}
+                  {/if}
                 </span>
               {/if}
             {/each}
@@ -263,7 +267,7 @@
     border-radius: 0.5rem;
     white-space: pre-wrap;
   }
-  
+
   .enrollment-modal__schedules {
     display: flex;
     flex-wrap: wrap;
@@ -271,7 +275,7 @@
     margin-top: 0.25rem;
     margin-left: 0;
   }
-  
+
   .enrollment-modal__schedule-badge {
     background-color: var(--brand-primary);
     color: white;
