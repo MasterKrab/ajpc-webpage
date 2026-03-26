@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro'
 import { generateState } from 'arctic'
-import { createDiscordClient } from '@lib/discord'
+import { createDiscordClient, DISCORD_SCOPES } from '@lib/discord'
 
 export const GET: APIRoute = async ({ cookies, request }) => {
   let state = generateState()
@@ -10,7 +10,7 @@ export const GET: APIRoute = async ({ cookies, request }) => {
     state = `${state}:${inviteCode}`
   }
 
-  const scopes = ['identify', 'email']
+  const scopes = DISCORD_SCOPES
 
   const redirectUri = new URL('/api/auth/callback', request.url).toString()
   const discord = createDiscordClient(redirectUri)

@@ -5,7 +5,13 @@
   import DeleteConfirmation from '../DeleteConfirmation.svelte'
   import Button from '@components/ui/Button.svelte'
 
-  type Course = {
+  interface Schedule {
+    id: string
+    day: string
+    timeRange: string
+  }
+
+  interface Course {
     id: string
     name: string
     description: string | null
@@ -13,7 +19,9 @@
     year: number
     maxStudents: number | null
     status: string
-    availableSchedules?: { id: string; day: string; timeRange: string }[]
+    availableSchedules?: Schedule[]
+    discordGuildId: string | null
+    discordRoleId: string | null
   }
 
   interface Props {
@@ -35,41 +43,52 @@
     status: course?.status || 'closed',
     availableSchedules: course?.availableSchedules
       ? [...course.availableSchedules]
-      : [],
+      : ([] as Schedule[]),
+    discordGuildId: course?.discordGuildId || '',
+    discordRoleId: course?.discordRoleId || '',
   })
 
-  async function updateCourse() {
+  const updateCourse = async () => {
     updateLoading = true
-    let payload = {
+    const payload = {
       ...editForm,
     }
 
-    const res = await fetch(`/api/admin/courses?id=${course.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+    try {
+      const response = await fetch(`/api/admin/courses?id=${course.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-    if (res.ok) {
-      course = {
-        ...course,
-        ...editForm,
+      if (response.ok) {
+        course = {
+          ...course,
+          ...editForm,
+        }
+        toast.success('Curso actualizado correctamente')
+      } else {
+        toast.error('Error al actualizar el curso')
       }
-      toast.success('Curso actualizado correctamente')
-    } else {
-      toast.error('Error al actualizar el curso')
+    } catch (error) {
+      toast.error('Error de conexión')
+    } finally {
+      updateLoading = false
     }
-    updateLoading = false
   }
 
-  async function deleteCourse() {
-    const res = await fetch(`/api/admin/courses?id=${course.id}`, {
-      method: 'DELETE',
-    })
-    if (res.ok) {
-      window.location.href = '/admin'
-    } else {
-      toast.error('Error al eliminar el curso')
+  const deleteCourse = async () => {
+    try {
+      const response = await fetch(`/api/admin/courses?id=${course.id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        window.location.href = '/admin'
+      } else {
+        toast.error('Error al eliminar el curso')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
     }
   }
 </script>
@@ -158,7 +177,7 @@
           >Horarios Disponibles</legend
         >
         <div class="schedules-list">
-          {#each editForm.availableSchedules as schedule, i}
+          {#each editForm.availableSchedules as schedule, index}
             <div class="schedule-item">
               <Select
                 aria-label="Día de horario"
@@ -183,22 +202,23 @@
               <button
                 class="remove-button"
                 type="button"
+                aria-label="Eliminar horario {schedule.day} {schedule.timeRange}"
                 onclick={() => {
                   editForm.availableSchedules =
                     editForm.availableSchedules.filter(
-                      (_, index) => index !== i,
+                      (_, scheduleIndex) => scheduleIndex !== index,
                     )
                 }}
               >
-                &times;
+                <span aria-hidden="true">&times;</span>
               </button>
             </div>
           {/each}
           <button
             type="button"
             class="add-schedule-button"
-            onclick={(e) => {
-              e.preventDefault()
+            onclick={(event) => {
+              event.preventDefault()
 
               editForm.availableSchedules = [
                 ...editForm.availableSchedules,
@@ -213,6 +233,34 @@
             + Agregar horario
           </button>
         </div>
+      </fieldset>
+
+      <fieldset class="form-group" style="padding: 0; margin: 0; border: none;">
+        <legend class="form-label" style="font-weight: 500;">Configuración de Discord</legend>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-group__label" for="{formId}-discordGuildId">ID del Servidor (Guild ID)</label>
+            <input
+              id="{formId}-discordGuildId"
+              class="form-input"
+              placeholder="Ej: 110..."
+              bind:value={editForm.discordGuildId}
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-group__label" for="{formId}-discordRoleId">ID del Rol (Opcional)</label>
+            <input
+              id="{formId}-discordRoleId"
+              class="form-input"
+              placeholder="Ej: 110..."
+              bind:value={editForm.discordRoleId}
+              aria-describedby="{formId}-discord-help"
+            />
+          </div>
+        </div>
+        <p id="{formId}-discord-help" class="form-help-text" style="font-size: 0.8rem; color: var(--text-color-secondary); margin-top: 0.5rem;">
+          Los alumnos serán agregados automáticamente a este servidor con este rol cuando su inscripción sea aprobada.
+        </p>
       </fieldset>
 
       <Button

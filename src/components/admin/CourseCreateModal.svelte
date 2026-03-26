@@ -4,18 +4,38 @@
   import Modal from '@components/ui/Modal.svelte'
   import Button from '@components/ui/Button.svelte'
 
+  interface Schedule {
+    id: string
+    day: string
+    timeRange: string
+  }
+
+  interface CourseForm {
+    name: string
+    description: string
+    level: 'beginner' | 'intermediate' | 'advanced'
+    year: number
+    maxStudents: number | undefined
+    status: 'closed' | 'open'
+    availableSchedules: Schedule[]
+    discordGuildId: string
+    discordRoleId: string
+  }
+
   let isOpen = $state(false)
   const formId = nanoid(5)
   let loading = $state(false)
 
-  let form = $state({
+  let form = $state<CourseForm>({
     name: '',
     description: '',
-    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    level: 'beginner',
     year: new Date().getFullYear(),
-    maxStudents: undefined as number | undefined,
-    status: 'closed' as const,
-    availableSchedules: [] as { id: string; day: string; timeRange: string }[],
+    maxStudents: undefined,
+    status: 'closed',
+    availableSchedules: [],
+    discordGuildId: '',
+    discordRoleId: '',
   })
 
   const reset = () => {
@@ -27,32 +47,39 @@
       maxStudents: undefined,
       status: 'closed',
       availableSchedules: [],
+      discordGuildId: '',
+      discordRoleId: '',
     }
   }
 
   const create = async () => {
     loading = true
-    const response = await fetch('/api/admin/courses', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        maxStudents: form.maxStudents ? Number(form.maxStudents) : null,
-        status: form.status,
-      }),
-    })
+    try {
+      const response = await fetch('/api/admin/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          maxStudents: form.maxStudents ? Number(form.maxStudents) : null,
+          status: form.status,
+        }),
+      })
 
-    if (response.ok) {
-      toast.success('Curso creado correctamente')
-      isOpen = false
-      reset()
-      // Reload page to show new course
-      window.location.reload()
-    } else {
-      const data = await response.json()
-      toast.error(data.error || 'Error al crear el curso')
+      if (response.ok) {
+        toast.success('Curso creado correctamente')
+        isOpen = false
+        reset()
+        // Reload page to show new course
+        window.location.reload()
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Error al crear el curso')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
+    } finally {
+      loading = false
     }
-    loading = false
   }
 </script>
 
@@ -61,8 +88,8 @@
 <Modal {isOpen} title="Crear Nuevo Curso" onClose={() => (isOpen = false)}>
   <form
     class="course-form"
-    onsubmit={(e) => {
-      e.preventDefault()
+    onsubmit={(event) => {
+      event.preventDefault()
       create()
     }}
   >
@@ -74,6 +101,7 @@
           id="{formId}-courseName"
           bind:value={form.name}
           required
+          aria-required="true"
           placeholder="Ej: Programación Competitiva 2025"
         />
       </div>
@@ -85,6 +113,7 @@
           id="{formId}-courseYear"
           bind:value={form.year}
           required
+          aria-required="true"
         />
       </div>
     </div>
@@ -131,7 +160,7 @@
     <fieldset class="form-group" style="padding: 0; margin: 0; border: none;">
       <legend class="form-label">Horarios Disponibles</legend>
       <div class="schedules-list">
-        {#each form.availableSchedules as schedule, i}
+        {#each form.availableSchedules as schedule, index}
           <div class="schedule-item">
             <select
               aria-label="Día de horario"
@@ -155,13 +184,14 @@
             <button
               class="remove-button"
               type="button"
+              aria-label="Eliminar horario {schedule.day} {schedule.timeRange}"
               onclick={() => {
                 form.availableSchedules = form.availableSchedules.filter(
-                  (_, index) => index !== i,
+                  (_, scheduleIndex) => scheduleIndex !== index,
                 )
               }}
             >
-              &times;
+              <span aria-hidden="true">&times;</span>
             </button>
           </div>
         {/each}
@@ -185,6 +215,32 @@
         </button>
       </div>
     </fieldset>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="{formId}-discordGuildId"
+          >ID Servidor Discord</label
+        >
+        <input
+          class="form-input"
+          id="{formId}-discordGuildId"
+          bind:value={form.discordGuildId}
+          placeholder="Opcional"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{formId}-discordRoleId"
+          >ID Rol Discord</label
+        >
+        <input
+          class="form-input"
+          id="{formId}-discordRoleId"
+          bind:value={form.discordRoleId}
+          placeholder="Opcional"
+          aria-label="ID del Rol de Discord (Opcional)"
+        />
+      </div>
+    </div>
 
     <div class="modal-actions">
       <Button
@@ -298,6 +354,6 @@
 
   .add-schedule-button:hover {
     background: var(--brand-primary);
-    color: white;
+    color: var(--text-color-primary);
   }
 </style>

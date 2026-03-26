@@ -1,5 +1,6 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
+  import { onMount } from 'svelte'
   import Select from '@components/ui/Select.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
@@ -10,7 +11,7 @@
   import Button from '@components/ui/Button.svelte'
   import type { Enrollment } from '@db/schema'
 
-  type EnrollmentItem = {
+  interface EnrollmentItem {
     enrollment: Enrollment & {
       notifiedAt: Date | null
       sectionId: string | null
@@ -19,7 +20,7 @@
     discordUsername: string
   }
 
-  type Section = {
+  interface Section {
     id: string
     courseId: string
     name: string
@@ -58,23 +59,30 @@
 
   const sectionOptions = $derived([
     { value: '', label: 'Sin asignar' },
-    ...sectionsList.map((s) => ({ value: s.id, label: s.name })),
+    ...sectionsList.map((section) => ({ value: section.id, label: section.name })),
   ])
 
-  async function refreshEnrollments(page = 1, append = false) {
+  const refreshEnrollments = async (page = 1, append = false) => {
     if (!append) enrollmentLoading = true
-    const response = await fetch(
-      `/api/admin/inscripciones?courseId=${courseId}&page=${page}&limit=${ENROLLMENTS_PER_PAGE}&search=${studentSearch}`,
-    )
-    const data = await response.json()
+    try {
+      const response = await fetch(
+        `/api/admin/inscripciones?courseId=${courseId}&page=${page}&limit=${ENROLLMENTS_PER_PAGE}&search=${studentSearch}`,
+      )
+      const data = await response.json()
 
-    if (append)
-      enrollmentsList = [...enrollmentsList, ...(data.enrollments || [])]
-    else enrollmentsList = data.enrollments || []
+      if (append) {
+        enrollmentsList = [...enrollmentsList, ...(data.enrollments || [])]
+      } else {
+        enrollmentsList = data.enrollments || []
+      }
 
-    enrollmentTotal = data.total || 0
-    enrollmentPage = page
-    enrollmentLoading = false
+      enrollmentTotal = data.total || 0
+      enrollmentPage = page
+    } catch (error) {
+      toast.error('Error al cargar inscripciones')
+    } finally {
+      enrollmentLoading = false
+    }
   }
 
   let searchTimeout: any
@@ -87,50 +95,63 @@
     }
   })
 
-  async function updateEnrollment(
-    id: string,
+  const updateEnrollment = async (
+    enrollmentId: string,
     status: 'approved' | 'rejected' | 'pending',
     notes?: string,
     feedback?: string,
-  ) {
-    await fetch(`/api/admin/inscripciones?id=${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status,
-        adminNotes: notes,
-        feedback,
-      }),
-    })
-    await refreshEnrollments(1, false)
-  }
-
-  async function notify(enrollmentId?: string) {
-    actionLoading = enrollmentId || 'batch'
-    const res = await fetch('/api/admin/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        enrollmentId,
-        courseId: enrollmentId ? undefined : courseId,
-      }),
-    })
-
-    if (res.ok) {
-      const data = await res.json()
-      toast.success(
-        data.count
-          ? `Se enviaron ${data.count} notificaciones.`
-          : 'Notificación enviada.',
-      )
-      await refreshEnrollments(1, false)
-    } else {
-      toast.error('Error al enviar notificaciones')
+  ) => {
+    try {
+      const response = await fetch(`/api/admin/inscripciones?id=${enrollmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status,
+          adminNotes: notes,
+          feedback,
+        }),
+      })
+      if (response.ok) {
+        await refreshEnrollments(1, false)
+      } else {
+        toast.error('Error al actualizar inscripción')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
     }
-    actionLoading = null
   }
 
-  function openEnrollmentDetail(item: EnrollmentItem) {
+  const notify = async (enrollmentId?: string) => {
+    actionLoading = enrollmentId || 'batch'
+    try {
+      const response = await fetch('/api/admin/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enrollmentId,
+          courseId: enrollmentId ? undefined : courseId,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(
+          data.count
+            ? `Se enviaron ${data.count} notificaciones.`
+            : 'Notificación enviada.',
+        )
+        await refreshEnrollments(1, false)
+      } else {
+        toast.error('Error al enviar notificaciones')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
+    } finally {
+      actionLoading = null
+    }
+  }
+
+  const openEnrollmentDetail = (item: EnrollmentItem) => {
     selectedEnrollment = {
       ...item.enrollment,
       courseName: item.courseName,
@@ -139,29 +160,33 @@
     isDetailModalOpen = true
   }
 
-  async function assignSectionToStudent(
+  const assignSectionToStudent = async (
     enrollmentId: string,
     sectionId: string,
-  ) {
-    const res = await fetch(`/api/admin/inscripciones?id=${enrollmentId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionId: sectionId || null }),
-    })
-
-    if (res.ok) {
-      toast.success('Paralelo asignado')
-      enrollmentsList = enrollmentsList.map((item) => {
-        if (item.enrollment.id === enrollmentId) {
-          return {
-            ...item,
-            enrollment: { ...item.enrollment, sectionId: sectionId || null },
-          }
-        }
-        return item
+  ) => {
+    try {
+      const response = await fetch(`/api/admin/inscripciones?id=${enrollmentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionId: sectionId || null }),
       })
-    } else {
-      toast.error('Error al asignar paralelo')
+
+      if (response.ok) {
+        toast.success('Paralelo asignado')
+        enrollmentsList = enrollmentsList.map((item) => {
+          if (item.enrollment.id === enrollmentId) {
+            return {
+              ...item,
+              enrollment: { ...item.enrollment, sectionId: sectionId || null },
+            }
+          }
+          return item
+        })
+      } else {
+        toast.error('Error al asignar paralelo')
+      }
+    } catch (error) {
+      toast.error('Error de conexión')
     }
   }
 
@@ -187,7 +212,7 @@
   {/snippet}
 </SubHeader>
 
-{#if enrollmentsList.some((e) => !e.enrollment.notifiedAt && e.enrollment.status !== 'pending')}
+{#if enrollmentsList.some((item) => !item.enrollment.notifiedAt && item.enrollment.status !== 'pending')}
   <div class="pending-notice">
     <span>Hay notificaciones pendientes para este curso.</span>
     <Button
@@ -212,12 +237,12 @@
         <caption class="sr-only">Lista de inscripciones al curso</caption>
         <thead>
           <tr>
-            <th class="table__header">Estudiante</th>
-            <th class="table__header">Info</th>
-            <th class="table__header">Estado</th>
-            <th class="table__header">Paralelo</th>
-            <th class="table__header">Notificación</th>
-            <th class="table__header">Acciones</th>
+            <th scope="col" class="table__header">Estudiante</th>
+            <th scope="col" class="table__header">Info</th>
+            <th scope="col" class="table__header">Estado</th>
+            <th scope="col" class="table__header">Paralelo</th>
+            <th scope="col" class="table__header">Notificación</th>
+            <th scope="col" class="table__header">Acciones</th>
           </tr>
         </thead>
         <tbody>

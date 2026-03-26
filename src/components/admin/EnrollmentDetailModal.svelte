@@ -1,7 +1,7 @@
 <script lang="ts">
   import Modal from '@components/ui/Modal.svelte'
 
-  interface EnrollmentType {
+  interface Enrollment {
     id: string
     fullName: string
     email: string
@@ -21,16 +21,22 @@
     discordUsername?: string
   }
 
+  interface Schedule {
+    id: string
+    day: string
+    timeRange: string
+  }
+
   interface Props {
-    enrollment: EnrollmentType
+    enrollment: Enrollment
     isOpen: boolean
-    availableSchedules: Array<{ id: string; day: string; timeRange: string }>
+    availableSchedules: Schedule[]
     onClose: () => void
     onStatusChange: (
-      id: string,
+      enrollmentId: string,
       status: 'approved' | 'rejected' | 'pending',
-      notes?: string,
-      feedback?: string,
+      adminNotes?: string,
+      studentFeedback?: string,
     ) => Promise<void>
   }
 
@@ -42,25 +48,25 @@
     onStatusChange,
   }: Props = $props()
 
-  let notes = $state(enrollment.adminNotes || '')
-  let feedback = $state(enrollment.feedback || '')
+  let adminNotes = $state(enrollment.adminNotes || '')
+  let studentFeedback = $state(enrollment.feedback || '')
   let isLoading = $state(false)
 
   $effect(() => {
     if (isOpen) {
-      notes = enrollment.adminNotes || ''
-      feedback = enrollment.feedback || ''
+      adminNotes = enrollment.adminNotes || ''
+      studentFeedback = enrollment.feedback || ''
     }
   })
 
-  async function handleAction(status: 'approved' | 'rejected' | 'pending') {
+  const handleAction = async (status: 'approved' | 'rejected' | 'pending') => {
     isLoading = true
-    await onStatusChange(enrollment.id, status, notes, feedback)
+    await onStatusChange(enrollment.id, status, adminNotes, studentFeedback)
     isLoading = false
     onClose()
   }
 
-  const genderLabel = (gender: string) => {
+  const getGenderLabel = (gender: string) => {
     switch (gender) {
       case 'male':
         return 'Masculino'
@@ -77,7 +83,7 @@
     }
   }
 
-  const statusLabel = (status: string) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pending':
         return '⏳ Pendiente'
@@ -100,7 +106,7 @@
         @{enrollment.discordUsername || 'Usuario'}
       </p>
       <span class="status-badge status--{enrollment.status}" role="status">
-        {statusLabel(enrollment.status)}
+        {getStatusLabel(enrollment.status)}
       </span>
     </div>
 
@@ -112,7 +118,7 @@
 
       <div class="field-group">
         <dt class="detail-grid__label">Edad / Género</dt>
-        <dd class="detail-grid__value">{enrollment.age} años · {genderLabel(enrollment.gender)}</dd>
+        <dd class="detail-grid__value">{enrollment.age} años · {getGenderLabel(enrollment.gender)}</dd>
       </div>
 
       <div class="field-group">
@@ -147,13 +153,13 @@
         <div class="field-group full-width">
           <dt class="detail-grid__label">Horarios Seleccionados</dt>
           <dd class="detail-grid__value schedules-badges">
-            {#each enrollment.selectedSchedules as scheduleId}
-              {@const schedule = availableSchedules.find(
-                (schedule) => schedule.id === scheduleId,
+            {#each enrollment.selectedSchedules as selectionId}
+              {@const currentSchedule = availableSchedules.find(
+                (availableSchedule) => availableSchedule.id === selectionId,
               )}
-              {#if schedule}
+              {#if currentSchedule}
                 <span class="schedule-badge">
-                  {schedule.day} · {schedule.timeRange}
+                  {currentSchedule.day} · {currentSchedule.timeRange}
                 </span>
               {/if}
             {/each}
@@ -172,7 +178,7 @@
         <textarea
           id="feedback"
           class="notes-area"
-          bind:value={feedback}
+          bind:value={studentFeedback}
           placeholder="Escribe una razón o feedback para el estudiante..."
           rows="3"
           aria-describedby="feedback-hint"
@@ -184,7 +190,7 @@
         <textarea
           id="admin-notes"
           class="notes-area"
-          bind:value={notes}
+          bind:value={adminNotes}
           placeholder="Escribe una nota interna..."
           rows="3"
         ></textarea>

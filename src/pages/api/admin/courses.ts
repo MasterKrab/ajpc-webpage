@@ -21,7 +21,10 @@ const courseSchema = z.object({
       }),
     )
     .optional()
+    .optional()
     .default([]),
+  discordGuildId: z.string().max(30).optional().nullable(),
+  discordRoleId: z.string().max(30).optional().nullable(),
 })
 
 export const GET: APIRoute = async ({ locals, url }) => {
@@ -105,6 +108,8 @@ export const PATCH: APIRoute = async ({ locals, request, url }) => {
     .set({
       ...parsed.data,
       maxStudents: parsed.data.maxStudents ?? null,
+      discordGuildId: parsed.data.discordGuildId ?? null,
+      discordRoleId: parsed.data.discordRoleId ?? null,
     })
     .where(eq(courses.id, courseId))
 

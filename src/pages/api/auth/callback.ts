@@ -61,6 +61,9 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
       const updateData: any = {
         discordUsername: discordUser.username,
         discordAvatar: discordUser.avatar,
+        discordAccessToken: tokens.accessToken(),
+        discordRefreshToken: tokens.refreshToken(),
+        discordTokenExpiresAt: tokens.accessTokenExpiresAt(),
         email: existingUser.email,
         updatedAt: new Date(),
       }
@@ -108,6 +111,9 @@ export const GET: APIRoute = async ({ url, cookies, request }) => {
         discordId: discordUser.id,
         discordUsername: discordUser.username,
         discordAvatar: discordUser.avatar,
+        discordAccessToken: tokens.accessToken(),
+        discordRefreshToken: tokens.refreshToken(),
+        discordTokenExpiresAt: tokens.accessTokenExpiresAt(),
         email: discordUser.email ?? null,
         role: role,
         name: null,

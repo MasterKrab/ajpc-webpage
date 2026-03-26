@@ -34,6 +34,11 @@ const tabs = [
     href: `/admin/cursos/${course.id}/modulos`,
   },
   {
+    id: 'discord',
+    label: 'Discord',
+    href: `/admin/cursos/${course.id}/discord`,
+  },
+  {
     id: 'settings',
     label: 'Configuración',
     href: `/admin/cursos/${course.id}/configuracion`,
@@ -54,7 +59,7 @@ const levelLabel = (level: string) => {
 }
 ---
 
-<PanelHeader title={course.name} onBack="window.history.back()">
+<PanelHeader title={course.name}>
   <div slot="extra" class="course-header__badges">
     <span class="badge badge--level">{levelLabel(course.level)}</span>
     <span class="badge badge--year">{course.year}</span>
@@ -63,21 +68,24 @@ const levelLabel = (level: string) => {
     </span>
   </div>
 
-  <div class="tabs-container">
+  <nav class="tabs-container" aria-label="Navegación del curso">
     {
       tabs.map((tab) => (
         <a
           href={tab.href}
           class={`tab-item ${activeTab === tab.id ? 'is-active' : ''}`}
+          aria-current={activeTab === tab.id ? 'page' : undefined}
         >
           {tab.label}
           {tab.count !== undefined && tab.count > 0 && (
-            <span class="tab-count">{tab.count}</span>
+            <span class="tab-count" aria-label="{tab.count} inscripciones">
+              {tab.count}
+            </span>
           )}
         </a>
       ))
     }
-  </div>
+  </nav>
 </PanelHeader>
 
 <style>

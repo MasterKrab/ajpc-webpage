@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro'
 import { isAdmin, isSudo } from '@lib/auth'
 import { db } from '@db/index'
 import { enrollments, courses, users } from '@db/schema'
+import { addMemberToGuild } from '@lib/discord'
 import { eq, and, sql } from 'drizzle-orm'
 import { z } from 'zod'
 

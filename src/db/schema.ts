@@ -11,6 +11,11 @@ export const users = sqliteTable('users', {
   role: text('role', { enum: ['student', 'docente', 'admin', 'sudo'] })
     .default('student')
     .notNull(),
+  discordAccessToken: text('discord_access_token'),
+  discordRefreshToken: text('discord_refresh_token'),
+  discordTokenExpiresAt: integer('discord_token_expires_at', {
+    mode: 'timestamp',
+  }),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
@@ -34,6 +39,8 @@ export const courses = sqliteTable('courses', {
   availableSchedules: text('available_schedules', { mode: 'json' })
     .$type<Array<{ id: string; day: string; timeRange: string }>>()
     .default([]),
+  discordGuildId: text('discord_guild_id'),
+  discordRoleId: text('discord_role_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
