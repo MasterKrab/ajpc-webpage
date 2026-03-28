@@ -59,7 +59,7 @@
 
   const updatePosition = () => {
     if (!container) return
-    
+
     const rect = container.getBoundingClientRect()
     pos = {
       top: rect.bottom,
@@ -73,8 +73,9 @@
     // Check both the container and any portaled menu
     const target = event.target as Node
     const isInsideContainer = container.contains(target)
-    const isInsideMenu = target instanceof HTMLElement && target.closest('.select-menu')
-    
+    const isInsideMenu =
+      target instanceof HTMLElement && target.closest('.select-menu')
+
     if (!isInsideContainer && !isInsideMenu) {
       isOpen = false
     }
@@ -156,12 +157,12 @@
     </button>
 
     {#if isOpen}
-      <div 
-        class="select-menu" 
-        role="listbox" 
-        use:portal 
-        style:top="{pos.top}px" 
-        style:left="{pos.left}px" 
+      <div
+        class="select-menu"
+        role="listbox"
+        use:portal
+        style:top="{pos.top}px"
+        style:left="{pos.left}px"
         style:width="{pos.width}px"
       >
         {#if searchable}
@@ -237,7 +238,6 @@
     color: var(--text-color-primary);
     background-color: var(--foreground-color);
     border: 1px solid var(--border-color, rgba(128, 128, 128, 0.4));
-    border-radius: 0.25rem;
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: var(--shadow-sm);
@@ -284,7 +284,7 @@
     position: fixed;
     background: var(--foreground-color);
     border: 1px solid var(--brand-primary);
-    border-radius: 0.5rem;
+    border-top-color: transparent;
     z-index: 200000;
     max-height: 250px;
     display: flex;

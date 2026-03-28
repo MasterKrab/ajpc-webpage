@@ -5,6 +5,12 @@
   import Select from '@components/ui/Select.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import trashIcon from '@assets/icons/trash.svg?raw'
+  import Table from '@components/tables/Table.svelte'
+  import TableHead from '@components/tables/TableHead.svelte'
+  import TableBody from '@components/tables/TableBody.svelte'
+  import TableRow from '@components/tables/TableRow.svelte'
+  import TableCell from '@components/tables/TableCell.svelte'
+  import TableHeader from '@components/tables/TableHeader.svelte'
 
   type Invite = {
     code: string
@@ -182,63 +188,61 @@
       <p>No hay invitaciones generadas aún.</p>
     </div>
   {:else}
-    <div class="table-wrapper">
-      <table class="invite-table">
-        <thead>
-          <tr>
-            <th>Rol</th>
-            <th>Link / Código</th>
-            <th>Usos</th>
-            <th>Creador</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each invites as invite}
-            <tr>
-              <td>
-                <span class="role-badge role-badge--{invite.role}">
-                  {roleLabel(invite.role)}
-                </span>
-              </td>
-              <td>
-                <code class="code-text">{invite.code}</code>
-              </td>
-              <td>
-                <div class="usage-info">
-                  <span class="usage-text"
-                    >{invite.uses} / {invite.maxUses}</span
-                  >
-                  <div class="usage-bar">
-                    <div
-                      class="usage-bar-fill"
-                      style:width="{(invite.uses / invite.maxUses) * 100}%"
-                      class:usage-bar-fill--full={invite.uses >= invite.maxUses}
-                    ></div>
-                  </div>
+    <Table ariaLabel="Tabla de invitaciones">
+      <TableHead>
+        <TableRow>
+          <TableHeader>Rol</TableHeader>
+          <TableHeader>Link / Código</TableHeader>
+          <TableHeader>Usos</TableHeader>
+          <TableHeader>Creador</TableHeader>
+          <TableHeader>Fecha</TableHeader>
+          <TableHeader>Acciones</TableHeader>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {#each invites as invite}
+          <TableRow>
+            <TableCell>
+              <span class="role-badge role-badge--{invite.role}">
+                {roleLabel(invite.role)}
+              </span>
+            </TableCell>
+            <TableCell>
+              <code class="code-text">{invite.code}</code>
+            </TableCell>
+            <TableCell>
+              <div class="usage-info">
+                <span class="usage-text">{invite.uses} / {invite.maxUses}</span>
+                <div class="usage-bar">
+                  <div
+                    class="usage-bar-fill"
+                    style:width="{(invite.uses / invite.maxUses) * 100}%"
+                    class:usage-bar-fill--full={invite.uses >= invite.maxUses}
+                  ></div>
                 </div>
-              </td>
-              <td>
-                <div class="creator-info">
-                  {#if invite.creatorDiscordId && invite.creatorAvatar}
-                    <img
-                      src="https://cdn.discordapp.com/avatars/{invite.creatorDiscordId}/{invite.creatorAvatar}.png?size=32"
-                      alt=""
-                      class="creator-avatar"
-                    />
-                  {/if}
-                  <span class="creator-name">
-                    @{invite.creatorUsername || 'Sistema'}
-                  </span>
-                </div>
-              </td>
-              <td>
-                <span class="date-text">
-                  {new Date(invite.createdAt).toLocaleDateString()}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div class="creator-info">
+                {#if invite.creatorDiscordId && invite.creatorAvatar}
+                  <img
+                    src="https://cdn.discordapp.com/avatars/{invite.creatorDiscordId}/{invite.creatorAvatar}.png?size=32"
+                    alt=""
+                    class="creator-avatar"
+                  />
+                {/if}
+                <span class="creator-name">
+                  @{invite.creatorUsername || 'Sistema'}
                 </span>
-              </td>
-              <td>
+              </div>
+            </TableCell>
+            <TableCell>
+              <span class="date-text">
+                {new Date(invite.createdAt).toLocaleDateString()}
+              </span>
+            </TableCell>
+            <TableCell>
+              <div class="actions-group">
                 {#if invite.uses < invite.maxUses}
                   <button
                     class="button button--small"
@@ -259,12 +263,12 @@
                     <span class="icon-trash">{@html trashIcon}</span>
                   {/if}
                 </button>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+              </div>
+            </TableCell>
+          </TableRow>
+        {/each}
+      </TableBody>
+    </Table>
   {/if}
 </div>
 
@@ -370,31 +374,6 @@
     background: rgba(128, 128, 128, 0.2);
   }
 
-  .table-wrapper {
-    overflow-x: auto;
-  }
-
-  .invite-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .invite-table th,
-  .invite-table td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-  }
-
-  .invite-table th {
-    color: var(--text-color-secondary);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-  }
-
   .role-badge {
     padding: 0.2rem 0.6rem;
     border-radius: 1rem;
@@ -490,11 +469,6 @@
     border: 2px dashed rgba(128, 128, 128, 0.1);
   }
 
-  .text-muted {
-    font-size: 0.75rem;
-    color: var(--text-color-secondary);
-  }
-
   .button--danger {
     background-color: var(
       --color-danger-background-color,
@@ -513,6 +487,11 @@
     justify-content: center;
     width: 1rem;
     height: 1rem;
+  }
+
+  .actions-group {
+    display: flex;
+    gap: 0.5rem;
   }
 
   :global(.icon-trash svg) {

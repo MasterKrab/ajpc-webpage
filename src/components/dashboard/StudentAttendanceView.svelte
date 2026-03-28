@@ -2,6 +2,12 @@
   import type { Module } from '@app-types/modules'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
+  import Table from '@components/tables/Table.svelte'
+  import TableHead from '@components/tables/TableHead.svelte'
+  import TableBody from '@components/tables/TableBody.svelte'
+  import TableRow from '@components/tables/TableRow.svelte'
+  import TableCell from '@components/tables/TableCell.svelte'
+  import TableHeader from '@components/tables/TableHeader.svelte'
 
   interface Props {
     modules: Module[]
@@ -27,45 +33,43 @@
         <p>Aún no hay módulos registrados en este curso.</p>
       </div>
     {:else}
-      <div class="table-wrapper">
-        <table class="user-table">
-          <thead>
-            <tr class="user-table__tr">
-              <th class="user-table__th">Módulo</th>
-              <th class="user-table__th">Fecha</th>
-              <th class="user-table__th">Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each modules as mod}
-              {@const status = attendanceRecords[mod.id]}
-              <tr class="user-table__tr">
-                <td class="user-table__td column-title">{mod.title}</td>
-                <td class="user-table__td column-date">
-                  {mod.createdAt
-                    ? new Date(mod.createdAt).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    : '-'}
-                </td>
-                <td class="user-table__td column-status">
-                  {#if status && statusLabels[status]}
-                    <span class="status-badge {statusLabels[status].class}">
-                      {statusLabels[status].label}
-                    </span>
-                  {:else}
-                    <span class="status-badge status--pending"
-                      >Sin registrar</span
-                    >
-                  {/if}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+      <Table ariaLabel="Tabla de mi asistencia">
+        <TableHead>
+          <TableRow>
+            <TableHeader>Módulo</TableHeader>
+            <TableHeader>Fecha</TableHeader>
+            <TableHeader>Estado</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {#each modules as mod}
+            {@const status = attendanceRecords[mod.id]}
+            <TableRow>
+              <TableCell class="column-title">{mod.title}</TableCell>
+              <TableCell class="column-date">
+                {mod.createdAt
+                  ? new Date(mod.createdAt).toLocaleDateString('es-ES', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : '-'}
+              </TableCell>
+              <TableCell class="column-status">
+                {#if status && statusLabels[status]}
+                  <span class="status-badge {statusLabels[status].class}">
+                    {statusLabels[status].label}
+                  </span>
+                {:else}
+                  <span class="status-badge status--pending"
+                    >Sin registrar</span
+                  >
+                {/if}
+              </TableCell>
+            </TableRow>
+          {/each}
+        </TableBody>
+      </Table>
     {/if}
   </DashboardContent>
 </div>
@@ -81,54 +85,6 @@
     padding: 3rem;
     text-align: center;
     color: var(--text-color-secondary);
-  }
-
-  .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    background: var(--foreground-color);
-    box-shadow: var(--shadow-sm);
-    border-radius: 0.75rem;
-  }
-
-  .user-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-    text-align: left;
-  }
-
-  .user-table__td,
-  .user-table__th {
-    min-width: 12.5rem;
-  }
-
-  .user-table__th {
-    padding: 1rem 1.25rem;
-    font-weight: 700;
-    color: var(--text-color-secondary);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 0.125rem solid
-      var(--border-color-light, rgba(128, 128, 128, 0.1));
-    background: rgba(var(--brand-primary-rgb), 0.02);
-  }
-
-  .user-table__td {
-    padding: 1rem 1.25rem;
-    border-bottom: 0.063rem solid
-      var(--border-color-light, rgba(128, 128, 128, 0.1));
-    color: var(--text-color-primary);
-    vertical-align: middle;
-  }
-
-  .user-table__tr:last-child .user-table__td {
-    border-bottom: none;
-  }
-
-  .user-table__tr:hover {
-    background-color: rgba(var(--brand-primary-rgb), 0.03);
   }
 
   .column-title {

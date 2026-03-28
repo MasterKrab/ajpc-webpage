@@ -8,6 +8,12 @@
   import RoleBadge from '@components/ui/RoleBadge.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import type { Snippet } from 'svelte'
+  import Table from '@components/tables/Table.svelte'
+  import TableHead from '@components/tables/TableHead.svelte'
+  import TableBody from '@components/tables/TableBody.svelte'
+  import TableRow from '@components/tables/TableRow.svelte'
+  import TableCell from '@components/tables/TableCell.svelte'
+  import TableHeader from '@components/tables/TableHeader.svelte'
 
   interface Props {
     users: T[]
@@ -18,6 +24,7 @@
     showRole?: boolean
     actions?: Snippet<[T]>
     emptyMessage?: string
+    ariaLabel?: string
   }
 
   let {
@@ -29,6 +36,7 @@
     showRole = false,
     actions,
     emptyMessage = 'No se encontraron usuarios.',
+    ariaLabel = 'Tabla de usuarios',
   }: Props = $props()
 </script>
 
@@ -40,70 +48,66 @@
       <p>{emptyMessage}</p>
     </div>
   {:else}
-    <div class="table-wrapper">
-      <table class="user-table">
-        <thead>
-          <tr class="user-table__tr">
-            <th class="user-table__th">Usuario</th>
-            <th class="user-table__th">Nombre</th>
+    <Table {ariaLabel}>
+      <TableHead>
+        <TableRow>
+          <TableHeader>Usuario</TableHeader>
+          <TableHeader>Nombre</TableHeader>
+          {#if showEmail}
+            <TableHeader>Email</TableHeader>
+          {/if}
+          {#if showRole}
+            <TableHeader>Rol</TableHeader>
+          {/if}
+          {#if actions}
+            <TableHeader>Acciones</TableHeader>
+          {/if}
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {#each users as user (user.id)}
+          <TableRow>
+            <TableCell>
+              <div class="user-cell">
+                {#if user.discordAvatar && user.discordId}
+                  <img
+                    class="user-cell__avatar"
+                    src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png?size=64`}
+                    alt=""
+                    width="32"
+                    height="32"
+                    loading="lazy"
+                  />
+                {:else}
+                  <div class="user-cell__avatar-placeholder">
+                    {user.discordUsername?.[0]?.toUpperCase() || '?'}
+                  </div>
+                {/if}
+                <span class="user-cell__username">@{user.discordUsername}</span>
+              </div>
+            </TableCell>
+            <TableCell>
+              <span class="user-name">{user.name || '—'}</span>
+            </TableCell>
             {#if showEmail}
-              <th class="user-table__th">Email</th>
+              <TableCell>
+                <span class="user-email">{user.email || '—'}</span>
+              </TableCell>
             {/if}
             {#if showRole}
-              <th class="user-table__th">Rol</th>
+              <TableCell>
+                <RoleBadge role={user.role || ''} />
+              </TableCell>
             {/if}
             {#if actions}
-              <th class="user-table__th">Acciones</th>
+              <TableCell class="user-table__td--actions">
+                {@render actions(user)}
+              </TableCell>
             {/if}
-          </tr>
-        </thead>
-        <tbody>
-          {#each users as user (user.id)}
-            <tr class="user-table__tr">
-              <td class="user-table__td">
-                <div class="user-cell">
-                  {#if user.discordAvatar && user.discordId}
-                    <img
-                      class="user-cell__avatar"
-                      src={`https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png?size=64`}
-                      alt=""
-                      width="32"
-                      height="32"
-                      loading="lazy"
-                    />
-                  {:else}
-                    <div class="user-cell__avatar-placeholder">
-                      {user.discordUsername?.[0]?.toUpperCase() || '?'}
-                    </div>
-                  {/if}
-                  <span class="user-cell__username"
-                    >@{user.discordUsername}</span
-                  >
-                </div>
-              </td>
-              <td class="user-table__td">
-                <span class="user-name">{user.name || '—'}</span>
-              </td>
-              {#if showEmail}
-                <td class="user-table__td">
-                  <span class="user-email">{user.email || '—'}</span>
-                </td>
-              {/if}
-              {#if showRole}
-                <td class="user-table__td">
-                  <RoleBadge role={user.role || ''} />
-                </td>
-              {/if}
-              {#if actions}
-                <td class="user-table__td user-table__td--actions">
-                  {@render actions(user)}
-                </td>
-              {/if}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+          </TableRow>
+        {/each}
+      </TableBody>
+    </Table>
 
     {#if hasMore && onLoadMore}
       <InfiniteScroll {hasMore} {loading} {onLoadMore} />
@@ -119,55 +123,9 @@
     text-align: left;
   }
 
-  .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    background: var(--foreground-color);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .user-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .user-table__td,
-  .user-table__th {
-    min-width: 12.5rem;
-  }
-
-  .user-table__th {
-    padding: 1rem 1.25rem;
-    font-weight: 700;
-    color: var(--text-color-secondary);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 0.125rem solid
-      var(--border-color-light, rgba(128, 128, 128, 0.1));
-    background: rgba(var(--brand-primary-rgb), 0.02);
-  }
-
-  .user-table__td {
-    padding: 1rem 1.25rem;
-    border-bottom: 0.063 solid
-      var(--border-color-light, rgba(128, 128, 128, 0.1));
-    color: var(--text-color-primary);
-    vertical-align: middle;
-  }
-
   .user-table__td--actions {
     display: flex;
     gap: 0.5rem;
-  }
-
-  .user-table__tr:last-child .user-table__td {
-    border-bottom: none;
-  }
-
-  .user-table__tr:hover {
-    background-color: rgba(var(--brand-primary-rgb), 0.03);
   }
 
   .user-cell {
@@ -217,12 +175,5 @@
     padding: 4rem 2rem;
     color: var(--text-color-secondary);
     text-align: center;
-  }
-
-  @media (max-width: 640px) {
-    .user-table th,
-    .user-table td {
-      padding: 0.75rem 1rem;
-    }
   }
 </style>

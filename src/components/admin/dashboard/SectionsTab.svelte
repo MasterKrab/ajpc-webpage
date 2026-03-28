@@ -5,6 +5,12 @@
   import SearchBox from '@components/ui/SearchBox.svelte'
   import Button from '@components/ui/Button.svelte'
   import MultiSelect from '@components/ui/MultiSelect.svelte'
+  import Table from '@components/tables/Table.svelte'
+  import TableHead from '@components/tables/TableHead.svelte'
+  import TableBody from '@components/tables/TableBody.svelte'
+  import TableRow from '@components/tables/TableRow.svelte'
+  import TableCell from '@components/tables/TableCell.svelte'
+  import TableHeader from '@components/tables/TableHeader.svelte'
 
   type Teacher = {
     id: string
@@ -230,64 +236,62 @@
     <p>No hay paralelos creados para este curso.</p>
   </div>
 {:else}
-  <div class="table-wrapper">
-    <table class="table">
-      <thead>
-        <tr>
-          <th class="table__header">Nombre</th>
-          <th class="table__header">Docentes</th>
-          <th class="table__header">Alumnos</th>
-          <th class="table__header">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each sectionsList as section}
-          <tr class="table__row">
-            <td class="table__cell"><strong>{section.name}</strong></td>
-            <td class="table__cell">
-              <div class="docentes-list">
-                {#each section.docentes as teacher}
-                  <span class="docente-tag"
-                    >{teacher.name || teacher.discordUsername}</span
-                  >
-                {:else}
-                  <span class="text-muted">Sin docente</span>
-                {/each}
-              </div>
-            </td>
-            <td class="table__cell">
-              {studentCounts[section.id] || 0}
-            </td>
-            <td class="table__cell">
-              <div class="actions-row">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onclick={() => openManageSection(section, 'students')}
+  <Table ariaLabel="Tabla de paralelos">
+    <TableHead>
+      <TableRow>
+        <TableHeader>Nombre</TableHeader>
+        <TableHeader>Docentes</TableHeader>
+        <TableHeader>Alumnos</TableHeader>
+        <TableHeader>Acciones</TableHeader>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {#each sectionsList as section}
+        <TableRow>
+          <TableCell><strong>{section.name}</strong></TableCell>
+          <TableCell>
+            <div class="docentes-list">
+              {#each section.docentes as teacher}
+                <span class="docente-tag"
+                  >{teacher.name || teacher.discordUsername}</span
                 >
-                  Alumnos
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onclick={() => openManageSection(section, 'general')}
-                >
-                  Gestionar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onclick={() => deleteSection(section.id)}
-                >
-                  Eliminar
-                </Button>
-              </div>
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
+              {:else}
+                <span class="text-muted">Sin docente</span>
+              {/each}
+            </div>
+          </TableCell>
+          <TableCell>
+            {studentCounts[section.id] || 0}
+          </TableCell>
+          <TableCell>
+            <div class="actions-row">
+              <Button
+                size="sm"
+                variant="secondary"
+                onclick={() => openManageSection(section, 'students')}
+              >
+                Alumnos
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onclick={() => openManageSection(section, 'general')}
+              >
+                Gestionar
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onclick={() => deleteSection(section.id)}
+              >
+                Eliminar
+              </Button>
+            </div>
+          </TableCell>
+        </TableRow>
+      {/each}
+    </TableBody>
+  </Table>
 {/if}
 
 <Modal
@@ -503,26 +507,6 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
-  }
-
-  .table-wrapper {
-    overflow-x: auto;
-  }
-
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .table__header,
-  .table__cell {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-  }
-
-  .table__cell {
-    font-size: 0.9375rem;
   }
 
   .docentes-list {

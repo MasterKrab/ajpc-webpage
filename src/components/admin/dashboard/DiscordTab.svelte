@@ -4,6 +4,12 @@
   import Button from '@components/ui/Button.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
   import Loader from '@components/ui/Loader.svelte'
+  import Table from '@components/tables/Table.svelte'
+  import TableHead from '@components/tables/TableHead.svelte'
+  import TableBody from '@components/tables/TableBody.svelte'
+  import TableRow from '@components/tables/TableRow.svelte'
+  import TableCell from '@components/tables/TableCell.svelte'
+  import TableHeader from '@components/tables/TableHeader.svelte'
 
   interface StudentSyncData {
     enrollmentId: string
@@ -188,88 +194,85 @@
       <p>No se pudo cargar la información de Discord. Asegúrate de que el servidor esté configurado correctamente en los ajustes del curso.</p>
     </div>
   {:else}
-    <div class="table-wrapper" aria-busy={actionLoading !== null}>
-      <table class="table" aria-labelledby="discord-sync-title">
-        <caption class="sr-only">Lista de estudiantes aprobados y su estado en el servidor de Discord</caption>
-        <thead>
-          <tr>
-            <th scope="col" class="table__header">Estudiante</th>
-            <th scope="col" class="table__header">Usuario Discord</th>
-            <th scope="col" class="table__header">Estado</th>
-            <th scope="col" class="table__header">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each syncData.students as student}
-            <tr class="table__row">
-              <td class="table__cell">
-                <strong>{student.fullName}</strong>
-              </td>
-              <td class="table__cell">
-                <span class="discord-tag" aria-label="Usuario de Discord: @{student.discordUsername}">
-                  @{student.discordUsername}
+    <Table ariaLabel="Lista de estudiantes y su estado en Discord">
+      <TableHead>
+        <TableRow>
+          <TableHeader>Estudiante</TableHeader>
+          <TableHeader>Usuario Discord</TableHeader>
+          <TableHeader>Estado</TableHeader>
+          <TableHeader>Acciones</TableHeader>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {#each syncData.students as student}
+          <TableRow>
+            <TableCell>
+              <strong>{student.fullName}</strong>
+            </TableCell>
+            <TableCell>
+              <span class="discord-tag" aria-label="Usuario de Discord: @{student.discordUsername}">
+                @{student.discordUsername}
+              </span>
+            </TableCell>
+            <TableCell>
+              {#if student.inGuild}
+                <span class="status-badge status-badge--success">
+                  <span aria-hidden="true">✅</span> En el servidor
                 </span>
-              </td>
-              <td class="table__cell">
-                {#if student.inGuild}
-                  <span class="status-badge status-badge--success">
-                    <span aria-hidden="true">✅</span> En el servidor
-                  </span>
-                  {#if student.needsNicknameUpdate}
-                    <span 
-                      class="status-badge status-badge--warning" 
-                      title="El apodo en Discord no coincide con el nombre real"
-                      role="status"
-                    >
-                      <span aria-hidden="true">⚠️</span> Apodo desactualizado
-                    </span>
-                  {/if}
-                {:else}
-                  <span class="status-badge status-badge--pending">
-                    <span aria-hidden="true">❌</span> No unido
+                {#if student.needsNicknameUpdate}
+                  <span 
+                    class="status-badge status-badge--warning" 
+                    title="El apodo en Discord no coincide con el nombre real"
+                    role="status"
+                  >
+                    <span aria-hidden="true">⚠️</span> Apodo desactualizado
                   </span>
                 {/if}
-              </td>
-              <td class="table__cell">
-                {#if !student.inGuild}
-                  {#if student.hasToken}
-                    <Button 
-                      size="sm" 
-                      onclick={() => joinDiscord(student)} 
-                      loading={actionLoading === `join-${student.enrollmentId}`}
-                      ariaLabel="Añadir a {student.fullName} al servidor de Discord"
-                    >
-                      Añadir
-                    </Button>
-                  {:else}
-                    <span 
-                      class="token-warning" 
-                      title="El alumno debe volver a iniciar sesión para otorgar permisos"
-                      role="status"
-                    >
-                      Faltan permisos
-                    </span>
-                  {/if}
-                {:else if student.needsNicknameUpdate}
+              {:else}
+                <span class="status-badge status-badge--pending">
+                  <span aria-hidden="true">❌</span> No unido
+                </span>
+              {/if}
+            </TableCell>
+            <TableCell>
+              {#if !student.inGuild}
+                {#if student.hasToken}
                   <Button 
                     size="sm" 
-                    variant="secondary"
-                    onclick={() => syncNickname(student)} 
-                    loading={actionLoading === `sync-${student.enrollmentId}`}
-                    ariaLabel="Sincronizar apodo de {student.fullName}"
+                    onclick={() => joinDiscord(student)} 
+                    loading={actionLoading === `join-${student.enrollmentId}`}
+                    ariaLabel="Añadir a {student.fullName} al servidor de Discord"
                   >
-                    Sincronizar Apodo
+                    Añadir
                   </Button>
                 {:else}
-                  <span class="text-muted" aria-hidden="true">—</span>
-                  <span class="sr-only">Sin acciones disponibles</span>
+                  <span 
+                    class="token-warning" 
+                    title="El alumno debe volver a iniciar sesión para otorgar permisos"
+                    role="status"
+                  >
+                    Faltan permisos
+                  </span>
                 {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+              {:else if student.needsNicknameUpdate}
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onclick={() => syncNickname(student)} 
+                  loading={actionLoading === `sync-${student.enrollmentId}`}
+                  ariaLabel="Sincronizar apodo de {student.fullName}"
+                >
+                  Sincronizar Apodo
+                </Button>
+              {:else}
+                <span class="text-muted" aria-hidden="true">—</span>
+                <span class="sr-only">Sin acciones disponibles</span>
+              {/if}
+            </TableCell>
+          </TableRow>
+        {/each}
+      </TableBody>
+    </Table>
   {/if}
 </DashboardContent>
 
@@ -304,22 +307,6 @@
   .header-desc {
     margin: 0.25rem 0 0;
     color: var(--text-color-secondary);
-  }
-
-  .table-wrapper {
-    overflow-x: auto;
-  }
-
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .table__header,
-  .table__cell {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
   }
 
   .discord-tag {

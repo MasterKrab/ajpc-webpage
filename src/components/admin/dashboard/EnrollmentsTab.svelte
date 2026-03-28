@@ -10,6 +10,12 @@
   import EnrollmentDetailModal from '@components/admin/EnrollmentDetailModal.svelte'
   import Button from '@components/ui/Button.svelte'
   import type { Enrollment } from '@db/schema'
+  import Table from '@components/tables/Table.svelte'
+  import TableHead from '@components/tables/TableHead.svelte'
+  import TableBody from '@components/tables/TableBody.svelte'
+  import TableRow from '@components/tables/TableRow.svelte'
+  import TableCell from '@components/tables/TableCell.svelte'
+  import TableHeader from '@components/tables/TableHeader.svelte'
 
   interface EnrollmentItem {
     enrollment: Enrollment & {
@@ -59,7 +65,10 @@
 
   const sectionOptions = $derived([
     { value: '', label: 'Sin asignar' },
-    ...sectionsList.map((section) => ({ value: section.id, label: section.name })),
+    ...sectionsList.map((section) => ({
+      value: section.id,
+      label: section.name,
+    })),
   ])
 
   const refreshEnrollments = async (page = 1, append = false) => {
@@ -102,15 +111,18 @@
     feedback?: string,
   ) => {
     try {
-      const response = await fetch(`/api/admin/inscripciones?id=${enrollmentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status,
-          adminNotes: notes,
-          feedback,
-        }),
-      })
+      const response = await fetch(
+        `/api/admin/inscripciones?id=${enrollmentId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status,
+            adminNotes: notes,
+            feedback,
+          }),
+        },
+      )
       if (response.ok) {
         await refreshEnrollments(1, false)
       } else {
@@ -165,11 +177,14 @@
     sectionId: string,
   ) => {
     try {
-      const response = await fetch(`/api/admin/inscripciones?id=${enrollmentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sectionId: sectionId || null }),
-      })
+      const response = await fetch(
+        `/api/admin/inscripciones?id=${enrollmentId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionId: sectionId || null }),
+        },
+      )
 
       if (response.ok) {
         toast.success('Paralelo asignado')
@@ -232,87 +247,84 @@
       <p>No hay estudiantes inscritos en este curso.</p>
     </div>
   {:else}
-    <div class="table-wrapper">
-      <table class="table">
-        <caption class="sr-only">Lista de inscripciones al curso</caption>
-        <thead>
-          <tr>
-            <th scope="col" class="table__header">Estudiante</th>
-            <th scope="col" class="table__header">Info</th>
-            <th scope="col" class="table__header">Estado</th>
-            <th scope="col" class="table__header">Paralelo</th>
-            <th scope="col" class="table__header">Notificación</th>
-            <th scope="col" class="table__header">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each enrollmentsList as item}
-            <tr class="table__row">
-              <td class="table__cell">
-                <strong>{item.enrollment.fullName}</strong><br />
-                <small class="text-muted">@{item.discordUsername}</small>
-              </td>
-              <td class="table__cell">
-                {item.enrollment.age} años<br />
-                <small class="text-muted">{item.enrollment.email}</small>
-              </td>
-              <td class="table__cell">
-                <span
-                  class="status-pill status--{item.enrollment.status}"
-                  role="status"
-                >
-                  {statusLabel(item.enrollment.status)}
+    <Table ariaLabel="Lista de inscripciones al curso">
+      <TableHead>
+        <TableRow>
+          <TableHeader>Estudiante</TableHeader>
+          <TableHeader>Info</TableHeader>
+          <TableHeader>Estado</TableHeader>
+          <TableHeader>Paralelo</TableHeader>
+          <TableHeader>Notificación</TableHeader>
+          <TableHeader>Acciones</TableHeader>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {#each enrollmentsList as item}
+          <TableRow>
+            <TableCell>
+              <strong>{item.enrollment.fullName}</strong><br />
+              <small class="text-muted">@{item.discordUsername}</small>
+            </TableCell>
+            <TableCell>
+              {item.enrollment.age} años<br />
+              <small class="text-muted">{item.enrollment.email}</small>
+            </TableCell>
+            <TableCell>
+              <span
+                class="status-pill status--{item.enrollment.status}"
+                role="status"
+              >
+                {statusLabel(item.enrollment.status)}
+              </span>
+            </TableCell>
+            <TableCell>
+              <Select
+                options={sectionOptions}
+                value={item.enrollment.sectionId || ''}
+                onChange={(value) =>
+                  assignSectionToStudent(item.enrollment.id, value)}
+                disabled={item.enrollment.status !== 'approved'}
+                extraClass="section-select"
+                placeholder=""
+                searchable={true}
+                aria-label="Asignar paralelo a {item.enrollment.fullName}"
+              />
+            </TableCell>
+            <TableCell>
+              {#if item.enrollment.notifiedAt}
+                <span class="notified-at">
+                  📩 {new Date(
+                    item.enrollment.notifiedAt,
+                  ).toLocaleDateString()}
                 </span>
-              </td>
-              <td class="table__cell">
-                <Select
-                  options={sectionOptions}
-                  value={item.enrollment.sectionId || ''}
-                  onChange={(value) =>
-                    assignSectionToStudent(item.enrollment.id, value)}
-                  disabled={item.enrollment.status !== 'approved'}
-                  extraClass="section-select"
-                  placeholder=""
-                  searchable={true}
-                  aria-label="Asignar paralelo a {item.enrollment.fullName}"
-                />
-              </td>
-              <td class="table__cell">
-                {#if item.enrollment.notifiedAt}
-                  <span class="notified-at">
-                    📩 {new Date(
-                      item.enrollment.notifiedAt,
-                    ).toLocaleDateString()}
-                  </span>
-                {:else if item.enrollment.status !== 'pending'}
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    loading={actionLoading === item.enrollment.id}
-                    loadingText="..."
-                    onclick={() => notify(item.enrollment.id)}
-                    ariaLabel="Notificar a {item.enrollment.fullName}"
-                  >
-                    Notificar
-                  </Button>
-                {:else}
-                  <span class="text-muted">—</span>
-                {/if}
-              </td>
-              <td class="table__cell actions-cell">
+              {:else if item.enrollment.status !== 'pending'}
                 <Button
                   size="sm"
-                  onclick={() => openEnrollmentDetail(item)}
-                  ariaLabel="Ver postulación de {item.enrollment.fullName}"
+                  variant="secondary"
+                  loading={actionLoading === item.enrollment.id}
+                  loadingText="..."
+                  onclick={() => notify(item.enrollment.id)}
+                  ariaLabel="Notificar a {item.enrollment.fullName}"
                 >
-                  Ver postulación
+                  Notificar
                 </Button>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+              {:else}
+                <span class="text-muted">—</span>
+              {/if}
+            </TableCell>
+            <TableCell class="actions-cell">
+              <Button
+                size="sm"
+                onclick={() => openEnrollmentDetail(item)}
+                ariaLabel="Ver postulación de {item.enrollment.fullName}"
+              >
+                Ver postulación
+              </Button>
+            </TableCell>
+          </TableRow>
+        {/each}
+      </TableBody>
+    </Table>
 
     {#if enrollmentLoading && enrollmentsList.length === 0}
       <Loader label="Cargando inscripciones..." />
@@ -342,22 +354,6 @@
 {/if}
 
 <style>
-  .table-wrapper {
-    overflow-x: auto;
-  }
-
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .table__header,
-  .table__cell {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-  }
-
   .text-muted {
     color: var(--text-color-secondary);
     font-size: 0.85em;
