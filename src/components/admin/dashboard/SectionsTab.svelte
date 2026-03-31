@@ -11,6 +11,7 @@
   import TableRow from '@components/tables/TableRow.svelte'
   import TableCell from '@components/tables/TableCell.svelte'
   import TableHeader from '@components/tables/TableHeader.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   type Teacher = {
     id: string
@@ -61,16 +62,19 @@
 
   async function fetchStudents() {
     enrollmentLoading = true
-    const response = await fetch(
-      `/api/admin/inscripciones?courseId=${courseId}&status=approved&search=${studentSearch}&limit=100`,
-    )
-    const data = await response.json()
-    if (response.ok) {
-      enrollmentsList = data.enrollments || []
-    } else {
+    try {
+      const result = await trpcClient.admin.enrollments.list.query({
+        courseId,
+        status: 'approved',
+        limit: 100,
+        page: 1,
+      })
+      enrollmentsList = result.enrollments
+    } catch (error) {
       toast.error('Error al cargar alumnos')
+    } finally {
+      enrollmentLoading = false
     }
-    enrollmentLoading = false
   }
 
   $effect(() => {
@@ -96,33 +100,36 @@
 
   async function fetchSections() {
     sectionsLoading = true
-    const response = await fetch(`/api/admin/sections?courseId=${courseId}`)
-    if (response.ok) {
-      sectionsList = await response.json()
-    } else {
+    try {
+      const result = await trpcClient.admin.sections.listByCourse.query({ courseId })
+      sectionsList = result as unknown as Section[]
+    } catch (error) {
       toast.error('Error al cargar paralelos')
+    } finally {
+      sectionsLoading = false
     }
-    sectionsLoading = false
   }
 
   async function saveSection() {
     sectionFormLoading = true
     const isEditing = !!editingSectionId
-    const url = isEditing
-      ? `/api/admin/sections?id=${editingSectionId}`
-      : '/api/admin/sections'
-    const method = isEditing ? 'PATCH' : 'POST'
 
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...sectionForm,
-        courseId,
-      }),
-    })
+    try {
+      if (isEditing) {
+        await trpcClient.admin.sections.update.mutate({
+          id: editingSectionId!,
+          name: sectionForm.name,
+          teacherIds: sectionForm.teacherIds,
+          courseId,
+        })
+      } else {
+        await trpcClient.admin.sections.create.mutate({
+          name: sectionForm.name,
+          courseId,
+          teacherIds: sectionForm.teacherIds,
+        })
+      }
 
-    if (response.ok) {
       toast.success(
         activeTab === 'teachers'
           ? 'Lista de docentes actualizada'
@@ -130,19 +137,19 @@
             ? 'Paralelo actualizado'
             : 'Paralelo creado',
       )
-      // If creating new, close modal. If editing, we stay in the modal.
       if (!isEditing) isManageModalOpen = false
 
       editingSectionId = null
       await fetchSections()
-    } else {
+    } catch (error) {
       toast.error(
         isEditing
           ? 'Error al actualizar el paralelo'
           : 'Error al crear el paralelo',
       )
+    } finally {
+      sectionFormLoading = false
     }
-    sectionFormLoading = false
   }
 
   function openCreateSection() {
@@ -170,16 +177,13 @@
   async function deleteSection(id: string) {
     if (!confirm('¿Estás seguro de eliminar este paralelo?')) return
 
-    const response = await fetch(`/api/admin/sections?id=${id}`, {
-      method: 'DELETE',
-    })
-
-    if (response.ok) {
+    try {
+      await trpcClient.admin.sections.delete.mutate({ id })
       toast.success('Paralelo eliminado')
       await fetchSections()
-    } else {
-      const data = await response.json()
-      toast.error(data.error || 'Error al eliminar el paralelo')
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al eliminar el paralelo')
     }
   }
 
@@ -187,21 +191,16 @@
     enrollmentId: string,
     sectionId: string,
   ) {
-    const res = await fetch(`/api/admin/inscripciones?id=${enrollmentId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sectionId: sectionId || null }),
-    })
-
-    if (res.ok) {
+    try {
+      await trpcClient.admin.enrollments.update.mutate({
+        id: enrollmentId,
+        sectionId: sectionId || null,
+      })
       toast.success('Paralelo asignado')
-      // Update local state optimistically
       enrollmentsList = enrollmentsList.map((item) => {
         if (item.enrollment.id === enrollmentId) {
-          // Track old section for count update
           const oldSectionId = item.enrollment.sectionId
 
-          // Update student count locally
           if (oldSectionId)
             studentCounts[oldSectionId] = Math.max(
               0,
@@ -218,7 +217,7 @@
         }
         return item
       })
-    } else {
+    } catch (error) {
       toast.error('Error al asignar paralelo')
     }
   }

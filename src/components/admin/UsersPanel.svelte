@@ -5,6 +5,7 @@
   import Select from '@components/ui/Select.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   type User = {
     id: string
@@ -36,16 +37,14 @@
   const fetchUsers = async (page = 1, append = false) => {
     if (!append) usersLoading = true
     try {
-      const searchParam = userSearchQuery
-        ? `&search=${encodeURIComponent(userSearchQuery)}`
-        : ''
-      const response = await fetch(
-        `/api/admin/users?page=${page}&limit=${USERS_PER_PAGE}${searchParam}`,
-      )
-      const data = await response.json()
-      if (append) usersList = [...usersList, ...(data.users || [])]
-      else usersList = data.users || []
-      usersTotal = data.total || 0
+      const result = await trpcClient.admin.users.list.query({
+        page,
+        limit: USERS_PER_PAGE,
+        search: userSearchQuery || undefined,
+      })
+      if (append) usersList = [...usersList, ...(result.users as unknown as User[])]
+      else usersList = result.users as unknown as User[]
+      usersTotal = result.total
       usersPage = page
     } catch {
       toast.error('Error al cargar usuarios')
@@ -56,15 +55,19 @@
 
   const changeRole = async (userId: string, role: string) => {
     roleChangeLoading = userId
-    const response = await fetch(`/api/admin/users?id=${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
-    })
-    if (response.ok) toast.success('Rol actualizado correctamente')
-    else toast.error('Error al actualizar el rol')
-    roleChangeLoading = null
-    fetchUsers(1, false)
+    try {
+      await trpcClient.admin.users.updateRole.mutate({
+        id: userId,
+        role: role as 'student' | 'docente' | 'admin' | 'sudo',
+      })
+      toast.success('Rol actualizado correctamente')
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al actualizar el rol')
+    } finally {
+      roleChangeLoading = null
+      fetchUsers(1, false)
+    }
   }
 
   let lastSearch = ''

@@ -5,6 +5,7 @@
   import Select from '@components/ui/Select.svelte'
   import MultiSelect from '@components/ui/MultiSelect.svelte'
   import { REGIONS, COMMUNES_BY_REGION, SCHOOL_TYPES } from '@lib/chileData'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Props {
     courseId: string
@@ -113,20 +114,11 @@
     loading = true
 
     try {
-      const response = await fetch('/api/inscripciones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed.data),
-      })
-
-      const result = await response.json()
-      if (!response.ok) {
-        errorMessage = result.error || 'Error al enviar inscripción'
-        return
-      }
+      await trpcClient.enrollment.create.mutate(parsed.data)
       success = true
-    } catch {
-      errorMessage = 'Error de conexión. Intenta de nuevo.'
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      errorMessage = trpcError?.message || 'Error al enviar inscripción.'
     } finally {
       loading = false
     }

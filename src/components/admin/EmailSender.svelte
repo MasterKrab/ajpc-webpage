@@ -7,6 +7,7 @@
   import RichTextEditor from './RichTextEditor.svelte'
   import { storage } from '@lib/storage'
   import Loader from '@components/ui/Loader.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Course {
     id: string
@@ -92,9 +93,8 @@
   const fetchCourses = async () => {
     loadingCourses = true
     try {
-      const response = await fetch('/api/admin/courses')
-      const data = await response.json()
-      courses = data.courses
+      const result = await trpcClient.admin.courses.list.query({ page: 1, limit: 100 })
+      courses = result.courses as Course[]
     } finally {
       loadingCourses = false
     }
@@ -103,8 +103,8 @@
   const fetchSections = async (courseId: string) => {
     loadingSections = true
     try {
-      const response = await fetch(`/api/admin/sections?courseId=${courseId}`)
-      sections = await response.json()
+      const result = await trpcClient.admin.sections.listByCourse.query({ courseId })
+      sections = result as unknown as Section[]
       selectedSectionIds = []
     } finally {
       loadingSections = false
@@ -133,29 +133,44 @@
   const handleConfirmSend = async () => {
     isConfirmModalOpen = false
     sending = true
-    const res = await fetch('/api/admin/send-mass-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipientType,
-        courseIds: selectedCourseIds,
-        sectionIds: selectedSectionIds,
-        subject,
-        body,
-        signature,
-      }),
-    })
+    try {
+      let result: { count: number }
 
-    const data = await res.json()
-    if (res.ok) {
-      toast.success(`Correos enviados correctamente: ${data.count}`)
+      if (recipientType === 'all') {
+        result = await trpcClient.admin.massEmail.send.mutate({
+          recipientType: 'all',
+          subject,
+          body,
+          signature,
+        })
+      } else if (recipientType === 'course') {
+        result = await trpcClient.admin.massEmail.send.mutate({
+          recipientType: 'course',
+          courseIds: selectedCourseIds,
+          subject,
+          body,
+          signature,
+        })
+      } else {
+        result = await trpcClient.admin.massEmail.send.mutate({
+          recipientType: 'section',
+          sectionIds: selectedSectionIds,
+          subject,
+          body,
+          signature,
+        })
+      }
+
+      toast.success(`Correos enviados correctamente: ${result.count}`)
       subject = ''
       body = ''
       clearStorage()
-    } else {
-      toast.error(`Error al enviar correos: ${data.error}`)
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(`Error al enviar correos: ${trpcError?.message || 'Error desconocido'}`)
+    } finally {
+      sending = false
     }
-    sending = false
   }
 
   const getPreviewHtml = (bodyHtml: string, signatureHtml: string) => {

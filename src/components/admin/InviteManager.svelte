@@ -11,6 +11,7 @@
   import TableRow from '@components/tables/TableRow.svelte'
   import TableCell from '@components/tables/TableCell.svelte'
   import TableHeader from '@components/tables/TableHeader.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   type Invite = {
     code: string
@@ -53,10 +54,10 @@
   const fetchInvites = async () => {
     loading = true
     try {
-      const response = await fetch('/api/admin/invites')
-      invites = await response.json()
+      const result = await trpcClient.admin.invites.list.query()
+      invites = result as unknown as Invite[]
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch invites:', error)
     } finally {
       loading = false
     }
@@ -65,22 +66,13 @@
   const generateInvite = async () => {
     generating = true
     try {
-      const response = await fetch('/api/admin/invites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: selectedRole, maxUses }),
-      })
-
-      if (response.ok) {
-        toast.success('Invitación generada')
-        await fetchInvites()
-      } else {
-        const data = await response.json()
-        toast.error(data.error || 'Error al generar invitación')
-      }
-    } catch (error) {
-      console.error(error)
-      toast.error('Error al generar invitación')
+      await trpcClient.admin.invites.create.mutate({ role: selectedRole, maxUses })
+      toast.success('Invitación generada')
+      await fetchInvites()
+    } catch (error: unknown) {
+      console.error('Failed to generate invite:', error)
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al generar invitación')
     } finally {
       generating = false
     }
@@ -98,20 +90,13 @@
     deleting = code
 
     try {
-      const response = await fetch(`/api/admin/invites?code=${code}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        toast.success('Invitación eliminada')
-        await fetchInvites()
-      } else {
-        const data = await response.json()
-        toast.error(data.error || 'Error al eliminar invitación')
-      }
-    } catch (error) {
-      console.error(error)
-      toast.error('Error al eliminar invitación')
+      await trpcClient.admin.invites.delete.mutate({ code })
+      toast.success('Invitación eliminada')
+      await fetchInvites()
+    } catch (error: unknown) {
+      console.error('Failed to delete invite:', error)
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al eliminar invitación')
     } finally {
       deleting = null
       inviteToDelete = null

@@ -7,6 +7,7 @@
   import Button from '@components/ui/Button.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import type { Module } from '@app-types/modules'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Props {
     courseId: string
@@ -48,10 +49,10 @@
   async function fetchModules() {
     modulesLoading = true
     try {
-      const response = await fetch(`/api/docente/modules?courseId=${courseId}`)
-      modulesList = await response.json()
+      const result = await trpcClient.docente.modules.listByCourse.query({ courseId })
+      modulesList = result as unknown as Module[]
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch modules:', error)
     } finally {
       modulesLoading = false
     }
@@ -59,15 +60,20 @@
 
   async function saveModule() {
     if (!newModule.title.trim() || !editingModuleId) return
-    const response = await fetch(`/api/docente/modules?id=${editingModuleId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ courseId, ...newModule }),
-    })
-    if (!response.ok) return
-    toast.success('Módulo actualizado')
-    isModuleModalOpen = false
-    editingModuleId = null
-    fetchModules()
+    try {
+      await trpcClient.docente.modules.update.mutate({
+        id: editingModuleId,
+        title: newModule.title,
+        description: newModule.description,
+      })
+      toast.success('Módulo actualizado')
+      isModuleModalOpen = false
+      editingModuleId = null
+      fetchModules()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al actualizar el módulo')
+    }
   }
 
   function openEditModule(mod: Module) {
@@ -79,15 +85,19 @@
   async function addMaterial() {
     if (!newMaterial.title.trim() || !newMaterial.url.trim() || !selectedModule)
       return
-    const response = await fetch('/api/docente/modules?action=material', {
-      method: 'POST',
-      body: JSON.stringify({ moduleId: selectedModule.id, ...newMaterial }),
-    })
-    if (!response.ok) return
-    toast.success('Material agregado')
-    isMaterialModalOpen = false
-    newMaterial = { title: '', url: '', type: 'link' }
-    fetchModules()
+    try {
+      await trpcClient.docente.modules.addMaterial.mutate({
+        moduleId: selectedModule.id,
+        ...newMaterial,
+      })
+      toast.success('Material agregado')
+      isMaterialModalOpen = false
+      newMaterial = { title: '', url: '', type: 'link' }
+      fetchModules()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al agregar material')
+    }
   }
 
   async function deleteModuleItem(id: string, type: 'module' | 'material') {
@@ -100,13 +110,11 @@
           : '¿Estás seguro de que deseas eliminar este material?',
       type: 'danger',
       onConfirm: async () => {
-        const response = await fetch(
-          `/api/docente/modules?id=${id}&type=${type}`,
-          {
-            method: 'DELETE',
-          },
-        )
-        if (!response.ok) return
+        if (type === 'module') {
+          await trpcClient.docente.modules.delete.mutate({ id })
+        } else {
+          await trpcClient.docente.modules.deleteMaterial.mutate({ id })
+        }
         toast.success('Eliminado')
         confirmModal.open = false
         fetchModules()

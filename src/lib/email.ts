@@ -58,7 +58,8 @@ const getAccessToken = async (): Promise<string> => {
   const data = await response.json()
   cachedAccessToken = data.access_token
   // Refresh token 5 minutes before it actually expires
-  tokenExpirationTime = Date.now() + (data.expires_in - 300) * 1000
+  if (!cachedAccessToken)
+    throw new Error('Failed to parse access token from Google response')
 
   return cachedAccessToken
 }

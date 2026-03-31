@@ -2,6 +2,7 @@
   import { toast } from 'svelte-sonner'
   import Modal from '@components/ui/Modal.svelte'
   import Button from '@components/ui/Button.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   let isModalOpen = $state(false)
   let isDeleting = $state(false)
@@ -9,20 +10,12 @@
   async function handleDelete() {
     isDeleting = true
     try {
-      const res = await fetch('/api/user/me', {
-        method: 'DELETE',
-      })
-
-      if (res.ok) {
-        toast.success('Cuenta eliminada correctamente')
-        // El servidor limpió la cookie, solo redirigimos
-        window.location.href = '/'
-      } else {
-        const errorData = await res.json()
-        toast.error(errorData.error || 'Error al eliminar la cuenta')
-      }
-    } catch (err) {
-      toast.error('Error de conexión')
+      await trpcClient.user.deleteAccount.mutate()
+      toast.success('Cuenta eliminada correctamente')
+      window.location.href = '/'
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al eliminar la cuenta')
     } finally {
       isDeleting = false
       isModalOpen = false

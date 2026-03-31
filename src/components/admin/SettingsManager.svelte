@@ -3,6 +3,7 @@
   import { toast } from 'svelte-sonner'
   import Loader from '@components/ui/Loader.svelte'
   import Button from '@components/ui/Button.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Props {
     initialSettings?: Record<string, string>
@@ -18,32 +19,23 @@
   const fetchSettings = async () => {
     try {
       loading = true
-      const response = await fetch('/api/admin/settings')
-      if (response.ok) settings = await response.json()
-      else toast.error('Error al cargar la configuración')
+      const result = await trpcClient.admin.settings.get.query()
+      settings = result
     } catch (error) {
-      console.error(error)
-      toast.error('Error de conexión')
+      console.error('Failed to fetch settings:', error)
+      toast.error('Error al cargar la configuración')
     } finally {
       loading = false
     }
   }
 
   const updateSetting = async (key: string, value: string) => {
-    const promise = (async () => {
-      const response = await fetch('/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [key]: value }),
-      })
-
-      if (!response.ok) throw new Error('Failed to update')
-
+    const mutationPromise = (async () => {
+      await trpcClient.admin.settings.update.mutate({ [key]: value })
       settings[key] = value
-      return response
     })()
 
-    toast.promise(promise, {
+    toast.promise(mutationPromise, {
       loading: 'Actualizando configuración...',
       success: 'Configuración actualizada correctamente',
       error: 'Error al guardar la configuración',
@@ -51,9 +43,9 @@
 
     try {
       updating = true
-      await promise
+      await mutationPromise
     } catch (error) {
-      console.error(error)
+      console.error('Failed to update setting:', error)
     } finally {
       updating = false
     }

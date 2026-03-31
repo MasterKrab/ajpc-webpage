@@ -6,6 +6,7 @@
   import EmailPreview from '@components/admin/EmailPreview.svelte'
   import RichTextEditor from '@components/admin/RichTextEditor.svelte'
   import { storage } from '@lib/storage'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Template {
     id: string
@@ -35,14 +36,14 @@
 
   const fetchTemplates = async () => {
     loading = true
-    const res = await fetch('/api/admin/templates')
-    templates = await res.json()
+    const result = await trpcClient.admin.templates.list.query()
+    templates = result as unknown as Template[]
 
-    // Restore from storage if available and newer/modified
+    // Restore from storage if available and the content was modified locally
     templates = templates.map((template) => {
-      const stored = loadFromStorage(template.id)
-      if (stored && stored !== template.body)
-        return { ...template, body: stored }
+      const storedContent = loadFromStorage(template.id)
+      if (storedContent && storedContent !== template.body)
+        return { ...template, body: storedContent }
 
       return template
     })
@@ -57,20 +58,17 @@
     signature: string,
   ) => {
     saving = id
-    const response = await fetch(`/api/admin/templates?id=${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, body, signature }),
-    })
-
-    if (response.ok) {
+    try {
+      await trpcClient.admin.templates.update.mutate({ id, subject, body, signature })
       toast.success('Plantilla guardada correctamente')
       storage.remove(`editor_content_template_${id}`)
-    } else {
-      toast.error('Error al guardar la plantilla')
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al guardar la plantilla')
+    } finally {
+      saving = null
+      await fetchTemplates()
     }
-    saving = null
-    await fetchTemplates()
   }
 
   const getPreviewHtml = (bodyHtml: string, signatureText: string) => {

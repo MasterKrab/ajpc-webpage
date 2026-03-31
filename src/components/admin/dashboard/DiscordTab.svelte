@@ -10,6 +10,7 @@
   import TableRow from '@components/tables/TableRow.svelte'
   import TableCell from '@components/tables/TableCell.svelte'
   import TableHeader from '@components/tables/TableHeader.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface StudentSyncData {
     enrollmentId: string
@@ -44,18 +45,12 @@
   const loadSyncData = async () => {
     loading = true
     try {
-      const response = await fetch(
-        `/api/admin/discord/sync?courseId=${courseId}`,
-      )
-      if (response.ok) {
-        syncData = await response.json()
-      } else {
-        const data = await response.json().catch(() => ({ error: 'Error del servidor' }))
-        toast.error(data.error || 'Error al cargar datos de Discord')
-      }
-    } catch (error: any) {
-      console.error('Fetch Error:', error)
-      toast.error(`Error de conexión: ${error.message || 'No se pudo contactar con el servidor'}`)
+      const result = await trpcClient.admin.discord.getSyncStatus.query({ courseId })
+      syncData = result as unknown as DiscordSyncResponse
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      console.error('Discord sync error:', error)
+      toast.error(trpcError?.message || 'Error al cargar datos de Discord')
     } finally {
       loading = false
     }
@@ -64,20 +59,12 @@
   const joinDiscord = async (student: StudentSyncData) => {
     actionLoading = `join-${student.enrollmentId}`
     try {
-      const response = await fetch('/api/admin/discord/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enrollmentId: student.enrollmentId }),
-      })
-      if (response.ok) {
-        toast.success(`Alumno ${student.fullName} añadido al servidor`)
-        await loadSyncData()
-      } else {
-        const data = await response.json()
-        toast.error(data.error || 'Error al añadir a Discord')
-      }
-    } catch (error: any) {
-      toast.error(`Error de conexión: ${error.message}`)
+      await trpcClient.admin.discord.joinGuild.mutate({ enrollmentId: student.enrollmentId })
+      toast.success(`Alumno ${student.fullName} añadido al servidor`)
+      await loadSyncData()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al añadir a Discord')
     } finally {
       actionLoading = null
     }
@@ -86,20 +73,12 @@
   const syncNickname = async (student: StudentSyncData) => {
     actionLoading = `sync-${student.enrollmentId}`
     try {
-      const response = await fetch('/api/admin/discord/sync-nickname', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enrollmentId: student.enrollmentId })
-      })
-      if (response.ok) {
-        toast.success(`Apodo de ${student.fullName} actualizado`)
-        await loadSyncData()
-      } else {
-        const data = await response.json()
-        toast.error(data.error || 'Error al sincronizar apodo')
-      }
-    } catch (error: any) {
-      toast.error(`Error de conexión: ${error.message}`)
+      await trpcClient.admin.discord.syncNickname.mutate({ enrollmentId: student.enrollmentId })
+      toast.success(`Apodo de ${student.fullName} actualizado`)
+      await loadSyncData()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al sincronizar apodo')
     } finally {
       actionLoading = null
     }

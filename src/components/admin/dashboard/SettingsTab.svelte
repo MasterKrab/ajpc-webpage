@@ -4,6 +4,7 @@
   import Select from '@components/ui/Select.svelte'
   import DeleteConfirmation from '../DeleteConfirmation.svelte'
   import Button from '@components/ui/Button.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Schedule {
     id: string
@@ -50,28 +51,27 @@
 
   const updateCourse = async () => {
     updateLoading = true
-    const payload = {
-      ...editForm,
-    }
-
     try {
-      const response = await fetch(`/api/admin/courses?id=${course.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      await trpcClient.admin.courses.update.mutate({
+        id: course.id,
+        name: editForm.name,
+        description: editForm.description || undefined,
+        level: editForm.level as 'beginner' | 'intermediate' | 'advanced',
+        year: Number(editForm.year),
+        maxStudents: editForm.maxStudents ?? null,
+        status: editForm.status as 'open' | 'closed',
+        availableSchedules: editForm.availableSchedules,
+        discordGuildId: editForm.discordGuildId || null,
+        discordRoleId: editForm.discordRoleId || null,
       })
-
-      if (response.ok) {
-        course = {
-          ...course,
-          ...editForm,
-        }
-        toast.success('Curso actualizado correctamente')
-      } else {
-        toast.error('Error al actualizar el curso')
+      course = {
+        ...course,
+        ...editForm,
       }
-    } catch (error) {
-      toast.error('Error de conexión')
+      toast.success('Curso actualizado correctamente')
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al actualizar el curso')
     } finally {
       updateLoading = false
     }
@@ -79,16 +79,11 @@
 
   const deleteCourse = async () => {
     try {
-      const response = await fetch(`/api/admin/courses?id=${course.id}`, {
-        method: 'DELETE',
-      })
-      if (response.ok) {
-        window.location.href = '/admin'
-      } else {
-        toast.error('Error al eliminar el curso')
-      }
-    } catch (error) {
-      toast.error('Error de conexión')
+      await trpcClient.admin.courses.delete.mutate({ id: course.id })
+      window.location.href = '/admin'
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al eliminar el curso')
     }
   }
 </script>

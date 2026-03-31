@@ -3,6 +3,7 @@
   import { nanoid } from 'nanoid'
   import Modal from '@components/ui/Modal.svelte'
   import Button from '@components/ui/Button.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Schedule {
     id: string
@@ -55,28 +56,24 @@
   const create = async () => {
     loading = true
     try {
-      const response = await fetch('/api/admin/courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          maxStudents: form.maxStudents ? Number(form.maxStudents) : null,
-          status: form.status,
-        }),
+      await trpcClient.admin.courses.create.mutate({
+        name: form.name,
+        description: form.description || undefined,
+        level: form.level,
+        year: Number(form.year),
+        maxStudents: form.maxStudents ? Number(form.maxStudents) : null,
+        status: form.status,
+        availableSchedules: form.availableSchedules,
+        discordGuildId: form.discordGuildId || null,
+        discordRoleId: form.discordRoleId || null,
       })
-
-      if (response.ok) {
-        toast.success('Curso creado correctamente')
-        isOpen = false
-        reset()
-        // Reload page to show new course
-        window.location.reload()
-      } else {
-        const data = await response.json()
-        toast.error(data.error || 'Error al crear el curso')
-      }
-    } catch (error) {
-      toast.error('Error de conexión')
+      toast.success('Curso creado correctamente')
+      isOpen = false
+      reset()
+      window.location.reload()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al crear el curso')
     } finally {
       loading = false
     }

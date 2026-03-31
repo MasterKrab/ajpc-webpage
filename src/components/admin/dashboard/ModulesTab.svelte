@@ -7,6 +7,7 @@
   import Button from '@components/ui/Button.svelte'
 
   import type { Module, Material } from '../../../types/modules'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Props {
     courseId: string
@@ -41,27 +42,28 @@
 
   async function fetchModules() {
     modulesLoading = true
-    const response = await fetch(`/api/docente/modules?courseId=${courseId}`)
-    modulesList = await response.json()
+    const result = await trpcClient.docente.modules.listByCourse.query({ courseId })
+    modulesList = result as unknown as Module[]
     modulesLoading = false
   }
 
   async function saveModule() {
     if (!newModule.title.trim()) return
     const isEditing = !!editingModuleId
-    const url = isEditing
-      ? `/api/docente/modules?id=${editingModuleId}`
-      : '/api/docente/modules'
-    const method = isEditing ? 'PATCH' : 'POST'
 
-    const response = await fetch(url, {
-      method,
-      body: JSON.stringify({
+    if (isEditing) {
+      const result = await trpcClient.docente.modules.update.mutate({
+        id: editingModuleId!,
+        ...newModule,
+      })
+      if (!result) return
+    } else {
+      const result = await trpcClient.docente.modules.create.mutate({
         courseId,
         ...newModule,
-      }),
-    })
-    if (!response.ok) return
+      })
+      if (!result) return
+    }
 
     toast.success(isEditing ? 'Módulo actualizado' : 'Módulo creado')
     isModuleModalOpen = false
@@ -82,12 +84,11 @@
   async function addMaterial() {
     if (!newMaterial.title.trim() || !newMaterial.url.trim() || !selectedModule)
       return
-    const response = await fetch('/api/docente/modules?action=material', {
-      method: 'POST',
-      body: JSON.stringify({ moduleId: selectedModule.id, ...newMaterial }),
-    })
 
-    if (!response.ok) return
+    await trpcClient.docente.modules.addMaterial.mutate({
+      moduleId: selectedModule.id,
+      ...newMaterial,
+    })
 
     toast.success('Material agregado')
     isMaterialModalOpen = false
@@ -105,13 +106,11 @@
           : '¿Estás seguro de que deseas eliminar este material?',
       type: 'danger',
       onConfirm: async () => {
-        const response = await fetch(
-          `/api/docente/modules?id=${id}&type=${type}`,
-          {
-            method: 'DELETE',
-          },
-        )
-        if (!response.ok) return
+        if (type === 'module') {
+          await trpcClient.docente.modules.delete.mutate({ id })
+        } else {
+          await trpcClient.docente.modules.deleteMaterial.mutate({ id })
+        }
 
         toast.success('Eliminado')
         confirmModal.open = false

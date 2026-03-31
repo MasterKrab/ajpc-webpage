@@ -16,6 +16,7 @@
   import TableRow from '@components/tables/TableRow.svelte'
   import TableCell from '@components/tables/TableCell.svelte'
   import TableHeader from '@components/tables/TableHeader.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface EnrollmentItem {
     enrollment: Enrollment & {
@@ -74,18 +75,19 @@
   const refreshEnrollments = async (page = 1, append = false) => {
     if (!append) enrollmentLoading = true
     try {
-      const response = await fetch(
-        `/api/admin/inscripciones?courseId=${courseId}&page=${page}&limit=${ENROLLMENTS_PER_PAGE}&search=${studentSearch}`,
-      )
-      const data = await response.json()
+      const result = await trpcClient.admin.enrollments.list.query({
+        courseId,
+        page,
+        limit: ENROLLMENTS_PER_PAGE,
+      })
 
       if (append) {
-        enrollmentsList = [...enrollmentsList, ...(data.enrollments || [])]
+        enrollmentsList = [...enrollmentsList, ...result.enrollments as unknown as EnrollmentItem[]]
       } else {
-        enrollmentsList = data.enrollments || []
+        enrollmentsList = result.enrollments as unknown as EnrollmentItem[]
       }
 
-      enrollmentTotal = data.total || 0
+      enrollmentTotal = result.total
       enrollmentPage = page
     } catch (error) {
       toast.error('Error al cargar inscripciones')
@@ -111,53 +113,33 @@
     feedback?: string,
   ) => {
     try {
-      const response = await fetch(
-        `/api/admin/inscripciones?id=${enrollmentId}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status,
-            adminNotes: notes,
-            feedback,
-          }),
-        },
-      )
-      if (response.ok) {
-        await refreshEnrollments(1, false)
-      } else {
-        toast.error('Error al actualizar inscripción')
-      }
+      await trpcClient.admin.enrollments.update.mutate({
+        id: enrollmentId,
+        status,
+        adminNotes: notes,
+        feedback,
+      })
+      await refreshEnrollments(1, false)
     } catch (error) {
-      toast.error('Error de conexión')
+      toast.error('Error al actualizar inscripción')
     }
   }
 
   const notify = async (enrollmentId?: string) => {
     actionLoading = enrollmentId || 'batch'
     try {
-      const response = await fetch('/api/admin/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enrollmentId,
-          courseId: enrollmentId ? undefined : courseId,
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        toast.success(
-          data.count
-            ? `Se enviaron ${data.count} notificaciones.`
-            : 'Notificación enviada.',
-        )
-        await refreshEnrollments(1, false)
-      } else {
-        toast.error('Error al enviar notificaciones')
-      }
-    } catch (error) {
-      toast.error('Error de conexión')
+      const result = await trpcClient.admin.notifications.send.mutate(
+        enrollmentId ? { enrollmentId } : { courseId }
+      )
+      toast.success(
+        result.count
+          ? `Se enviaron ${result.count} notificaciones.`
+          : 'Notificación enviada.',
+      )
+      await refreshEnrollments(1, false)
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al enviar notificaciones')
     } finally {
       actionLoading = null
     }
@@ -177,31 +159,22 @@
     sectionId: string,
   ) => {
     try {
-      const response = await fetch(
-        `/api/admin/inscripciones?id=${enrollmentId}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sectionId: sectionId || null }),
-        },
-      )
-
-      if (response.ok) {
-        toast.success('Paralelo asignado')
-        enrollmentsList = enrollmentsList.map((item) => {
-          if (item.enrollment.id === enrollmentId) {
-            return {
-              ...item,
-              enrollment: { ...item.enrollment, sectionId: sectionId || null },
-            }
+      await trpcClient.admin.enrollments.update.mutate({
+        id: enrollmentId,
+        sectionId: sectionId || null,
+      })
+      toast.success('Paralelo asignado')
+      enrollmentsList = enrollmentsList.map((item) => {
+        if (item.enrollment.id === enrollmentId) {
+          return {
+            ...item,
+            enrollment: { ...item.enrollment, sectionId: sectionId || null },
           }
-          return item
-        })
-      } else {
-        toast.error('Error al asignar paralelo')
-      }
+        }
+        return item
+      })
     } catch (error) {
-      toast.error('Error de conexión')
+      toast.error('Error al asignar paralelo')
     }
   }
 

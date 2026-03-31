@@ -1,6 +1,7 @@
 <script lang="ts">
   import { toast } from 'svelte-sonner'
   import Button from '@components/ui/Button.svelte'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Props {
     initialName: string | null
@@ -27,24 +28,20 @@
     }
 
     loading = true
-    const response = await fetch('/api/user/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email }),
-    })
-
-    if (response.ok) {
+    try {
+      await trpcClient.user.updateProfile.mutate({ name: name.trim(), email: email.trim() })
       toast.success('Perfil actualizado correctamente')
       initialName = name
       initialEmail = email
       if (redirectTo) {
         window.location.href = redirectTo
       }
-    } else {
-      const data = await response.json()
-      toast.error(data.error || 'Error al actualizar el perfil')
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al actualizar el perfil')
+    } finally {
+      loading = false
     }
-    loading = false
   }
 </script>
 

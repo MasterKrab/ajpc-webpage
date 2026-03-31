@@ -4,6 +4,11 @@
   "exclude": ["dist"],
   "compilerOptions": {
     "baseUrl": ".",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
     "paths": {
       "@components/*": ["src/components/*"],
       "@assets/*": ["src/assets/*"],
@@ -13,7 +18,8 @@
       "@constants/*": ["src/constants/*"],
       "@db/*": ["src/db/*"],
       "@lib/*": ["src/lib/*"],
-      "@app-types/*": ["src/types/*"]
+      "@app-types/*": ["src/types/*"],
+      "@app-trpc/*": ["src/trpc/*"]
     }
   }
 }

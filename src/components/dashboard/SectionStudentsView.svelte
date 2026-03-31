@@ -9,6 +9,7 @@
   import Button from '@components/ui/Button.svelte'
   import Loader from '@components/ui/Loader.svelte'
   import type { Student } from '@app-types/users'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Observation {
     id: string
@@ -54,56 +55,62 @@
 
   const fetchStudents = async (page = 1, append = false) => {
     if (!append) studentsLoading = true
-    const searchParam = studentSearchQuery
-      ? `&search=${encodeURIComponent(studentSearchQuery)}`
-      : ''
-    const response = await fetch(
-      `/api/docente/students?sectionId=${sectionId}&page=${page}&limit=${STUDENTS_PER_PAGE}${searchParam}`,
-    )
-    const data = await response.json()
-    if (append) {
-      studentsList = [...studentsList, ...(data.students || [])]
-    } else {
-      studentsList = data.students || []
+    try {
+      const result = await trpcClient.docente.students.list.query({
+        sectionId,
+        page,
+        limit: STUDENTS_PER_PAGE,
+        search: studentSearchQuery || undefined,
+      })
+      if (append) {
+        studentsList = [...studentsList, ...result.students as unknown as Student[]]
+      } else {
+        studentsList = result.students as unknown as Student[]
+      }
+      studentsTotal = result.total
+      studentsPage = page
+    } finally {
+      studentsLoading = false
     }
-    studentsTotal = data.total || 0
-    studentsPage = page
-    studentsLoading = false
   }
 
   async function openObservations(student: Student) {
     selectedStudent = student
     isObservationModalOpen = true
     observationsLoading = true
-    const res = await fetch(
-      `/api/docente/observations?studentId=${student.id}&courseId=${courseId}`,
-    )
-    observationsList = await res.json()
-    observationsLoading = false
+    try {
+      const result = await trpcClient.docente.observations.list.query({
+        studentId: student.id,
+        courseId,
+      })
+      observationsList = result as unknown as Observation[]
+    } finally {
+      observationsLoading = false
+    }
   }
 
   async function saveObservation() {
     if (!newObservation.trim() || !selectedStudent) return
     savingObservation = true
-    const response = await fetch('/api/docente/observations', {
-      method: 'POST',
-      body: JSON.stringify({
+    try {
+      await trpcClient.docente.observations.create.mutate({
         studentId: selectedStudent.id,
         courseId,
         observation: newObservation,
-      }),
-    })
-    if (response.ok) {
+      })
       toast.success('Observación guardada')
       newObservation = ''
-      const updated = await fetch(
-        `/api/docente/observations?studentId=${selectedStudent.id}&courseId=${courseId}`,
-      )
-      observationsList = await updated.json()
-    } else {
-      toast.error('Error al guardar la observación')
+      const result = await trpcClient.docente.observations.list.query({
+        studentId: selectedStudent.id,
+        courseId,
+      })
+      observationsList = result as unknown as Observation[]
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al guardar la observación')
+    } finally {
+      savingObservation = false
     }
-    savingObservation = false
   }
 
   let lastSearch = ''

@@ -9,6 +9,7 @@
   import Loader from '@components/ui/Loader.svelte'
   import type { Student } from '@app-types/users'
   import type { Module } from '@app-types/modules'
+  import { trpcClient } from '@app-trpc/client'
 
   interface Attendance {
     studentId: string
@@ -59,8 +60,8 @@
   async function fetchModules() {
     modulesLoading = true
     try {
-      const res = await fetch(`/api/docente/modules?courseId=${courseId}`)
-      modulesList = await res.json()
+      const result = await trpcClient.docente.modules.listByCourse.query({ courseId })
+      modulesList = result as unknown as Module[]
     } finally {
       modulesLoading = false
     }
@@ -68,27 +69,34 @@
 
   const fetchStudents = async (page = 1) => {
     studentsLoading = true
-    const searchParam = studentSearchQuery
-      ? `&search=${encodeURIComponent(studentSearchQuery)}`
-      : ''
-    const res = await fetch(
-      `/api/docente/students?sectionId=${sectionId}&page=${page}&limit=${STUDENTS_PER_PAGE}${searchParam}`,
-    )
-    const data = await res.json()
-    studentsList = data.students || []
-    studentsTotal = data.total || 0
-    studentsLoading = false
+    try {
+      const result = await trpcClient.docente.students.list.query({
+        sectionId,
+        page,
+        limit: STUDENTS_PER_PAGE,
+        search: studentSearchQuery || undefined,
+      })
+      studentsList = result.students as unknown as Student[]
+      studentsTotal = result.total
+    } finally {
+      studentsLoading = false
+    }
   }
 
   async function fetchAttendance() {
     if (!selectedModule) return
     attendanceLoading = true
-    const res = await fetch(
-      `/api/docente/attendance?moduleId=${selectedModule.id}&sectionId=${sectionId}&page=1&limit=${STUDENTS_PER_PAGE}`,
-    )
-    const data = await res.json()
-    attendanceList = data.attendance || []
-    attendanceLoading = false
+    try {
+      const result = await trpcClient.docente.attendance.list.query({
+        moduleId: selectedModule.id,
+        sectionId,
+        page: 1,
+        limit: STUDENTS_PER_PAGE,
+      })
+      attendanceList = result.attendance as unknown as Attendance[]
+    } finally {
+      attendanceLoading = false
+    }
   }
 
   async function selectModuleForAttendance(mod: Module) {
@@ -98,16 +106,13 @@
 
   async function saveAttendance(studentId: string, status: string) {
     if (!selectedModule) return
-    const response = await fetch('/api/docente/attendance', {
-      method: 'POST',
-      body: JSON.stringify({
+    try {
+      await trpcClient.docente.attendance.save.mutate({
         moduleId: selectedModule.id,
         sectionId,
         studentId,
-        status,
-      }),
-    })
-    if (response.ok) {
+        status: status as 'present' | 'absent' | 'late' | 'excused',
+      })
       const entry = attendanceList.find((a) => a.studentId === studentId)
       if (entry) {
         entry.status = status as any
@@ -127,7 +132,7 @@
         description: `${studentsList.find((s) => s.id === studentId)?.name || 'alumno'} → ${labels[status] || status}`,
         duration: 2000,
       })
-    } else {
+    } catch {
       toast.error('Error al actualizar asistencia')
     }
   }
