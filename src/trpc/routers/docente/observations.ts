@@ -17,7 +17,7 @@ export const docenteObservationsRouter = router({
    */
   list: teacherProcedure
     .input(z.object({ studentId: z.string().min(1), courseId: z.string().min(1) }))
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const observationList = await ctx.database
         .select()
         .from(studentObservations)
@@ -37,7 +37,7 @@ export const docenteObservationsRouter = router({
    */
   create: teacherProcedure
     .input(observationInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const newObservationId = generateId()
 
       await ctx.database.insert(studentObservations).values({

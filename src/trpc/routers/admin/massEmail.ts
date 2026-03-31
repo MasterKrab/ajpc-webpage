@@ -57,7 +57,7 @@ export const adminMassEmailRouter = router({
    */
   send: adminProcedure
     .input(massEmailInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const sanitizedBody = sanitizeHtml(input.body, sanitizeOptions)
       const sanitizedSignature = sanitizeHtml(input.signature, {
         allowedTags: [],

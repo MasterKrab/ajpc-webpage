@@ -22,7 +22,7 @@ export const adminUsersRouter = router({
    */
   list: adminProcedure
     .input(userListInputSchema)
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.limit
       const conditions = []
 
@@ -68,7 +68,7 @@ export const adminUsersRouter = router({
    */
   updateRole: sudoProcedure
     .input(updateRoleInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       if (input.id === ctx.user.id) {
         throw new TRPCError({
           code: 'BAD_REQUEST',

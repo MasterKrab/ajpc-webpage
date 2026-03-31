@@ -17,7 +17,7 @@ export const docenteStudentsRouter = router({
    */
   list: teacherProcedure
     .input(studentListInputSchema)
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.limit
 
       const baseConditions = [

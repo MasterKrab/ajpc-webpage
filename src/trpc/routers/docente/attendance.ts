@@ -24,7 +24,7 @@ export const docenteAttendanceRouter = router({
    */
   list: teacherProcedure
     .input(attendanceListInputSchema)
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.limit
 
       const whereClause = and(
@@ -58,7 +58,7 @@ export const docenteAttendanceRouter = router({
    */
   upsert: teacherProcedure
     .input(attendanceUpsertInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const [existingRecord] = await ctx.database
         .select()
         .from(attendance)

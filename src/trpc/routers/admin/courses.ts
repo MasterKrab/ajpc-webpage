@@ -51,7 +51,7 @@ export const adminCoursesRouter = router({
   /**
    * Returns a paginated list of all courses.
    */
-  list: adminProcedure.input(courseListInputSchema).query(async ({ ctx, input }: { ctx: any; input: any }) => {
+  list: adminProcedure.input(courseListInputSchema).query(async ({ ctx, input }) => {
     const offset = (input.page - 1) * input.limit
 
     const [totalCountRow] = await ctx.database
@@ -75,7 +75,7 @@ export const adminCoursesRouter = router({
   /**
    * Creates a new course and returns its generated ID.
    */
-  create: adminProcedure.input(courseInputSchema).mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+  create: adminProcedure.input(courseInputSchema).mutation(async ({ ctx, input }) => {
     const newCourseId = generateId()
     await ctx.database.insert(courses).values({
       id: newCourseId,
@@ -91,7 +91,7 @@ export const adminCoursesRouter = router({
    */
   update: adminProcedure
     .input(courseUpdateInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updateFields } = input
 
       const [existingCourse] = await ctx.database
@@ -124,7 +124,7 @@ export const adminCoursesRouter = router({
    */
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const [existingCourse] = await ctx.database
         .select()
         .from(courses)

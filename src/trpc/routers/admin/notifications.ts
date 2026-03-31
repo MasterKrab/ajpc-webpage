@@ -19,7 +19,7 @@ export const adminNotificationsRouter = router({
    */
   send: adminProcedure
     .input(sendNotificationsInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       type NotificationTarget = {
         enrollment: typeof enrollments.$inferSelect
         courseName: string
@@ -62,8 +62,8 @@ export const adminNotificationsRouter = router({
       }
 
       const allTemplates = await ctx.database.select().from(emailTemplates)
-      const approvedTemplate = allTemplates.find((template: any) => template.id === 'approved')
-      const rejectedTemplate = allTemplates.find((template: any) => template.id === 'rejected')
+      const approvedTemplate = allTemplates.find((template) => template.id === 'approved')
+      const rejectedTemplate = allTemplates.find((template) => template.id === 'rejected')
 
       if (!approvedTemplate || !rejectedTemplate) {
         throw new TRPCError({

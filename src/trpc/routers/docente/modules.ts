@@ -24,7 +24,7 @@ export const docenteModulesRouter = router({
    */
   listByCourse: teacherProcedure
     .input(z.object({ courseId: z.string().min(1) }))
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const courseModules = await ctx.database
         .select()
         .from(modules)
@@ -32,7 +32,7 @@ export const docenteModulesRouter = router({
         .orderBy(modules.createdAt)
 
       const modulesWithMaterials = await Promise.all(
-        courseModules.map(async (courseModule: any) => {
+        courseModules.map(async (courseModule) => {
           const materialList = await ctx.database
             .select()
             .from(moduleMaterials)
@@ -50,7 +50,7 @@ export const docenteModulesRouter = router({
    */
   create: adminProcedure
     .input(moduleInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const newModuleId = generateId()
       await ctx.database.insert(modules).values({ id: newModuleId, ...input })
       return { id: newModuleId }
@@ -61,7 +61,7 @@ export const docenteModulesRouter = router({
    */
   createMaterial: adminProcedure
     .input(materialInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const newMaterialId = generateId()
       await ctx.database
         .insert(moduleMaterials)
@@ -74,7 +74,7 @@ export const docenteModulesRouter = router({
    */
   update: adminProcedure
     .input(moduleInputSchema.extend({ id: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updateFields } = input
       await ctx.database
         .update(modules)
@@ -88,7 +88,7 @@ export const docenteModulesRouter = router({
    */
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       // Materials must be deleted before the module due to foreign key constraint
       await ctx.database
         .delete(moduleMaterials)
@@ -102,7 +102,7 @@ export const docenteModulesRouter = router({
    */
   deleteMaterial: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       await ctx.database
         .delete(moduleMaterials)
         .where(eq(moduleMaterials.id, input.id))

@@ -9,7 +9,7 @@ export const docenteSectionsRouter = router({
    * Admins and sudo see all sections; teachers only see their assigned ones.
    * Includes student count (approved enrollments only) and course name.
    */
-  list: teacherProcedure.query(async ({ ctx }: { ctx: any }) => {
+  list: teacherProcedure.query(async ({ ctx }) => {
     const isAdminOrSudo = ctx.user.role === 'admin' || ctx.user.role === 'sudo'
 
     type SectionRow = {

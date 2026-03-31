@@ -27,7 +27,7 @@ export const enrollmentRouter = router({
   /**
    * Returns all enrollments for the current authenticated user.
    */
-  list: protectedProcedure.query(async ({ ctx }: { ctx: any }) => {
+  list: protectedProcedure.query(async ({ ctx }) => {
     const result = await ctx.database
       .select({
         enrollment: enrollments,
@@ -48,7 +48,7 @@ export const enrollmentRouter = router({
    */
   create: protectedProcedure
     .input(createEnrollmentInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const { courseId, ...enrollmentData } = input
 
       if (!ctx.user.name || !ctx.user.email) {

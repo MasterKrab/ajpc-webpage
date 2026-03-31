@@ -6,11 +6,11 @@ export const adminSettingsRouter = router({
   /**
    * Returns all application settings as a key-value map.
    */
-  get: adminProcedure.query(async ({ ctx }: { ctx: any }) => {
+  get: adminProcedure.query(async ({ ctx }) => {
     const allSettings = await ctx.database.select().from(settings)
 
     const settingsMap = allSettings.reduce(
-      (accumulator: any, currentSetting: any) => {
+      (accumulator, currentSetting) => {
         accumulator[currentSetting.key] = currentSetting.value
         return accumulator
       },
@@ -25,7 +25,7 @@ export const adminSettingsRouter = router({
    */
   update: adminProcedure
     .input(z.record(z.string(), z.string()))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const settingEntries = Object.entries(input)
 
       for (const [key, value] of settingEntries) {

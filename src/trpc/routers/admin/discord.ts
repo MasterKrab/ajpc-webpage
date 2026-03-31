@@ -18,7 +18,7 @@ export const adminDiscordRouter = router({
    */
   getMemberStatus: adminProcedure
     .input(z.object({ enrollmentId: z.string().min(1) }))
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const [enrollment] = await ctx.database
         .select()
         .from(enrollments)
@@ -74,7 +74,7 @@ export const adminDiscordRouter = router({
    */
   joinGuild: adminProcedure
     .input(z.object({ enrollmentId: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const [enrollment] = await ctx.database
         .select()
         .from(enrollments)
@@ -140,7 +140,7 @@ export const adminDiscordRouter = router({
    */
   getSyncStatus: adminProcedure
     .input(z.object({ courseId: z.string().min(1) }))
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const [course] = await ctx.database
         .select()
         .from(courses)
@@ -173,11 +173,11 @@ export const adminDiscordRouter = router({
       )
 
       const guildMembersMap = new Map<string, DiscordGuildMember>(
-        guildMembers.map((member: any) => [member.user.id, member]),
+        guildMembers.map((member) => [member.user.id, member]),
       )
 
       const synchronizationData = approvedEnrollments.map(
-        ({ enrollment, user }: { enrollment: any; user: any }) => {
+        ({ enrollment, user }) => {
           const guildMember = guildMembersMap.get(user.discordId)
 
           return {
@@ -213,7 +213,7 @@ export const adminDiscordRouter = router({
    */
   syncNickname: adminProcedure
     .input(z.object({ enrollmentId: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const [enrollment] = await ctx.database
         .select()
         .from(enrollments)

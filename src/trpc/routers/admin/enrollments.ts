@@ -25,7 +25,7 @@ export const adminEnrollmentsRouter = router({
    */
   list: adminProcedure
     .input(enrollmentListInputSchema)
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const offset = (input.page - 1) * input.limit
       const conditions = []
 
@@ -71,7 +71,7 @@ export const adminEnrollmentsRouter = router({
    */
   update: adminProcedure
     .input(enrollmentUpdateInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updateFields } = input
 
       const updatePayload: {

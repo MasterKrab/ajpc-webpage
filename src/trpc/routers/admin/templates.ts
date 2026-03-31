@@ -67,7 +67,7 @@ export const adminTemplatesRouter = router({
    * Returns all email templates, auto-seeding defaults on first call.
    * Also runs migration fixes for outdated signature values.
    */
-  list: adminProcedure.query(async ({ ctx }: { ctx: any }) => {
+  list: adminProcedure.query(async ({ ctx }) => {
     let templateList = await ctx.database.select().from(emailTemplates)
 
     // Auto-seed if the table is empty
@@ -90,9 +90,9 @@ export const adminTemplatesRouter = router({
     }
 
     // Migration: add the received template if it was added after initial seeding
-    const hasReceivedTemplate = templateList.some((template: any) => template.id === 'received')
+    const hasReceivedTemplate = templateList.some((template) => template.id === 'received')
     if (!hasReceivedTemplate) {
-      const receivedDefault = DEFAULT_EMAIL_TEMPLATES.find((template: any) => template.id === 'received')!
+      const receivedDefault = DEFAULT_EMAIL_TEMPLATES.find((template) => template.id === 'received')!
       await ctx.database.insert(emailTemplates).values(receivedDefault)
       templateList.push({ ...receivedDefault, updatedAt: null })
     }
@@ -105,7 +105,7 @@ export const adminTemplatesRouter = router({
    */
   update: adminProcedure
     .input(templateUpdateInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const sanitizedBody = sanitizeHtml(input.body, sanitizeOptions)
       const sanitizedSignature = sanitizeHtml(input.signature, {
         allowedTags: [],

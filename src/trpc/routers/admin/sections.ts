@@ -16,14 +16,14 @@ export const adminSectionsRouter = router({
    */
   listByCourse: adminProcedure
     .input(z.object({ courseId: z.string().min(1) }))
-    .query(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .query(async ({ ctx, input }) => {
       const sectionList = await ctx.database
         .select()
         .from(sections)
         .where(eq(sections.courseId, input.courseId))
 
       const sectionsWithTeachers = await Promise.all(
-        sectionList.map(async (section: any) => {
+        sectionList.map(async (section) => {
           const assignedTeachers = await ctx.database
             .select({
               id: users.id,
@@ -49,7 +49,7 @@ export const adminSectionsRouter = router({
    */
   create: adminProcedure
     .input(sectionInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const { teacherIds, ...sectionFields } = input
       const newSectionId = generateId()
 
@@ -60,7 +60,7 @@ export const adminSectionsRouter = router({
 
       if (teacherIds && teacherIds.length > 0) {
         await ctx.database.insert(sectionDocentes).values(
-          teacherIds.map((teacherId: string) => ({
+          teacherIds.map((teacherId) => ({
             sectionId: newSectionId,
             teacherId,
           })),
@@ -75,7 +75,7 @@ export const adminSectionsRouter = router({
    */
   update: adminProcedure
     .input(sectionInputSchema.partial().extend({ id: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, teacherIds, ...sectionFields } = input
 
       if (Object.keys(sectionFields).length > 0) {
@@ -96,7 +96,7 @@ export const adminSectionsRouter = router({
 
         if (teacherIds.length > 0) {
           await ctx.database.insert(sectionDocentes).values(
-            teacherIds.map((teacherId: string) => ({
+            teacherIds.map((teacherId) => ({
               sectionId: id,
               teacherId,
             })),
@@ -112,7 +112,7 @@ export const adminSectionsRouter = router({
    */
   delete: adminProcedure
     .input(z.object({ id: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       // Unlink students before deleting so they aren't orphaned
       await ctx.database
         .update(enrollments)

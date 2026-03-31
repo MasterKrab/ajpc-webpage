@@ -22,7 +22,7 @@ export const userRouter = router({
    */
   updateProfile: protectedProcedure
     .input(updateProfileInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       await ctx.database
         .update(users)
         .set({
@@ -39,7 +39,7 @@ export const userRouter = router({
    * Deletes the current authenticated user's account.
    * Sudo users cannot delete their own account through this procedure.
    */
-  deleteAccount: protectedProcedure.mutation(async ({ ctx }: { ctx: any }) => {
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
     if (ctx.user.role === 'sudo') {
       throw new TRPCError({
         code: 'FORBIDDEN',

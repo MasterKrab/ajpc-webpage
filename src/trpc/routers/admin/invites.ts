@@ -15,7 +15,7 @@ export const adminInvitesRouter = router({
    * Returns all invite codes.
    * Sudo users see all invites; admin users only see their own.
    */
-  list: adminProcedure.query(async ({ ctx }: { ctx: any }) => {
+  list: adminProcedure.query(async ({ ctx }) => {
     const isSudoUser = ctx.user.role === 'sudo'
 
     let queryBuilder = ctx.database
@@ -49,7 +49,7 @@ export const adminInvitesRouter = router({
    */
   create: adminProcedure
     .input(createInviteInputSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const isSudoUser = ctx.user.role === 'sudo'
 
       if (input.role === 'admin' && !isSudoUser) {
@@ -78,7 +78,7 @@ export const adminInvitesRouter = router({
    */
   delete: adminProcedure
     .input(z.object({ code: z.string().min(1) }))
-    .mutation(async ({ ctx, input }: { ctx: any; input: any }) => {
+    .mutation(async ({ ctx, input }) => {
       const isSudoUser = ctx.user.role === 'sudo'
 
       const [existingInvite] = await ctx.database
