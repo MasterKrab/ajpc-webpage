@@ -298,6 +298,8 @@
     white-space: pre-wrap;
     line-height: 1.5;
     font-size: 0.9375rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .form-section__hint {

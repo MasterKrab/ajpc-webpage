@@ -218,6 +218,8 @@
     font-size: 0.95rem;
     color: var(--text-color-secondary);
     line-height: 1.5;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .module-card__actions {

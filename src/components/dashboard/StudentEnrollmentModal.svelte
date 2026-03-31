@@ -237,6 +237,8 @@
   .enrollment-modal__feedback-text {
     margin: 0.25rem 0 0;
     font-size: 0.9375rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .enrollment-modal__fields {
@@ -269,6 +271,8 @@
     padding: 0.75rem;
     border-radius: 0.5rem;
     white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .enrollment-modal__schedules {

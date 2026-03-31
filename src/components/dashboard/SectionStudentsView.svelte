@@ -213,6 +213,8 @@
   .observation-item__text {
     margin-top: 0;
     margin-bottom: 0.5rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .observation-item__time {

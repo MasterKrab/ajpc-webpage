@@ -55,6 +55,8 @@
     color: var(--text-color-secondary);
     font-size: 0.95rem;
     font-weight: 500;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .sub-header__actions {
