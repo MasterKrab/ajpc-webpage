@@ -154,10 +154,13 @@
               {@const schedule = enrollment.availableSchedules?.find(
                 (schedule) => schedule.id === scheduleId,
               )}
+
               {#if schedule}
                 <span class="enrollment-modal__schedule-badge">
                   {#if schedule.timeRange}
                     {schedule.day}: {schedule.timeRange}
+                  {:else}
+                    {schedule.day}
                   {/if}
                 </span>
               {/if}
