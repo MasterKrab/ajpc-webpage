@@ -91,7 +91,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
       const isOnboardingFlow =
         pathname.startsWith('/dashboard/onboarding') ||
-        pathname.startsWith('/api/user/profile')
+        pathname.includes('/api/trpc/user.updateProfile')
 
       if (!isSharedPath && !isOnboardingFlow) {
         console.log(
