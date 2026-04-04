@@ -63,7 +63,7 @@
 </div>
 
 <script>
-  ;(function initSimulation() {
+  const initSimulation = () => {
     let hasAnimated = false
     const rawCodeLines = [
       'string text;',
@@ -92,6 +92,10 @@
     const termOutput = document.getElementById('term-output')
     const container = document.querySelector('.code-simulation')
 
+    let observer: IntersectionObserver | null = null
+    let ideInterval: ReturnType<typeof setInterval> | null = null
+    let termInterval: ReturnType<typeof setInterval> | null = null
+
     function startAnimation() {
       if (hasAnimated) return
       hasAnimated = true
@@ -107,22 +111,22 @@
 
       let i = 0
 
-      const ideInterval = setInterval(() => {
+      ideInterval = setInterval(() => {
         ideTarget.textContent += rawCodeToType.charAt(i)
         i++
         if (i >= rawCodeToType.length) {
-          clearInterval(ideInterval)
+          if (ideInterval) clearInterval(ideInterval)
           ideTarget.innerHTML = formattedCode
           ideCursor.style.display = 'none'
 
           setTimeout(() => {
             termCursor.style.display = 'inline'
             let j = 0
-            const termInterval = setInterval(() => {
+            termInterval = setInterval(() => {
               termCmdTarget.textContent += termCmdToType.charAt(j)
               j++
               if (j >= termCmdToType.length) {
-                clearInterval(termInterval)
+                if (termInterval) clearInterval(termInterval)
                 termCursor.style.display = 'none'
 
                 setTimeout(() => {
@@ -136,13 +140,13 @@
     }
 
     if (container && window.IntersectionObserver) {
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (!entry.isIntersecting) return
 
             startAnimation()
-            observer.disconnect()
+            observer?.disconnect()
           })
         },
         { threshold: 0.3 },
@@ -152,7 +156,19 @@
       // Fallback if no IntersectionObserver
       setTimeout(startAnimation, 1000)
     }
-  })()
+
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        if (observer) observer.disconnect()
+        if (ideInterval) clearInterval(ideInterval)
+        if (termInterval) clearInterval(termInterval)
+      },
+      { once: true },
+    )
+  }
+
+  document.addEventListener('astro:page-load', initSimulation)
 </script>
 
 <style>
