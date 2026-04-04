@@ -16,7 +16,6 @@
 
   let { courseId, courseName, courseSchedules }: Props = $props()
 
-
   const formId = nanoid(5)
 
   const schoolYears = [
@@ -57,8 +56,8 @@
       age: z
         .number({ error: 'Ingresa tu edad' })
         .int()
-        .min(8, 'Edad mínima: 8')
-        .max(25, 'Edad máxima: 25'),
+        .min(12, 'Edad mínima: 12')
+        .max(21, 'Edad máxima: 21'),
       gender: z.string().min(1, 'Selecciona tu género'),
       schoolYear: z.string().min(1, 'Selecciona tu año de estudio'),
       schoolType: z.string().min(1, 'Selecciona el tipo de establecimiento'),
@@ -171,8 +170,8 @@
             type="number"
             id="{formId}-age"
             bind:value={age}
-            min="8"
-            max="25"
+            min="12"
+            max="21"
             required
             aria-required="true"
             aria-invalid={!!getError('age')}
@@ -441,7 +440,12 @@
               : undefined}
           />
           <span>
-            He leído y acepto los <button type="button" class="link-button" onclick={() => showTermsModal = true}>Términos y Condiciones</button> *
+            He leído y acepto los <button
+              type="button"
+              class="link-button"
+              onclick={() => (showTermsModal = true)}
+              >Términos y Condiciones</button
+            > *
           </span>
         </label>
         {#if getError('acceptTerms')}
@@ -469,7 +473,12 @@
               : undefined}
           />
           <span>
-            He leído y acepto el <button type="button" class="link-button" onclick={() => showRulesModal = true}>Reglamento de Convivencia</button> *
+            He leído y acepto el <button
+              type="button"
+              class="link-button"
+              onclick={() => (showRulesModal = true)}
+              >Reglamento de Convivencia</button
+            > *
           </span>
         </label>
         {#if getError('acceptConduct')}
@@ -485,7 +494,12 @@
     </Button>
   </form>
 
-  <Modal isOpen={showTermsModal} title="Términos y Condiciones" onClose={() => showTermsModal = false} size="xl">
+  <Modal
+    isOpen={showTermsModal}
+    title="Términos y Condiciones"
+    onClose={() => (showTermsModal = false)}
+    size="xl"
+  >
     <iframe
       src="/documents/terminos-y-condiciones-estudiantes.pdf"
       title="Términos y Condiciones"
@@ -493,7 +507,12 @@
     ></iframe>
   </Modal>
 
-  <Modal isOpen={showRulesModal} title="Reglamento de Convivencia" onClose={() => showRulesModal = false} size="xl">
+  <Modal
+    isOpen={showRulesModal}
+    title="Reglamento de Convivencia"
+    onClose={() => (showRulesModal = false)}
+    size="xl"
+  >
     <iframe
       src="/documents/reglamento-de-conviencia-estudiantes.pdf"
       title="Reglamento de Convivencia"

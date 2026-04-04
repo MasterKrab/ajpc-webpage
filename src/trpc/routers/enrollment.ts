@@ -9,7 +9,7 @@ import { TRPCError } from '@trpc/server'
 
 const createEnrollmentInputSchema = z.object({
   courseId: z.string().min(1),
-  age: z.number().int().min(8).max(25),
+  age: z.number().int().min(12).max(21),
   gender: z.string().min(1),
   schoolYear: z.string().min(1),
   schoolName: z.string().optional(),
