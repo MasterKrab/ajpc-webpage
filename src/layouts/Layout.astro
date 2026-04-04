@@ -15,6 +15,7 @@ import Footer from '@components/Footer.astro'
 import FloatingFocus from '@components/FloatingFocus.astro'
 import CursorEffect from '@components/CursorEffect.astro'
 import TopLoader from '@components/TopLoader.svelte'
+import SpeedInsights from '@components/SpeedInsights.astro'
 
 const { metadata = {}, showAside = true } = Astro.props
 ---
@@ -39,6 +40,7 @@ const { metadata = {}, showAside = true } = Astro.props
     <ClientRouter />
     <FloatingFocus />
     <CursorEffect />
+    <SpeedInsights />
     <ViewTransitions />
   </head>
   <body>
