@@ -8,11 +8,9 @@ const LINK_INSCRIPTION = user ? '/dashboard' : '/login'
 ---
 
 <Layout showAside={false}>
-  <!-- Dynamic Full-Page Background -->
   <canvas id="page-canvas" class="page__canvas" aria-hidden="true"></canvas>
 
   <div class="landing">
-    <!-- Creative Text Hero -->
     <header class="hero">
       <div class="hero__glow"></div>
       <h1 class="hero__title">
@@ -614,7 +612,7 @@ const LINK_INSCRIPTION = user ? '/dashboard' : '/login'
     .modules__title {
       font-size: 2.5rem;
       margin-bottom: 4rem;
-      text-align: center;
+      text-align: start;
       font-weight: 850;
     }
 
@@ -663,7 +661,7 @@ const LINK_INSCRIPTION = user ? '/dashboard' : '/login'
     }
 
     .module-card__name {
-      font-size: 1.75rem;
+      font-size: clamp(1.25rem, 2vw, 1.75rem);
       margin: 0;
       color: var(--brand-primary);
       font-weight: 800;
@@ -712,7 +710,13 @@ const LINK_INSCRIPTION = user ? '/dashboard' : '/login'
       flex-direction: column;
       align-items: center;
       gap: 1rem;
-      width: 12rem;
+      width: 100%;
+    }
+
+    @media screen and (min-width: 30rem) {
+      .feature-item {
+        width: 12rem;
+      }
     }
 
     .feature-item:hover {
