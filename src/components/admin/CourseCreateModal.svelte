@@ -3,6 +3,7 @@
   import { nanoid } from 'nanoid'
   import Modal from '@components/ui/Modal.svelte'
   import Button from '@components/ui/Button.svelte'
+  import RichTextEditor from '@components/admin/RichTextEditor.svelte'
   import { trpcClient } from '@app-trpc/client'
 
   interface Schedule {
@@ -145,14 +146,9 @@
 
     <div class="form-group">
       <label class="form-label" for="{formId}-courseDesc">Descripción</label>
-      <textarea
-        class="form-input"
-        id="{formId}-courseDesc"
-        bind:value={form.description}
-        rows="3"
-        placeholder="Breve descripción del curso..."
-      ></textarea>
+      <RichTextEditor bind:value={form.description} placeholder="Breve descripción del curso..." variables={[]} />
     </div>
+
 
     <fieldset class="form-group" style="padding: 0; margin: 0; border: none;">
       <legend class="form-label">Horarios Disponibles</legend>

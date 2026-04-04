@@ -14,6 +14,8 @@
   }
 
   let { courseId, courseName, courseSchedules }: Props = $props()
+
+
   const formId = nanoid(5)
 
   const schoolYears = [

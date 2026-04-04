@@ -60,9 +60,6 @@ const levelLabel = (level: string) => {
                 {levelLabel(course.level)} · {course.year}
                 {course.maxStudents ? ` · Máx: ${course.maxStudents}` : ''}
               </p>
-              {course.description && (
-                <p class="course-card__desc">{course.description}</p>
-              )}
               <a href={`/admin/cursos/${course.id}`} class="course-card__link">
                 Gestionar curso →
               </a>
@@ -163,16 +160,6 @@ const levelLabel = (level: string) => {
     font-size: 0.875rem;
     color: var(--text-color-secondary);
     font-weight: 600;
-  }
-
-  .course-card__desc {
-    margin: 0;
-    font-size: 0.9375rem;
-    color: var(--text-color-secondary);
-    line-height: 1.5;
-    flex-grow: 1;
-    overflow-wrap: break-word;
-    word-break: break-word;
   }
 
   .course-card__link {

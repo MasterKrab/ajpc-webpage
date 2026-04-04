@@ -3,6 +3,7 @@ import DashboardLayout from '@layouts/DashboardLayout.astro'
 import StudentEnrollmentModal from '@components/dashboard/StudentEnrollmentModal.svelte'
 import { isTeacher, isAdmin } from '@lib/auth'
 import { db } from '@db/index'
+import sanitizeHtml from 'sanitize-html'
 import { enrollments, courses } from '@db/schema'
 import { eq } from 'drizzle-orm'
 
@@ -183,7 +184,10 @@ const availableCourses = openCourses
                   </div>
 
                   {course.description && (
-                    <p class="course-card__description">{course.description}</p>
+                    <div
+                      class="course-card__description-content"
+                      set:html={sanitizeHtml(course.description)}
+                    />
                   )}
                   {alreadyEnrolled ? (
                     <span class="course-card__enrolled">Ya inscrito/a</span>
@@ -457,14 +461,33 @@ const availableCourses = openCourses
     color: var(--brand-primary);
   }
 
-  .course-card__description {
+  .course-card__description-content {
     font-size: 1rem;
     line-height: 1.6;
     color: var(--text-color-secondary);
     margin: 0 0 1.5rem;
     max-width: 65ch;
+    white-space: pre-wrap;
     overflow-wrap: break-word;
     word-break: break-word;
+  }
+
+  :global(.course-card__description-content p) {
+    margin-bottom: 0.5rem;
+  }
+  :global(.course-card__description-content p:last-child) {
+    margin-bottom: 0;
+  }
+  :global(
+    .course-card__description-content ul,
+    .course-card__description-content ol
+  ) {
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+  }
+  :global(.course-card__description-content a) {
+    color: var(--brand-primary);
+    text-decoration: underline;
   }
 
   .course-card__button {
