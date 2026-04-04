@@ -16,7 +16,7 @@ import FloatingFocus from '@components/FloatingFocus.astro'
 import CursorEffect from '@components/CursorEffect.astro'
 import TopLoader from '@components/TopLoader.svelte'
 
-const { metadata = {} } = Astro.props
+const { metadata = {}, showAside = true } = Astro.props
 ---
 
 <!doctype html>
@@ -44,11 +44,11 @@ const { metadata = {} } = Astro.props
   <body>
     <TopLoader client:load />
     <Header />
-    <div class="container">
+    <div class:list={['container', { 'container--full-width': !showAside }]}>
       <main class="main">
         <slot transition:animate="slide" />
       </main>
-      <Aside />
+      {showAside && <Aside />}
     </div>
     <Footer />
   </body>
@@ -66,7 +66,7 @@ const { metadata = {} } = Astro.props
     width: 100%;
   }
 
-  @media screen and (min-width: 600px) {
+  @media screen and (min-width: 37.5rem) {
     .container {
       gap: 1rem;
       padding-left: 1rem;
@@ -74,24 +74,29 @@ const { metadata = {} } = Astro.props
     }
   }
 
-  @media screen and (min-width: 768px) {
+  @media screen and (min-width: 48rem) {
     .container {
       grid-template-columns: 2fr 1fr;
+    }
+
+    .container--full-width {
+      grid-template-columns: 1fr;
     }
   }
 
   .main {
     transition: var(--transition-theme);
     padding: 3rem 1rem;
+    min-width: 0;
   }
 
-  @media screen and (min-width: 600px) {
+  @media screen and (min-width: 37.5rem) {
     .main {
       padding: 1.5rem;
     }
   }
 
-  @media screen and (min-width: 768px) {
+  @media screen and (min-width: 48rem) {
     .main {
       padding-left: 2rem;
       padding-right: 2rem;
