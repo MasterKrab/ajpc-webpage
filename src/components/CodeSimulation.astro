@@ -1,0 +1,363 @@
+<div class="code-simulation reveal">
+  <div class="window ide-window">
+    <div class="window__header">
+      <div class="window__dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="window__title">main.cpp — AJPC</div>
+    </div>
+    <div class="window__body">
+      <pre
+        class="code-block"><code><span class="kw">#include</span> <span class="str">&lt;bits/stdc++.h&gt;</span>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">string</span> <span class="fn">decrypt</span>(<span class="kw">string</span> text) {"{"}
+    <span class="kw">for</span> (<span class="kw">auto</span> &amp;character : text) character ^= <span class="num">998244353</span>;
+    <span class="kw">return</span> text;
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {"{"}
+    <span class="fn">ios_base::sync_with_stdio</span>(<span class="num">0</span>); <span class="fn">cin.tie</span>(<span class="num">0</span>);
+    
+    <span id="anim-code-target" /><span class="cursor" id="ide-cursor">|</span></code></pre>
+    </div>
+  </div>
+
+  <div class="window term-window">
+    <div class="window__header">
+      <div class="window__title">Terminal — zsh</div>
+    </div>
+    <div class="window__body term-body">
+      <div class="term-line">
+        <span class="prompt">~/ajpc $</span>
+        <span id="anim-term-cmd"></span><span
+          class="cursor"
+          id="term-cursor"
+          style="display: none;">_</span
+        >
+      </div>
+
+      <div id="term-output" class="term-output" style="display: none;">
+        <p class="out-text">
+          La AJPC es una iniciativa creada por estudiantes apasionados por la
+          programación competitiva, con el objetivo de formar a la próxima
+          generación de programadores en Chile 🇨🇱. Durante el 2025 logramos
+          construir una comunidad increíble, con más de 70 estudiantes de
+          distintas regiones del país, y donde varios de ellos incluso
+          obtuvieron medallas en la Olimpiada Chilena de Informática 🏆
+        </p>
+        <p class="out-text mt-2">
+          Trabajamos completamente en C++ 💻, el lenguaje estándar en
+          programación competitiva, y contamos con dos modalidades pensadas para
+          distintos niveles:
+        </p>
+        <div class="term-line mt-2">
+          <span class="prompt">~/ajpc $</span>
+          <span class="cursor">_</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  ;(function initSimulation() {
+    let hasAnimated = false
+    const rawCodeLines = [
+      'string text;',
+      '    cin >> text;',
+      '',
+      '    cout << decrypt(text) << "\\n";',
+      '}',
+    ]
+    const rawCodeToType = rawCodeLines.join('\n')
+
+    const formattedCodeLines = [
+      '<span class="kw">string</span> text;',
+      '    <span class="fn">cin</span> &gt;&gt; text;',
+      '',
+      '    <span class="fn">cout</span> &lt;&lt; <span class="fn">decrypt</span>(text) &lt;&lt; <span class="str">"\\n"</span>;',
+      '    <span class="kw">return</span> <span class="num">0</span>;',
+      '}',
+    ]
+    const formattedCode = formattedCodeLines.join('\n')
+    const termCmdToType = `g++ main.cpp -o main.out && ./main.out < input.txt`
+
+    const ideTarget = document.getElementById('anim-code-target')
+    const ideCursor = document.getElementById('ide-cursor')
+    const termCmdTarget = document.getElementById('anim-term-cmd')
+    const termCursor = document.getElementById('term-cursor')
+    const termOutput = document.getElementById('term-output')
+    const container = document.querySelector('.code-simulation')
+
+    function startAnimation() {
+      if (hasAnimated) return
+      hasAnimated = true
+
+      if (
+        !ideTarget ||
+        !ideCursor ||
+        !termCmdTarget ||
+        !termCursor ||
+        !termOutput
+      )
+        return
+
+      let i = 0
+
+      const ideInterval = setInterval(() => {
+        ideTarget.textContent += rawCodeToType.charAt(i)
+        i++
+        if (i >= rawCodeToType.length) {
+          clearInterval(ideInterval)
+          ideTarget.innerHTML = formattedCode
+          ideCursor.style.display = 'none'
+
+          setTimeout(() => {
+            termCursor.style.display = 'inline'
+            let j = 0
+            const termInterval = setInterval(() => {
+              termCmdTarget.textContent += termCmdToType.charAt(j)
+              j++
+              if (j >= termCmdToType.length) {
+                clearInterval(termInterval)
+                termCursor.style.display = 'none'
+
+                setTimeout(() => {
+                  termOutput.style.display = 'block'
+                }, 100)
+              }
+            }, 30)
+          }, 300)
+        }
+      }, 10)
+    }
+
+    if (container && window.IntersectionObserver) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return
+
+            startAnimation()
+            observer.disconnect()
+          })
+        },
+        { threshold: 0.3 },
+      )
+      observer.observe(container)
+    } else {
+      // Fallback if no IntersectionObserver
+      setTimeout(startAnimation, 1000)
+    }
+  })()
+</script>
+
+<style>
+  .code-simulation {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  @media screen and (min-width: 48rem) {
+    .ide-window {
+      flex: 1.3;
+    }
+
+    .term-window {
+      flex: 1;
+    }
+  }
+
+  .window {
+    background: rgba(40, 42, 54, 0.95); /* Dracula Bg #282a36 */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid #44475a; /* Dracula Current Line */
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .window__header {
+    background: rgba(68, 71, 90, 0.5); /* Dracula Current Line #44475a */
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #44475a;
+    position: relative;
+  }
+
+  .window__dots {
+    display: flex;
+    gap: 0.5rem;
+    position: absolute;
+  }
+
+  .window__dots span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .window__dots span:nth-child(1) {
+    background-color: #ff5f56;
+  }
+  .window__dots span:nth-child(2) {
+    background-color: #ffbd2e;
+  }
+  .window__dots span:nth-child(3) {
+    background-color: #27c93f;
+  }
+
+  .window__title {
+    flex: 1;
+    text-align: center;
+    color: #6272a4; /* Dracula Comment color for subtle titles */
+    font-size: clamp(0.7rem, 2.5vw, 0.85rem);
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .window__body {
+    padding: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: clamp(0.75rem, 3.5vw, 0.95rem);
+    line-height: 1.6;
+    color: #f8f8f2; /* Dracula Foreground */
+    overflow-x: auto;
+    width: 100%;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  .code-block {
+    margin: 0;
+  }
+
+  /* IDE Syntax Colors Mapped to Dracula */
+  :global(.kw) {
+    color: #ff79c6; /* Dracula Pink */
+  }
+  :global(.str) {
+    color: #f1fa8c; /* Dracula Yellow */
+  }
+  :global(.fn) {
+    color: #50fa7b; /* Dracula Green */
+  }
+  :global(.cmt) {
+    color: #6272a4; /* Dracula Comment */
+    font-style: italic;
+  }
+  :global(.num) {
+    color: #bd93f9; /* Dracula Purple */
+  }
+
+  /* Terminal Specifics */
+  .term-body {
+    background: rgba(
+      33,
+      34,
+      44,
+      0.95
+    ); /* Dracula explicitly darker terminal #21222c */
+    color: #f8f8f2;
+    flex: 1; /* Stretch to fill */
+  }
+
+  .term-line {
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+
+  .prompt {
+    color: #50fa7b; /* Dracula Green for prompt */
+    font-weight: bold;
+    margin-right: 0.5rem;
+  }
+
+  .term-output {
+    margin-top: 1rem;
+    color: #f8f8f2;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.7;
+    font-size: clamp(0.85rem, 4vw, 1.05rem);
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .term-output p {
+    margin: 0;
+  }
+
+  .mt-2 {
+    margin-top: 1.5rem;
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    background-color: currentColor;
+    animation: blink 1s step-end infinite;
+  }
+
+  #term-cursor {
+    width: 8px;
+    height: 1em;
+    vertical-align: middle;
+  }
+
+  /* IDE cursor is just | but let's make it a block */
+  #ide-cursor {
+    width: 2px;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* Minimal Custom Scrollbar for IDE & Terminal */
+  .window__body::-webkit-scrollbar,
+  pre::-webkit-scrollbar {
+    height: 8px;
+  }
+  .window__body::-webkit-scrollbar-track,
+  pre::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  .window__body::-webkit-scrollbar-thumb,
+  pre::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .window__body::-webkit-scrollbar-thumb:hover,
+  pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+</style>
