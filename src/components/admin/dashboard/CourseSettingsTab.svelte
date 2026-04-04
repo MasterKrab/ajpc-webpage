@@ -4,6 +4,7 @@
   import Select from '@components/ui/Select.svelte'
   import DeleteConfirmation from '../DeleteConfirmation.svelte'
   import Button from '@components/ui/Button.svelte'
+  import RichTextEditor from '@components/admin/RichTextEditor.svelte'
   import { trpcClient } from '@app-trpc/client'
 
   interface Schedule {
@@ -155,17 +156,13 @@
           />
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="padding-bottom: 3rem;">
         <label class="form-group__label" for="{formId}-description"
           >Descripción</label
         >
-        <textarea
-          id="{formId}-description"
-          class="form-input"
-          rows="3"
-          bind:value={editForm.description}
-        ></textarea>
+        <RichTextEditor bind:value={editForm.description} placeholder="Descripción..." variables={[]} />
       </div>
+
 
       <fieldset class="form-group" style="padding: 0; margin: 0; border: none;">
         <legend class="form-label" style="font-weight: 500;"

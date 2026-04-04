@@ -1,7 +1,7 @@
 ---
 import DashboardLayout from '@layouts/DashboardLayout.astro'
 import CourseDashboardHeader from '@components/admin/dashboard/CourseDashboardHeader.astro'
-import SettingsTab from '@components/admin/dashboard/SettingsTab.svelte'
+import CourseSettingsTab from '@components/admin/dashboard/CourseSettingsTab.svelte'
 import { isAdmin } from '@lib/auth'
 import { db } from '@db/index'
 import { courses, enrollments } from '@db/schema'
@@ -42,6 +42,6 @@ const [totalRes] = await db
   />
 
   <main>
-    <SettingsTab client:load course={course} />
+    <CourseSettingsTab client:load course={course} />
   </main>
 </DashboardLayout>

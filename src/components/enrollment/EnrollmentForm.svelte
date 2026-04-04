@@ -2,6 +2,7 @@
   import { z } from 'zod'
   import { nanoid } from 'nanoid'
   import Button from '@components/ui/Button.svelte'
+  import Modal from '@components/ui/Modal.svelte'
   import Select from '@components/ui/Select.svelte'
   import MultiSelect from '@components/ui/MultiSelect.svelte'
   import { REGIONS, COMMUNES_BY_REGION, SCHOOL_TYPES } from '@lib/chileData'
@@ -39,6 +40,9 @@
   let selectedSchedules = $state<string[]>([])
   let acceptTerms = $state(false)
   let acceptConduct = $state(false)
+
+  let showTermsModal = $state(false)
+  let showRulesModal = $state(false)
 
   let loading = $state(false)
   let success = $state(false)
@@ -437,11 +441,7 @@
               : undefined}
           />
           <span>
-            He leído y acepto los <a
-              href="/terminos"
-              target="_blank"
-              rel="noopener noreferrer">Términos y Condiciones</a
-            > *
+            He leído y acepto los <button type="button" class="link-button" onclick={() => showTermsModal = true}>Términos y Condiciones</button> *
           </span>
         </label>
         {#if getError('acceptTerms')}
@@ -469,11 +469,7 @@
               : undefined}
           />
           <span>
-            He leído y acepto el <a
-              href="/reglamento"
-              target="_blank"
-              rel="noopener noreferrer">Reglamento de Convivencia</a
-            > *
+            He leído y acepto el <button type="button" class="link-button" onclick={() => showRulesModal = true}>Reglamento de Convivencia</button> *
           </span>
         </label>
         {#if getError('acceptConduct')}
@@ -488,6 +484,22 @@
       Enviar inscripción
     </Button>
   </form>
+
+  <Modal isOpen={showTermsModal} title="Términos y Condiciones" onClose={() => showTermsModal = false} size="xl">
+    <iframe
+      src="/documents/terminos-y-condiciones-estudiantes.pdf"
+      title="Términos y Condiciones"
+      class="pdf-viewer"
+    ></iframe>
+  </Modal>
+
+  <Modal isOpen={showRulesModal} title="Reglamento de Convivencia" onClose={() => showRulesModal = false} size="xl">
+    <iframe
+      src="/documents/reglamento-de-conviencia-estudiantes.pdf"
+      title="Reglamento de Convivencia"
+      class="pdf-viewer"
+    ></iframe>
+  </Modal>
 {/if}
 
 <style>
@@ -649,5 +661,22 @@
 
   .text-error {
     color: var(--color-danger);
+  }
+
+  .link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--brand-primary);
+    text-decoration: underline;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .pdf-viewer {
+    width: 100%;
+    min-height: 70vh;
+    border: none;
+    border-radius: 0.5rem;
   }
 </style>
