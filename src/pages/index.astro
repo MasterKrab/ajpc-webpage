@@ -130,12 +130,11 @@ const LINK_INSCRIPTION = user ? '/dashboard' : '/login'
       rootMargin: '0px 0px 100px 0px',
     }
 
-    const observer = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries, obs) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('reveal--visible')
-        } else {
-          entry.target.classList.remove('reveal--visible')
+          obs.unobserve(entry.target)
         }
       })
     }, observerOptions)
