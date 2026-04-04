@@ -7,11 +7,17 @@ import vercel from '@astrojs/vercel'
 import cloudflare from '@astrojs/cloudflare'
 
 const isCloudflare = process.env.DEPLOY_TARGET === 'cloudflare'
-const adapter = isCloudflare ? cloudflare() : vercel()
+const adapter = isCloudflare
+  ? cloudflare()
+  : vercel({
+      webAnalytics: {
+        enabled: true,
+      },
+    })
 
 export default defineConfig({
   site: 'https://academiajuvenil.progcomp.cl',
   output: 'server',
-  adapter: adapter,
+  adapter,
   integrations: [sitemap(), icon(), svelte()],
 })
