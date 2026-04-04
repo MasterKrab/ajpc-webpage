@@ -48,7 +48,7 @@ importers:
         specifier: ^11.16.0
         version: 11.16.0(typescript@5.9.3)
       '@vercel/analytics':
-        specifier: ^2.0.1
+        specifier: 2.0.1
         version: 2.0.1(svelte@5.38.0)
       arctic:
         specifier: 3.7.0
