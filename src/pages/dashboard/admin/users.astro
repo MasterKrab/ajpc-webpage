@@ -11,7 +11,7 @@ const user = Astro.locals.user!
 if (!isAdmin(user)) return Astro.redirect('/dashboard')
 if (!isSudo(user)) return Astro.redirect('/dashboard/admin')
 
-const LIMIT = 20
+const LIMIT = 10
 
 const [{ count: totalUsers }] = await db
   .select({ count: sql<number>`count(*)` })

@@ -30,20 +30,19 @@
   let roleChangeLoading = $state<string | null>(null)
   let userSearchQuery = $state('')
   let usersPage = $state(1)
-  const USERS_PER_PAGE = 20
+  let usersPerPage = $state(10)
 
-  const hasMoreUsers = $derived(usersList.length < usersTotal)
+  const totalPages = $derived(Math.max(1, Math.ceil(usersTotal / usersPerPage)))
 
-  const fetchUsers = async (page = 1, append = false) => {
-    if (!append) usersLoading = true
+  const fetchUsers = async (page = 1) => {
+    usersLoading = true
     try {
       const result = await trpcClient.admin.users.list.query({
         page,
-        limit: USERS_PER_PAGE,
+        limit: usersPerPage,
         search: userSearchQuery || undefined,
       })
-      if (append) usersList = [...usersList, ...(result.users as unknown as User[])]
-      else usersList = result.users as unknown as User[]
+      usersList = result.users as unknown as User[]
       usersTotal = result.total
       usersPage = page
     } catch {
@@ -66,7 +65,7 @@
       toast.error(trpcError?.message || 'Error al actualizar el rol')
     } finally {
       roleChangeLoading = null
-      fetchUsers(1, false)
+      fetchUsers(usersPage)
     }
   }
 
@@ -75,13 +74,23 @@
     if (userSearchQuery === lastSearch) return
     const timer = setTimeout(() => {
       lastSearch = userSearchQuery
-      fetchUsers(1, false)
+      usersPage = 1
+      fetchUsers(1)
     }, 400)
     return () => clearTimeout(timer)
   })
 
+  const handlePageChange = (page: number) => {
+    fetchUsers(page)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    usersPerPage = size
+    fetchUsers(1)
+  }
+
   // Only do initial fetch if no SSR data was provided
-  if (initialUsers.length === 0) fetchUsers(1, false)
+  if (initialUsers.length === 0) fetchUsers(1)
 </script>
 
 <SubHeader title="Gestión de usuarios">
@@ -94,10 +103,14 @@
   <UserTable
     users={usersList}
     loading={usersLoading}
-    hasMore={hasMoreUsers}
-    onLoadMore={() => fetchUsers(usersPage + 1, true)}
     showEmail
     showRole
+    currentPage={usersPage}
+    totalItems={usersTotal}
+    {totalPages}
+    pageSize={usersPerPage}
+    onPageChange={handlePageChange}
+    onPageSizeChange={handlePageSizeChange}
   >
     {#snippet actions(user)}
       <Select

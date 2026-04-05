@@ -1,302 +1,321 @@
 <script lang="ts">
+  import Select from '@components/ui/Select.svelte'
+
   interface Props {
     currentPage: number
-    onPageChange: (page: number) => void
-    totalPages?: number | null
+    totalPages: number
     totalItems?: number | null
     pageSize?: number
     pageSizes?: number[]
+    onPageChange: (page: number) => void
     onPageSizeChange?: (pageSize: number) => void
-    showPageInput?: boolean
-    showPageSizeSelector?: boolean
-    hasNextPage?: boolean | null
-    hasPreviousPage?: boolean | null
   }
 
   let {
     currentPage,
-    onPageChange,
-    totalPages = null,
+    totalPages,
     totalItems = null,
-    pageSize = 10,
-    pageSizes = [5, 10, 25, 50],
+    pageSize = 20,
+    pageSizes = [5, 10, 20, 50],
+    onPageChange,
     onPageSizeChange,
-    showPageInput = true,
-    showPageSizeSelector = true,
-    hasNextPage = null,
-    hasPreviousPage = null,
   }: Props = $props()
 
-  let pageInput = $state(currentPage)
-  let internalPageSize = $state(pageSize)
+  const pageButtons = $derived.by(() => {
+    if (totalPages <= 7)
+      return Array.from({ length: totalPages }, (_, i) => i + 1)
 
-  const effectivePageSize = () => internalPageSize || 10
+    const pages: (number | 'ellipsis')[] = [1]
 
-  const effectiveTotalPages = () => {
-    const pageSizeValue = effectivePageSize()
-    if (totalPages !== null && totalPages !== undefined) return totalPages
-    const total = totalItems ?? 0
-    return Math.max(1, Math.ceil(total / pageSizeValue))
-  }
+    const windowStart = Math.max(2, currentPage - 1)
+    const windowEnd = Math.min(totalPages - 1, currentPage + 1)
 
-  const effectiveHasPrevious = () =>
-    hasPreviousPage !== null && hasPreviousPage !== undefined
-      ? hasPreviousPage
-      : currentPage > 1
+    if (windowStart > 2) pages.push('ellipsis')
 
-  const effectiveHasNext = () =>
-    hasNextPage !== null && hasNextPage !== undefined
-      ? hasNextPage
-      : currentPage < effectiveTotalPages()
+    for (let p = windowStart; p <= windowEnd; p++) {
+      pages.push(p)
+    }
 
-  const effectiveTotalItems = () => totalItems ?? 0
+    if (windowEnd < totalPages - 1) pages.push('ellipsis')
 
-  const startItem = () =>
-    effectiveTotalItems() > 0 ? (currentPage - 1) * effectivePageSize() + 1 : 0
-
-  const endItem = () =>
-    effectiveTotalItems() > 0
-      ? Math.min(effectiveTotalItems(), currentPage * effectivePageSize())
-      : 0
-
-  $effect(() => {
-    pageInput = currentPage
+    pages.push(totalPages)
+    return pages
   })
 
-  const normalizePage = (page: number) => {
-    const floorPage = Math.max(1, Math.floor(page))
-    const last = effectiveTotalPages()
-    return Math.min(last, floorPage)
+  const startItem = $derived(
+    totalItems != null && totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0,
+  )
+  const endItem = $derived(
+    totalItems != null && totalItems > 0
+      ? Math.min(totalItems, currentPage * pageSize)
+      : 0,
+  )
+
+  const canGoPrev = $derived(currentPage > 1)
+  const canGoNext = $derived(currentPage < totalPages)
+
+  const goTo = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) return
+    onPageChange(page)
   }
 
-  const goToPage = (page: number) => {
-    const targetPage = normalizePage(page)
-
-    if (targetPage === currentPage) {
-      pageInput = currentPage
-      return
-    }
-
-    onPageChange(targetPage)
-  }
-
-  const goToFirst = () => {
-    if (!effectiveHasPrevious()) return
-    goToPage(1)
-  }
-
-  const goToPrevious = () => {
-    if (!effectiveHasPrevious()) return
-    goToPage(currentPage - 1)
-  }
-
-  const goToNext = () => {
-    if (!effectiveHasNext()) return
-    goToPage(currentPage + 1)
-  }
-
-  const goToLast = () => {
-    if (!effectiveHasNext()) return
-    goToPage(effectiveTotalPages())
-  }
-
-  const handlePageInput = () => {
-    const desired = Number(pageInput)
-    if (!Number.isFinite(desired)) {
-      pageInput = currentPage
-      return
-    }
-
-    goToPage(desired)
-  }
-
-  const handlePageSizeChange = (event: Event) => {
-    const element = event.target as HTMLSelectElement
-    const size = Number(element.value)
-
-    if (!Number.isFinite(size) || size <= 0) return
-
-    internalPageSize = size
-
-    if (onPageSizeChange) onPageSizeChange(size)
-
-    onPageChange(1)
+  const handlePageSizeChange = (val: any) => {
+    const size = Number(val)
+    if (Number.isFinite(size) && size > 0 && onPageSizeChange)
+      onPageSizeChange(size)
   }
 </script>
 
-<div class="table-pagination">
-  <div class="table-pagination__info">
+<nav class="pagination" aria-label="Paginación">
+  <p class="pagination__summary">
     {#if totalItems != null}
-      Mostrando
-      <span class="table-pagination__current">{startItem()}</span>
-      -
-      <span class="table-pagination__current">{endItem()}</span>
-      de
-      <span class="table-pagination__total">{totalItems}</span>
+      <span class="pagination__count">
+        {startItem}–{endItem}
+      </span>
+      <span class="pagination__count-label">de {totalItems}</span>
     {:else}
-      Página
-      <span class="table-pagination__current">{currentPage}</span>
-      de
-      <span class="table-pagination__total">{effectiveTotalPages()}</span>
+      <span class="pagination__count-label"
+        >Página {currentPage} de {totalPages}</span
+      >
     {/if}
-  </div>
+  </p>
 
-  <div class="table-pagination__controls">
+  <div class="pagination__controls">
     <button
-      class="table-pagination__button"
-      disabled={!effectiveHasPrevious()}
-      onclick={goToFirst}
-      aria-label="Ir a primera página"
-    >
-      « Primero
-    </button>
-
-    <button
-      class="table-pagination__button"
-      disabled={!effectiveHasPrevious()}
-      onclick={goToPrevious}
+      class="pagination__navigation-button"
+      onclick={() => goTo(currentPage - 1)}
+      disabled={!canGoPrev}
       aria-label="Página anterior"
     >
-      Anterior
-    </button>
-
-    {#if showPageInput}
-      <div class="table-pagination__goto">
-        <label for="page-input" class="visually-hidden">Página</label>
-        <input
-          id="page-input"
-          class="table-pagination__input"
-          type="number"
-          min="1"
-          max={effectiveTotalPages()}
-          bind:value={pageInput}
-          onkeydown={(event) => event.key === 'Enter' && handlePageInput()}
-          onblur={handlePageInput}
-          aria-label="Ir a página"
+      <svg
+        width="1rem"
+        height="1rem"
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M10 12L6 8l4-4"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         />
-        <button class="table-pagination__button" onclick={handlePageInput}>
-          Ir
-        </button>
-      </div>
-    {/if}
-
-    <button
-      class="table-pagination__button"
-      disabled={!effectiveHasNext()}
-      onclick={goToNext}
-      aria-label="Siguiente página"
-    >
-      Siguiente
+      </svg>
     </button>
 
-    <button
-      class="table-pagination__button"
-      disabled={!effectiveHasNext()}
-      onclick={goToLast}
-      aria-label="Ir a última página"
-    >
-      Último »
-    </button>
+    <div class="pagination__pages" role="list">
+      {#each pageButtons as button}
+        {#if button === 'ellipsis'}
+          <span class="pagination__ellipsis" aria-hidden="true">…</span>
+        {:else}
+          <span role="listitem">
+            <button
+              class="pagination__page-button"
+              class:pagination__page-button--active={button === currentPage}
+              onclick={() => goTo(button as number)}
+              aria-label="Ir a página {button}"
+              aria-current={button === currentPage ? 'page' : undefined}
+            >
+              {button}
+            </button>
+          </span>
+        {/if}
+      {/each}
+    </div>
 
-    {#if showPageSizeSelector}
-      <div class="table-pagination__page-size">
-        <label for="page-size" class="visually-hidden">Filas por página</label>
-        <select
-          id="page-size"
-          class="table-pagination__select"
-          value={effectivePageSize()}
-          onchange={handlePageSizeChange}
-          aria-label="Filas por página"
-        >
-          {#each pageSizes as size}
-            <option value={size}>{size} / pág</option>
-          {/each}
-        </select>
-      </div>
-    {/if}
+    <button
+      class="pagination__navigation-button"
+      onclick={() => goTo(currentPage + 1)}
+      disabled={!canGoNext}
+      aria-label="Página siguiente"
+    >
+      <svg
+        width="1rem"
+        height="1rem"
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M6 4l4 4-4 4"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
   </div>
-</div>
+
+  {#if onPageSizeChange}
+    <div class="pagination__size">
+      <label for="pagination-page-size" class="pagination__size-label"
+        >Filas</label
+      >
+      <div class="pagination__size-wrapper">
+        <Select
+          name="pagination-page-size"
+          options={pageSizes.map((size) => ({
+            value: size,
+            label: String(size),
+          }))}
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          aria-label="Filas por página"
+          placeholder=""
+        />
+      </div>
+    </div>
+  {/if}
+</nav>
 
 <style>
-  .table-pagination {
+  .pagination {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--border-color-light, rgba(128, 128, 128, 0.1));
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border-color);
     background: var(--foreground-color);
+    flex-wrap: wrap;
   }
 
-  .table-pagination__info {
-    font-size: 0.875rem;
+  .pagination__summary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    font-size: 0.8125rem;
     color: var(--text-color-secondary);
-    margin-right: 0.75rem;
+    flex: 1;
+    white-space: nowrap;
   }
 
-  .table-pagination__current,
-  .table-pagination__total {
+  .pagination__count {
     font-weight: 600;
     color: var(--text-color-primary);
   }
 
-  .table-pagination__controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
+  .pagination__count-label {
+    color: var(--text-color-secondary);
   }
 
-  .table-pagination__goto,
-  .table-pagination__page-size {
+  .pagination__controls {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
-  .table-pagination__input,
-  .table-pagination__select {
-    padding: 0.35rem 0.4rem;
-    min-width: 3.5rem;
-    border: 1px solid var(--border-color-light, rgba(128, 128, 128, 0.2));
-    background: var(--background-color);
-    border-radius: 0.375rem;
+  .pagination__navigation-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
     color: var(--text-color-primary);
-    font-size: 0.875rem;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      color 0.15s;
   }
 
-  .table-pagination__button {
-    padding: 0.45rem 0.75rem;
-    border: 1px solid var(--border-color-light, rgba(128, 128, 128, 0.2));
-    background: var(--background-color);
-    border-radius: 0.375rem;
+  .pagination__navigation-button:hover:not(:disabled) {
+    background: rgba(17, 107, 177, 0.08);
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+  }
+
+  .pagination__navigation-button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .pagination__pages {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .pagination__page-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.4rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: transparent;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-color-primary);
     cursor: pointer;
-    transition: all 0.2s;
+    transition:
+      background 0.15s,
+      border-color 0.15s,
+      color 0.15s;
   }
 
-  .table-pagination__button:hover:not(:disabled) {
-    background: rgba(var(--brand-primary-rgb), 0.08);
+  .pagination__page-button:hover:not(.pagination__page-button--active) {
+    background: rgba(17, 107, 177, 0.08);
+    border-color: var(--border-color);
+  }
+
+  .pagination__page-button--active {
+    background: var(--brand-primary);
+    color: #fff;
     border-color: var(--brand-primary);
+    font-weight: 700;
+    cursor: default;
   }
 
-  .table-pagination__button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .pagination__ellipsis {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 1.75rem;
+    height: 2rem;
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    letter-spacing: 0.05em;
+    user-select: none;
+    padding-bottom: 0.1rem;
   }
 
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+  .pagination__size {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+  }
+
+  .pagination__size-label {
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
     white-space: nowrap;
-    border: 0;
+  }
+
+  .pagination__size-wrapper {
+    width: 5rem;
+    --select-padding: 0.35rem 0.5rem;
+    --select-height: 2rem;
+    --select-font-size: 0.8125rem;
+    --select-border-radius: 0.5rem;
+    --select-arrow-size: 0.875rem;
+  }
+
+  @media (max-width: 35rem) {
+    .pagination__summary {
+      width: 100%;
+      flex: unset;
+    }
+
+    .pagination__size {
+      margin-left: 0;
+    }
   }
 </style>
