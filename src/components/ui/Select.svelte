@@ -231,9 +231,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: var(--select-padding, 0.75rem 1rem);
+    height: var(--select-height, auto);
+    border-radius: var(--select-border-radius, 0);
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: var(--select-font-size, 0.95rem);
     font-weight: 500;
     color: var(--text-color-primary);
     background-color: var(--foreground-color);
@@ -276,8 +278,8 @@
   }
 
   .select-arrow svg {
-    width: 1rem;
-    height: 1rem;
+    width: var(--select-arrow-size, 1rem);
+    height: var(--select-arrow-size, 1rem);
   }
 
   .select-menu {

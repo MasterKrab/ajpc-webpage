@@ -42,17 +42,20 @@ export const adminUsersRouter = router({
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-      const [totalCountRow] = await ctx.database
-        .select({ count: sql<number>`count(*)` })
-        .from(users)
-        .where(whereClause)
+      const [totalCountResult, userList] = await Promise.all([
+        ctx.database
+          .select({ count: sql<number>`count(*)` })
+          .from(users)
+          .where(whereClause),
+        ctx.database
+          .select()
+          .from(users)
+          .where(whereClause)
+          .limit(input.limit)
+          .offset(offset)
+      ])
 
-      const userList = await ctx.database
-        .select()
-        .from(users)
-        .where(whereClause)
-        .limit(input.limit)
-        .offset(offset)
+      const totalCountRow = totalCountResult[0]
 
       return {
         users: userList,
