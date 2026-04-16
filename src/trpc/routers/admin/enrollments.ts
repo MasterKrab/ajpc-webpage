@@ -1,11 +1,12 @@
 import { z } from 'zod'
 import { router, adminProcedure } from '../../trpc'
 import { enrollments, courses, users } from '@db/schema'
-import { eq, and, sql } from 'drizzle-orm'
+import { eq, and, sql, or, like } from 'drizzle-orm'
 
 const enrollmentListInputSchema = z.object({
   courseId: z.string().optional(),
   status: z.enum(['pending', 'approved', 'rejected']).optional(),
+  search: z.string().optional(),
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(100).default(50),
 })
@@ -35,12 +36,23 @@ export const adminEnrollmentsRouter = router({
       if (input.status) {
         conditions.push(eq(enrollments.status, input.status))
       }
+      if (input.search) {
+        const searchPattern = `%${input.search}%`
+        conditions.push(
+          or(
+            like(users.discordUsername, searchPattern),
+            like(enrollments.fullName, searchPattern),
+            like(enrollments.email, searchPattern),
+          ),
+        )
+      }
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
       const [totalCountRow] = await ctx.database
         .select({ count: sql<number>`count(*)` })
         .from(enrollments)
+        .innerJoin(users, eq(enrollments.userId, users.id))
         .where(whereClause)
 
       const enrollmentList = await ctx.database

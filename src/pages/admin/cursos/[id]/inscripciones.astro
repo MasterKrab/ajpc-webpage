@@ -35,7 +35,7 @@ const enrollmentData = await db
   .innerJoin(courses, eq(enrollments.courseId, courses.id))
   .innerJoin(users, eq(enrollments.userId, users.id))
   .where(eq(enrollments.courseId, id))
-  .limit(20) // Initial page
+  .limit(10) // Initial page
 
 // Fetch sections for the dropdown
 const sectionsList = await db
@@ -61,6 +61,7 @@ const sectionsList = await db
       client:load
       courseId={id}
       initialEnrollments={enrollmentData}
+      initialTotal={total}
       sectionsList={sectionsList}
       availableSchedules={course.availableSchedules ?? []}
     />

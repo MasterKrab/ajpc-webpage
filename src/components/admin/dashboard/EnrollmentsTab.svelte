@@ -5,11 +5,11 @@
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
   import SearchBox from '@components/ui/SearchBox.svelte'
-  import InfiniteScroll from '@components/ui/InfiniteScroll.svelte'
-  import Loader from '@components/ui/Loader.svelte'
   import EnrollmentDetailModal from '@components/admin/EnrollmentDetailModal.svelte'
   import Button from '@components/ui/Button.svelte'
   import type { Enrollment } from '@db/schema'
+  import TablePagination from '@components/tables/TablePagination.svelte'
+  import TableSkeletonRow from '@components/tables/TableSkeletonRow.svelte'
   import Table from '@components/tables/Table.svelte'
   import TableHead from '@components/tables/TableHead.svelte'
   import TableBody from '@components/tables/TableBody.svelte'
@@ -36,6 +36,7 @@
   interface Props {
     courseId: string
     initialEnrollments: EnrollmentItem[]
+    initialTotal?: number
     sectionsList: Section[]
     availableSchedules: Array<{ id: string; day: string; timeRange: string }>
   }
@@ -43,17 +44,22 @@
   let {
     courseId,
     initialEnrollments,
+    initialTotal = 0,
     sectionsList,
     availableSchedules,
   }: Props = $props()
 
   let enrollmentsList = $state<EnrollmentItem[]>(initialEnrollments)
-  let enrollmentTotal = $state(initialEnrollments.length)
+  let enrollmentTotal = $state(initialTotal)
   let enrollmentLoading = $state(false)
   let enrollmentPage = $state(1)
-  const ENROLLMENTS_PER_PAGE = 20
+  let pageSize = $state(10)
   let studentSearch = $state('')
   let actionLoading = $state<string | null>(null)
+
+  const totalPages = $derived(
+    Math.max(1, Math.ceil(enrollmentTotal / pageSize)),
+  )
 
   let selectedEnrollment = $state<
     | (EnrollmentItem['enrollment'] & {
@@ -72,21 +78,17 @@
     })),
   ])
 
-  const refreshEnrollments = async (page = 1, append = false) => {
-    if (!append) enrollmentLoading = true
+  const refreshEnrollments = async (page = 1) => {
+    enrollmentLoading = true
     try {
       const result = await trpcClient.admin.enrollments.list.query({
         courseId,
         page,
-        limit: ENROLLMENTS_PER_PAGE,
+        limit: pageSize,
+        search: studentSearch || undefined,
       })
 
-      if (append) {
-        enrollmentsList = [...enrollmentsList, ...result.enrollments as unknown as EnrollmentItem[]]
-      } else {
-        enrollmentsList = result.enrollments as unknown as EnrollmentItem[]
-      }
-
+      enrollmentsList = result.enrollments as unknown as EnrollmentItem[]
       enrollmentTotal = result.total
       enrollmentPage = page
     } catch (error) {
@@ -96,13 +98,22 @@
     }
   }
 
+  const handlePageChange = (page: number) => {
+    refreshEnrollments(page)
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    pageSize = size
+    refreshEnrollments(1)
+  }
+
   let searchTimeout: any
   $effect(() => {
     if (studentSearch !== undefined) {
       clearTimeout(searchTimeout)
       searchTimeout = setTimeout(() => {
-        refreshEnrollments(1, false)
-      }, 300)
+        refreshEnrollments(1)
+      }, 400)
     }
   })
 
@@ -119,7 +130,7 @@
         adminNotes: notes,
         feedback,
       })
-      await refreshEnrollments(1, false)
+      await refreshEnrollments(1)
     } catch (error) {
       toast.error('Error al actualizar inscripción')
     }
@@ -129,14 +140,14 @@
     actionLoading = enrollmentId || 'batch'
     try {
       const result = await trpcClient.admin.notifications.send.mutate(
-        enrollmentId ? { enrollmentId } : { courseId }
+        enrollmentId ? { enrollmentId } : { courseId },
       )
       toast.success(
         result.count
           ? `Se enviaron ${result.count} notificaciones.`
           : 'Notificación enviada.',
       )
-      await refreshEnrollments(1, false)
+      await refreshEnrollments(1)
     } catch (error: unknown) {
       const trpcError = error as { message?: string }
       toast.error(trpcError?.message || 'Error al enviar notificaciones')
@@ -191,7 +202,12 @@
     }
   }
 
-  const hasMoreEnrollments = $derived(enrollmentsList.length < enrollmentTotal)
+  // Initial fetch if no SSR data or if search/pagination starts
+  onMount(() => {
+    if (initialEnrollments.length === 0 && enrollmentTotal > 0) {
+      refreshEnrollments(1)
+    }
+  })
 </script>
 
 <SubHeader title="Inscripciones">
@@ -232,84 +248,89 @@
         </TableRow>
       </TableHead>
       <TableBody>
-        {#each enrollmentsList as item}
-          <TableRow>
-            <TableCell>
-              <strong>{item.enrollment.fullName}</strong><br />
-              <small class="text-muted">@{item.discordUsername}</small>
-            </TableCell>
-            <TableCell>
-              {item.enrollment.age} años<br />
-              <small class="text-muted">{item.enrollment.email}</small>
-            </TableCell>
-            <TableCell>
-              <span
-                class="status-pill status--{item.enrollment.status}"
-                role="status"
-              >
-                {statusLabel(item.enrollment.status)}
-              </span>
-            </TableCell>
-            <TableCell>
-              <Select
-                options={sectionOptions}
-                value={item.enrollment.sectionId || ''}
-                onChange={(value) =>
-                  assignSectionToStudent(item.enrollment.id, value)}
-                disabled={item.enrollment.status !== 'approved'}
-                extraClass="section-select"
-                placeholder=""
-                searchable={true}
-                aria-label="Asignar paralelo a {item.enrollment.fullName}"
-              />
-            </TableCell>
-            <TableCell>
-              {#if item.enrollment.notifiedAt}
-                <span class="notified-at">
-                  📩 {new Date(
-                    item.enrollment.notifiedAt,
-                  ).toLocaleDateString()}
+        {#if enrollmentLoading}
+          {#each Array(pageSize) as _}
+            <TableSkeletonRow
+              cells={['w150', 'w180', 'pill', 'w150', 'pill', 'action']}
+            />
+          {/each}
+        {:else}
+          {#each enrollmentsList as item}
+            <TableRow>
+              <TableCell>
+                <strong>{item.enrollment.fullName}</strong><br />
+                <small class="text-muted">@{item.discordUsername}</small>
+              </TableCell>
+              <TableCell>
+                {item.enrollment.age} años<br />
+                <small class="text-muted">{item.enrollment.email}</small>
+              </TableCell>
+              <TableCell>
+                <span
+                  class="status-pill status--{item.enrollment.status}"
+                  role="status"
+                >
+                  {statusLabel(item.enrollment.status)}
                 </span>
-              {:else if item.enrollment.status !== 'pending'}
+              </TableCell>
+              <TableCell>
+                <Select
+                  options={sectionOptions}
+                  value={item.enrollment.sectionId || ''}
+                  onChange={(value) =>
+                    assignSectionToStudent(item.enrollment.id, value)}
+                  disabled={item.enrollment.status !== 'approved'}
+                  extraClass="section-select"
+                  placeholder=""
+                  searchable={true}
+                  aria-label="Asignar paralelo a {item.enrollment.fullName}"
+                />
+              </TableCell>
+              <TableCell>
+                {#if item.enrollment.notifiedAt}
+                  <span class="notified-at">
+                    📩 {new Date(
+                      item.enrollment.notifiedAt,
+                    ).toLocaleDateString()}
+                  </span>
+                {:else if item.enrollment.status !== 'pending'}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={actionLoading === item.enrollment.id}
+                    loadingText="..."
+                    onclick={() => notify(item.enrollment.id)}
+                    ariaLabel="Notificar a {item.enrollment.fullName}"
+                  >
+                    Notificar
+                  </Button>
+                {:else}
+                  <span class="text-muted">—</span>
+                {/if}
+              </TableCell>
+              <TableCell class="actions-cell">
                 <Button
                   size="sm"
-                  variant="secondary"
-                  loading={actionLoading === item.enrollment.id}
-                  loadingText="..."
-                  onclick={() => notify(item.enrollment.id)}
-                  ariaLabel="Notificar a {item.enrollment.fullName}"
+                  onclick={() => openEnrollmentDetail(item)}
+                  ariaLabel="Ver postulación de {item.enrollment.fullName}"
                 >
-                  Notificar
+                  Ver postulación
                 </Button>
-              {:else}
-                <span class="text-muted">—</span>
-              {/if}
-            </TableCell>
-            <TableCell class="actions-cell">
-              <Button
-                size="sm"
-                onclick={() => openEnrollmentDetail(item)}
-                ariaLabel="Ver postulación de {item.enrollment.fullName}"
-              >
-                Ver postulación
-              </Button>
-            </TableCell>
-          </TableRow>
-        {/each}
+              </TableCell>
+            </TableRow>
+          {/each}
+        {/if}
       </TableBody>
     </Table>
 
-    {#if enrollmentLoading && enrollmentsList.length === 0}
-      <Loader label="Cargando inscripciones..." />
-    {/if}
-
-    {#if hasMoreEnrollments}
-      <InfiniteScroll
-        hasMore={hasMoreEnrollments}
-        loading={enrollmentLoading}
-        onLoadMore={() => refreshEnrollments(enrollmentPage + 1, true)}
-      />
-    {/if}
+    <TablePagination
+      currentPage={enrollmentPage}
+      {totalPages}
+      totalItems={enrollmentTotal}
+      {pageSize}
+      onPageChange={handlePageChange}
+      onPageSizeChange={handlePageSizeChange}
+    />
   {/if}
 </DashboardContent>
 
