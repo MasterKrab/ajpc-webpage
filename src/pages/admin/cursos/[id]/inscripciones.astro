@@ -5,7 +5,7 @@ import EnrollmentsTab from '@components/admin/dashboard/EnrollmentsTab.svelte'
 import { isAdmin } from '@lib/auth'
 import { db } from '@db/index'
 import { courses, enrollments, users, sections } from '@db/schema'
-import { eq, sql, count } from 'drizzle-orm'
+import { eq, sql, count, inArray } from 'drizzle-orm'
 
 const user = Astro.locals.user
 if (!user || !isAdmin(user)) return Astro.redirect('/login')
@@ -35,7 +35,32 @@ const enrollmentData = await db
   .innerJoin(courses, eq(enrollments.courseId, courses.id))
   .innerJoin(users, eq(enrollments.userId, users.id))
   .where(eq(enrollments.courseId, id))
-  .limit(10) // Initial page
+  .limit(10)
+
+// Also fetch other enrollments for these users to show in the list/modal
+const userIds = enrollmentData.map((e) => e.enrollment.userId)
+const otherEnrollments =
+  userIds.length > 0
+    ? await db
+        .select({
+          userId: enrollments.userId,
+          courseName: courses.name,
+          status: enrollments.status,
+        })
+        .from(enrollments)
+        .innerJoin(courses, eq(enrollments.courseId, courses.id))
+        .where(inArray(enrollments.userId, userIds))
+    : []
+
+const initialEnrollments = enrollmentData.map((e) => ({
+  ...e,
+  allEnrollments: otherEnrollments
+    .filter((oe) => oe.userId === e.enrollment.userId)
+    .map((oe) => ({
+      courseName: oe.courseName,
+      status: oe.status,
+    })),
+}))
 
 // Fetch sections for the dropdown
 const sectionsList = await db
@@ -60,7 +85,7 @@ const sectionsList = await db
     <EnrollmentsTab
       client:load
       courseId={id}
-      initialEnrollments={enrollmentData}
+      initialEnrollments={initialEnrollments}
       initialTotal={total}
       sectionsList={sectionsList}
       availableSchedules={course.availableSchedules ?? []}

@@ -25,6 +25,7 @@
     }
     courseName: string
     discordUsername: string
+    allEnrollments?: Array<{ courseName: string; status: string }>
   }
 
   interface Section {
@@ -65,6 +66,7 @@
     | (EnrollmentItem['enrollment'] & {
         courseName?: string
         discordUsername?: string
+        allEnrollments?: Array<{ courseName: string; status: string }>
       })
     | null
   >(null)
@@ -161,6 +163,7 @@
       ...item.enrollment,
       courseName: item.courseName,
       discordUsername: item.discordUsername,
+      allEnrollments: item.allEnrollments,
     }
     isDetailModalOpen = true
   }
@@ -258,7 +261,17 @@
           {#each enrollmentsList as item}
             <TableRow>
               <TableCell>
-                <strong>{item.enrollment.fullName}</strong><br />
+                <strong>{item.enrollment.fullName}</strong>
+                {#if item.allEnrollments && item.allEnrollments.length > 1}
+                  <span
+                    class="multi-badge"
+                    title="Este estudiante tiene {item.allEnrollments
+                      .length} postulaciones"
+                  >
+                    +{item.allEnrollments.length - 1}
+                  </span>
+                {/if}
+                <br />
                 <small class="text-muted">@{item.discordUsername}</small>
               </TableCell>
               <TableCell>
@@ -406,5 +419,21 @@
     padding: 3rem;
     text-align: center;
     color: var(--text-color-secondary);
+  }
+
+  .multi-badge {
+    background-color: var(--brand-primary);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 1rem;
+    vertical-align: middle;
+    margin-left: 0.35rem;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
   }
 </style>

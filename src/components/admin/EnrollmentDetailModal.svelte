@@ -19,6 +19,7 @@
     selectedSchedules: string[] | null
     courseName?: string
     discordUsername?: string
+    allEnrollments?: Array<{ courseName: string; status: string }>
   }
 
   interface Schedule {
@@ -118,12 +119,16 @@
 
       <div class="field-group">
         <dt class="detail-grid__label">Edad / Género</dt>
-        <dd class="detail-grid__value">{enrollment.age} años · {getGenderLabel(enrollment.gender)}</dd>
+        <dd class="detail-grid__value">
+          {enrollment.age} años · {getGenderLabel(enrollment.gender)}
+        </dd>
       </div>
 
       <div class="field-group">
         <dt class="detail-grid__label">Escuela / Año</dt>
-        <dd class="detail-grid__value">{enrollment.schoolName || 'N/A'} ({enrollment.schoolYear})</dd>
+        <dd class="detail-grid__value">
+          {enrollment.schoolName || 'N/A'} ({enrollment.schoolYear})
+        </dd>
       </div>
 
       <div class="field-group">
@@ -166,11 +171,29 @@
           </dd>
         </div>
       {/if}
+
+      {#if enrollment.allEnrollments && enrollment.allEnrollments.length > 0}
+        <div class="field-group full-width">
+          <dt class="detail-grid__label">Todas sus postulaciones</dt>
+          <dd class="detail-grid__value other-enrollments-list">
+            {#each enrollment.allEnrollments as other}
+              <span class="other-enrollment-item">
+                <span class="other-course-name">{other.courseName}</span>
+                <span class="other-status-pill status--{other.status}">
+                  {getStatusLabel(other.status)}
+                </span>
+              </span>
+            {/each}
+          </dd>
+        </div>
+      {/if}
     </dl>
 
     <div class="form-section">
       <div class="field-group full-width">
-        <label class="form-section__label" for="feedback">Nota al estudiante (Feedback)</label>
+        <label class="form-section__label" for="feedback"
+          >Nota al estudiante (Feedback)</label
+        >
         <p class="form-section__hint" id="feedback-hint">
           Opcional. Se enviará por correo junto con el resultado
           (Aprobada/Rechazada).
@@ -186,7 +209,9 @@
       </div>
 
       <div class="field-group full-width">
-        <label class="form-section__label" for="admin-notes">Notas de administración (Interno)</label>
+        <label class="form-section__label" for="admin-notes"
+          >Notas de administración (Interno)</label
+        >
         <textarea
           id="admin-notes"
           class="notes-area"
@@ -344,6 +369,38 @@
     border-radius: 0.5rem;
     font-size: 0.8125rem;
     font-weight: 600;
+  }
+
+  .other-enrollments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--background-secondary);
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+  }
+
+  .other-enrollment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--foreground-color);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+  }
+
+  .other-course-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .other-status-pill {
+    padding: 0.125rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
   }
 
   .notes-area {

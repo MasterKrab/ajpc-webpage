@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { router, adminProcedure } from '../../trpc'
 import { enrollments, courses, users } from '@db/schema'
-import { eq, and, sql, or, like } from 'drizzle-orm'
+import { eq, and, sql, or, like, inArray } from 'drizzle-orm'
 
 const enrollmentListInputSchema = z.object({
   courseId: z.string().optional(),
@@ -69,8 +69,35 @@ export const adminEnrollmentsRouter = router({
         .limit(input.limit)
         .offset(offset)
 
+      const userIds = enrollmentList.map((e) => e.enrollment.userId)
+      const otherEnrollments =
+        userIds.length > 0
+          ? await ctx.database
+              .select({
+                userId: enrollments.userId,
+                courseName: courses.name,
+                status: enrollments.status,
+              })
+              .from(enrollments)
+              .innerJoin(courses, eq(enrollments.courseId, courses.id))
+              .where(inArray(enrollments.userId, userIds))
+          : []
+
+      const enrollmentsWithOthers = enrollmentList.map((e) => {
+        const userOthers = otherEnrollments.filter(
+          (oe) => oe.userId === e.enrollment.userId,
+        )
+        return {
+          ...e,
+          allEnrollments: userOthers.map((oe) => ({
+            courseName: oe.courseName,
+            status: oe.status,
+          })),
+        }
+      })
+
       return {
-        enrollments: enrollmentList,
+        enrollments: enrollmentsWithOthers,
         total: totalCountRow.count,
         page: input.page,
         limit: input.limit,
