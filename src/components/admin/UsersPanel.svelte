@@ -5,7 +5,10 @@
   import Select from '@components/ui/Select.svelte'
   import SubHeader from '@components/ui/SubHeader.svelte'
   import DashboardContent from '@components/ui/DashboardContent.svelte'
+  import Button from '@components/ui/Button.svelte'
+  import ConfirmModal from '@components/ui/ConfirmModal.svelte'
   import { trpcClient } from '@app-trpc/client'
+  import { downloadCSV, generateCSV } from '@utils/csv'
 
   type User = {
     id: string
@@ -91,10 +94,61 @@
 
   // Only do initial fetch if no SSR data was provided
   if (initialUsers.length === 0) fetchUsers(1)
+
+  let exportingCsv = $state(false)
+  let isExportModalOpen = $state(false)
+  
+  const exportCsv = async () => {
+    isExportModalOpen = false
+    exportingCsv = true
+    const toastId = toast.loading('Exportando CSV...')
+    try {
+      const result = await trpcClient.admin.users.exportAll.query({
+        search: userSearchQuery || undefined,
+      })
+
+      const headers = [
+        { key: 'id', label: 'ID' },
+        { key: 'discordUsername', label: 'Discord Username' },
+        { key: 'name', label: 'Name' },
+        { key: 'email', label: 'Email' },
+        { key: 'role', label: 'Role' },
+      ]
+
+      const csvStr = generateCSV(result.users, headers)
+      await downloadCSV('usuarios.csv', csvStr)
+      toast.success('CSV descargado correctamente', { id: toastId })
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.dismiss(toastId)
+      } else {
+        toast.error('Error al exportar CSV', { id: toastId })
+      }
+    } finally {
+      exportingCsv = false
+    }
+  }
 </script>
+
+<ConfirmModal
+  isOpen={isExportModalOpen}
+  title="Descargar CSV"
+  message="¿Estás seguro de que deseas descargar el listado de usuarios? Esta acción exportará todos los registros que coincidan con tu búsqueda actual."
+  confirmText="Descargar"
+  onConfirm={exportCsv}
+  onCancel={() => (isExportModalOpen = false)}
+/>
 
 <SubHeader title="Gestión de usuarios">
   {#snippet actions()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (isExportModalOpen = true)}
+      loading={exportingCsv}
+    >
+      Descargar CSV
+    </Button>
     <SearchBox bind:value={userSearchQuery} placeholder="Buscar usuarios..." />
   {/snippet}
 </SubHeader>

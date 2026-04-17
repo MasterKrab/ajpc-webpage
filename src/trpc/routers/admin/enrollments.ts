@@ -105,6 +105,56 @@ export const adminEnrollmentsRouter = router({
     }),
 
   /**
+   * Returns all enrollments for CSV export without pagination limits.
+   */
+  exportAll: adminProcedure
+    .input(
+      z.object({
+        courseId: z.string().optional(),
+        status: z.enum(['pending', 'approved', 'rejected']).optional(),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = []
+
+      if (input.courseId) {
+        conditions.push(eq(enrollments.courseId, input.courseId))
+      }
+      if (input.status) {
+        conditions.push(eq(enrollments.status, input.status))
+      }
+      if (input.search) {
+        const searchPattern = `%${input.search}%`
+        conditions.push(
+          or(
+            like(users.discordUsername, searchPattern),
+            like(enrollments.fullName, searchPattern),
+            like(enrollments.email, searchPattern),
+          ),
+        )
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+      const enrollmentList = await ctx.database
+        .select({
+          enrollment: enrollments,
+          courseName: courses.name,
+          courseLevel: courses.level,
+          discordUsername: users.discordUsername,
+        })
+        .from(enrollments)
+        .innerJoin(courses, eq(enrollments.courseId, courses.id))
+        .innerJoin(users, eq(enrollments.userId, users.id))
+        .where(whereClause)
+
+      return {
+        enrollments: enrollmentList,
+      }
+    }),
+
+  /**
    * Updates enrollment status, admin notes, feedback, and/or section assignment.
    * Resets notifiedAt when status changes so the student can be re-notified.
    */

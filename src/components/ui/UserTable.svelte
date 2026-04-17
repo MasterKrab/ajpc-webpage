@@ -55,7 +55,7 @@
   }: Props = $props()
 
   const showPagination = $derived(
-    onPageChange !== undefined && currentPage !== undefined
+    onPageChange !== undefined && currentPage !== undefined,
   )
 
   const skeletonColumns = $derived(
@@ -64,8 +64,15 @@
       'w150',
       showEmail ? 'w180' : null,
       showRole ? 'pill' : null,
-      actions ? 'action' : null
-    ].filter(Boolean) as ('avatar-text' | 'w100' | 'w150' | 'w180' | 'pill' | 'action')[]
+      actions ? 'action' : null,
+    ].filter(Boolean) as (
+      | 'avatar-text'
+      | 'w100'
+      | 'w150'
+      | 'w180'
+      | 'pill'
+      | 'action'
+    )[],
   )
 
   // Safe non-null totalPages for the pagination component
@@ -74,7 +81,7 @@
       ? totalPages
       : totalItems != null
         ? Math.max(1, Math.ceil(totalItems / (pageSize ?? 20)))
-        : 1
+        : 1,
   )
 </script>
 
@@ -147,7 +154,9 @@
                       {user.discordUsername?.[0]?.toUpperCase() || '?'}
                     </div>
                   {/if}
-                  <span class="user-cell__username">@{user.discordUsername}</span>
+                  <span class="user-cell__username"
+                    >@{user.discordUsername}</span
+                  >
                 </div>
               </TableCell>
               <TableCell>
@@ -180,8 +189,8 @@
         totalPages={effectiveTotalPages}
         totalItems={totalItems ?? undefined}
         pageSize={pageSize ?? 20}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
+        {onPageChange}
+        {onPageSizeChange}
       />
     {:else if hasMore && onLoadMore}
       <InfiniteScroll {hasMore} {loading} {onLoadMore} />

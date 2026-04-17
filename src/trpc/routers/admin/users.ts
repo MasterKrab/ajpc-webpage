@@ -52,7 +52,7 @@ export const adminUsersRouter = router({
           .from(users)
           .where(whereClause)
           .limit(input.limit)
-          .offset(offset)
+          .offset(offset),
       ])
 
       const totalCountRow = totalCountResult[0]
@@ -62,6 +62,44 @@ export const adminUsersRouter = router({
         total: totalCountRow.count,
         page: input.page,
         limit: input.limit,
+      }
+    }),
+
+  /**
+   * Returns a list of all users matching the filters without pagination limits, meant for CSV export.
+   */
+  exportAll: adminProcedure
+    .input(
+      z.object({
+        role: z.enum(['student', 'docente', 'admin', 'sudo']).optional(),
+        search: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = []
+
+      if (input.role) conditions.push(eq(users.role, input.role))
+
+      if (input.search) {
+        const searchPattern = `%${input.search}%`
+        conditions.push(
+          or(
+            like(users.discordUsername, searchPattern),
+            like(users.name, searchPattern),
+            like(users.email, searchPattern),
+          ),
+        )
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+      const userList = await ctx.database
+        .select()
+        .from(users)
+        .where(whereClause)
+
+      return {
+        users: userList,
       }
     }),
 

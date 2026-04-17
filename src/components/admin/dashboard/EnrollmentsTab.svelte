@@ -7,6 +7,7 @@
   import SearchBox from '@components/ui/SearchBox.svelte'
   import EnrollmentDetailModal from '@components/admin/EnrollmentDetailModal.svelte'
   import Button from '@components/ui/Button.svelte'
+  import ConfirmModal from '@components/ui/ConfirmModal.svelte'
   import type { Enrollment } from '@db/schema'
   import TablePagination from '@components/tables/TablePagination.svelte'
   import TableSkeletonRow from '@components/tables/TableSkeletonRow.svelte'
@@ -17,6 +18,7 @@
   import TableCell from '@components/tables/TableCell.svelte'
   import TableHeader from '@components/tables/TableHeader.svelte'
   import { trpcClient } from '@app-trpc/client'
+  import { downloadCSV, generateCSV } from '@utils/csv'
 
   interface EnrollmentItem {
     enrollment: Enrollment & {
@@ -211,10 +213,73 @@
       refreshEnrollments(1)
     }
   })
+
+  let exportingCsv = $state(false)
+  let isExportModalOpen = $state(false)
+  
+  const exportCsv = async () => {
+    isExportModalOpen = false
+    exportingCsv = true
+    const toastId = toast.loading('Exportando CSV...')
+    try {
+      const result = await trpcClient.admin.enrollments.exportAll.query({
+        courseId,
+        search: studentSearch || undefined,
+      })
+      const headers = [
+        { key: 'enrollment.id', label: 'ID Inscripción' },
+        { key: 'enrollment.fullName', label: 'Nombre' },
+        { key: 'discordUsername', label: 'Discord' },
+        { key: 'enrollment.email', label: 'Email' },
+        { key: 'enrollment.age', label: 'Edad' },
+        { key: 'enrollment.gender', label: 'Género' },
+        { key: 'enrollment.schoolYear', label: 'Curso/Año Escolar' },
+        { key: 'enrollment.schoolName', label: 'Colegio' },
+        { key: 'enrollment.schoolType', label: 'Tipo de Colegio' },
+        { key: 'enrollment.region', label: 'Región' },
+        { key: 'enrollment.commune', label: 'Comuna' },
+        { key: 'enrollment.previousExperience', label: 'Experiencia Previa' },
+        { key: 'enrollment.motivation', label: 'Motivación' },
+        { key: 'enrollment.selectedSchedules', label: 'Horarios Seleccionados' },
+        { key: 'enrollment.status', label: 'Estado' },
+        { key: 'enrollment.adminNotes', label: 'Notas Admin' },
+        { key: 'enrollment.feedback', label: 'Feedback' },
+        { key: 'enrollment.createdAt', label: 'Fecha de Inscripción' },
+      ]
+      const csvStr = generateCSV(result.enrollments, headers)
+      await downloadCSV('inscripciones.csv', csvStr)
+      toast.success('CSV descargado correctamente', { id: toastId })
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.dismiss(toastId)
+      } else {
+        toast.error('Error al exportar CSV', { id: toastId })
+      }
+    } finally {
+      exportingCsv = false
+    }
+  }
 </script>
+
+<ConfirmModal
+  isOpen={isExportModalOpen}
+  title="Descargar CSV"
+  message="¿Estás seguro de que deseas descargar las inscripciones de este curso? Se exportarán los registros correspondientes a la búsqueda actual."
+  confirmText="Descargar"
+  onConfirm={exportCsv}
+  onCancel={() => (isExportModalOpen = false)}
+/>
 
 <SubHeader title="Inscripciones">
   {#snippet actions()}
+    <Button
+      variant="secondary"
+      size="sm"
+      onclick={() => (isExportModalOpen = true)}
+      loading={exportingCsv}
+    >
+      Descargar CSV
+    </Button>
     <SearchBox bind:value={studentSearch} placeholder="Buscar inscritos..." />
   {/snippet}
 </SubHeader>
