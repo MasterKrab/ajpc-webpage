@@ -154,11 +154,13 @@ body {
   margin: 0;
   font-family: var(--primary-font);
   color: var(--text-color-primary);
-  transition: var(--transition-theme);
-  line-height: 1.5;
-
   scrollbar-width: 2rem;
   overflow-x: hidden;
+  line-height: 1.5;
+}
+
+body.theme-loaded  {
+  transition: var(--transition-theme);
 }
 
 @media screen and (min-width: 600px) {

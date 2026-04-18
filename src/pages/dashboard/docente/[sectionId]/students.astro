@@ -13,12 +13,12 @@ if (!isTeacher(user)) return Astro.redirect('/dashboard')
 
 const { sectionId } = Astro.params
 
-const sectionRow = await getSectionData(sectionId!)
+const [sectionRow, hasAccess] = await Promise.all([
+  getSectionData(sectionId!),
+  verifyTeacherAccess(user, sectionId!)
+])
 
-if (!sectionRow) return Astro.redirect('/dashboard/docente')
-
-if (!(await verifyTeacherAccess(user, sectionId!)))
-  return Astro.redirect('/dashboard/docente')
+if (!sectionRow || !hasAccess) return Astro.redirect('/dashboard/docente')
 
 // SSR first page of students
 const LIMIT = 20
@@ -28,26 +28,27 @@ const conditions = [
 ]
 const finalWhere = and(...conditions)
 
-const [{ count: totalStudents }] = await db
-  .select({ count: sql<number>`count(*)` })
-  .from(enrollments)
-  .innerJoin(users, eq(enrollments.userId, users.id))
-  .where(finalWhere as any)
-
-const initialStudents = await db
-  .select({
-    id: users.id,
-    name: users.name,
-    discordUsername: users.discordUsername,
-    discordId: users.discordId,
-    discordAvatar: users.discordAvatar,
-    enrollmentId: enrollments.id,
-  })
-  .from(enrollments)
-  .innerJoin(users, eq(enrollments.userId, users.id))
-  .where(finalWhere as any)
-  .limit(LIMIT)
-  .offset(0)
+const [[{ count: totalStudents }], initialStudents] = await Promise.all([
+  db
+    .select({ count: sql<number>`count(*)` })
+    .from(enrollments)
+    .innerJoin(users, eq(enrollments.userId, users.id))
+    .where(finalWhere as any),
+  db
+    .select({
+      id: users.id,
+      name: users.name,
+      discordUsername: users.discordUsername,
+      discordId: users.discordId,
+      discordAvatar: users.discordAvatar,
+      enrollmentId: enrollments.id,
+    })
+    .from(enrollments)
+    .innerJoin(users, eq(enrollments.userId, users.id))
+    .where(finalWhere as any)
+    .limit(LIMIT)
+    .offset(0)
+])
 
 const tabs = [
   {

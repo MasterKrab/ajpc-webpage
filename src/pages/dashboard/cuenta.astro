@@ -9,11 +9,10 @@ import { isTeacher, isAdmin } from '@lib/auth'
 
 const user = Astro.locals.user!
 
-const [fullUser] = await db.select().from(users).where(eq(users.id, user.id))
-const [accountDeletionSetting] = await db
-  .select()
-  .from(settings)
-  .where(eq(settings.key, 'allow_account_deletion'))
+const [[fullUser], [accountDeletionSetting]] = await Promise.all([
+  db.select().from(users).where(eq(users.id, user.id)),
+  db.select().from(settings).where(eq(settings.key, 'allow_account_deletion'))
+])
 const canDeleteAccount = accountDeletionSetting?.value === 'true'
 
 ---

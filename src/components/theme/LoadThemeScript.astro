@@ -27,4 +27,9 @@
 
   root.classList.remove(...Object.values(THEMES))
   root.classList.add(theme)
+
+  // Prevent initial theme transition flash
+  window.addEventListener('load', () => {
+    document.body.classList.add('theme-loaded')
+  })
 </script>

@@ -11,35 +11,36 @@ const user = Astro.locals.user!
 const admin = isAdmin(user)
 const teacher = isTeacher(user)
 
-const userEnrollments = await db
-  .select({
-    id: enrollments.id,
-    fullName: enrollments.fullName,
-    email: enrollments.email,
-    age: enrollments.age,
-    gender: enrollments.gender,
-    schoolYear: enrollments.schoolYear,
-    schoolName: enrollments.schoolName,
-    region: enrollments.region,
-    commune: enrollments.commune,
-    previousExperience: enrollments.previousExperience,
-    motivation: enrollments.motivation,
-    selectedSchedules: enrollments.selectedSchedules,
-    status: enrollments.status,
-    feedback: enrollments.feedback,
-    sectionId: enrollments.sectionId,
-    courseName: courses.name,
-    courseLevel: courses.level,
-    availableSchedules: courses.availableSchedules,
-  })
-  .from(enrollments)
-  .innerJoin(courses, eq(enrollments.courseId, courses.id))
-  .where(eq(enrollments.userId, user.id))
-
-const openCourses = await db
-  .select()
-  .from(courses)
-  .where(eq(courses.status, 'open'))
+const [userEnrollments, openCourses] = await Promise.all([
+  db
+    .select({
+      id: enrollments.id,
+      fullName: enrollments.fullName,
+      email: enrollments.email,
+      age: enrollments.age,
+      gender: enrollments.gender,
+      schoolYear: enrollments.schoolYear,
+      schoolName: enrollments.schoolName,
+      region: enrollments.region,
+      commune: enrollments.commune,
+      previousExperience: enrollments.previousExperience,
+      motivation: enrollments.motivation,
+      selectedSchedules: enrollments.selectedSchedules,
+      status: enrollments.status,
+      feedback: enrollments.feedback,
+      sectionId: enrollments.sectionId,
+      courseName: courses.name,
+      courseLevel: courses.level,
+      availableSchedules: courses.availableSchedules,
+    })
+    .from(enrollments)
+    .innerJoin(courses, eq(enrollments.courseId, courses.id))
+    .where(eq(enrollments.userId, user.id)),
+  db
+    .select()
+    .from(courses)
+    .where(eq(courses.status, 'open')),
+])
 
 const availableCourses = openCourses
 ---

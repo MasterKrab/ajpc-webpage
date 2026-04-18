@@ -42,7 +42,7 @@ const { metadata = {}, showAside = true } = Astro.props
     <ViewTransitions />
   </head>
   <body>
-    <TopLoader client:load />
+    <TopLoader client:idle />
     <Header />
     <div class:list={['container', { 'container--full-width': !showAside }]}>
       <main class="main">

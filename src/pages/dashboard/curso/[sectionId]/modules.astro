@@ -12,12 +12,12 @@ if (!user) return Astro.redirect('/login')
 
 const { sectionId } = Astro.params
 
-const sectionRow = await getSectionData(sectionId!)
+const [sectionRow, hasAccess] = await Promise.all([
+  getSectionData(sectionId!),
+  verifyStudentAccess(user, sectionId!)
+])
 
-if (!sectionRow) return Astro.redirect('/dashboard')
-
-if (!(await verifyStudentAccess(user, sectionId!)))
-  return Astro.redirect('/dashboard')
+if (!sectionRow || !hasAccess) return Astro.redirect('/dashboard')
 
 const rawModules = await db
   .select()

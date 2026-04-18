@@ -14,7 +14,7 @@ const { metadata = {} } = Astro.props
     <BaseHead metadata={metadata} />
   </head>
   <body>
-    <TopLoader client:load />
+    <TopLoader client:idle />
     <header class="enrollment-header">
       <AppLogo />
       <UserBadge />

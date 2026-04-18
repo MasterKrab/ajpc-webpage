@@ -18,13 +18,12 @@ if (!isTeacher(user)) return Astro.redirect('/dashboard')
 
 const { sectionId } = Astro.params
 
-const sectionRow = await getSectionData(sectionId!)
+const [sectionRow, hasAccess] = await Promise.all([
+  getSectionData(sectionId!),
+  verifyTeacherAccess(user, sectionId!)
+])
 
-if (!sectionRow) return Astro.redirect('/dashboard/docente')
-
-if (!(await verifyTeacherAccess(user, sectionId!))) {
-  return Astro.redirect('/dashboard/docente')
-}
+if (!sectionRow || !hasAccess) return Astro.redirect('/dashboard/docente')
 
 const [rawModules, studentsResult] = await Promise.all([
   db
@@ -38,24 +37,26 @@ const [rawModules, studentsResult] = await Promise.all([
       eq(enrollments.status, 'approved'),
     ]
     const finalWhere = and(...conditions)
-    const [{ count }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(enrollments)
-      .innerJoin(users, eq(enrollments.userId, users.id))
-      .where(finalWhere as any)
-    const students = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        discordUsername: users.discordUsername,
-        discordId: users.discordId,
-        discordAvatar: users.discordAvatar,
-        enrollmentId: enrollments.id,
-      })
-      .from(enrollments)
-      .innerJoin(users, eq(enrollments.userId, users.id))
-      .where(finalWhere as any)
-      .limit(50)
+    const [[{ count }], students] = await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(enrollments)
+        .innerJoin(users, eq(enrollments.userId, users.id))
+        .where(finalWhere as any),
+      db
+        .select({
+          id: users.id,
+          name: users.name,
+          discordUsername: users.discordUsername,
+          discordId: users.discordId,
+          discordAvatar: users.discordAvatar,
+          enrollmentId: enrollments.id,
+        })
+        .from(enrollments)
+        .innerJoin(users, eq(enrollments.userId, users.id))
+        .where(finalWhere as any)
+        .limit(50)
+    ])
     return { students, total: count }
   })(),
 ])

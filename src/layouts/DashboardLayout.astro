@@ -20,7 +20,7 @@ const user = Astro.locals.user
     <ClientRouter />
   </head>
   <body>
-    <TopLoader client:load />
+    <TopLoader client:idle />
     <header class="header">
       <AppLogo />
       <Navigation>
@@ -29,6 +29,7 @@ const user = Astro.locals.user
             user && (
               <li class="menu__item">
                 <a
+                  data-astro-prefetch
                   class:list={[
                     'menu__link',
                     {
@@ -55,6 +56,7 @@ const user = Astro.locals.user
             user && (
               <li class="menu__item">
                 <a
+                  data-astro-prefetch
                   class:list={[
                     'menu__link',
                     {
@@ -79,6 +81,7 @@ const user = Astro.locals.user
             user && isTeacher(user) && (
               <li class="menu__item">
                 <a
+                  data-astro-prefetch
                   class:list={[
                     'menu__link',
                     {
@@ -103,6 +106,7 @@ const user = Astro.locals.user
             user && isAdmin(user) && (
               <li class="menu__item">
                 <a
+                  data-astro-prefetch
                   class:list={[
                     'menu__link',
                     {
@@ -133,7 +137,8 @@ const user = Astro.locals.user
       <slot />
     </main>
 
-    <Toaster client:load />
+    <!-- @ts-ignore -->
+    <Toaster client:idle />
 
     <MiniFooter />
   </body>

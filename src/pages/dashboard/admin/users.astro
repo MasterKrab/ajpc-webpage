@@ -13,11 +13,12 @@ if (!isSudo(user)) return Astro.redirect('/dashboard/admin')
 
 const LIMIT = 10
 
-const [{ count: totalUsers }] = await db
-  .select({ count: sql<number>`count(*)` })
-  .from(users)
-
-const initialUsers = await db.select().from(users).limit(LIMIT).offset(0)
+const [[{ count: totalUsers }], initialUsers] = await Promise.all([
+  db
+    .select({ count: sql<number>`count(*)` })
+    .from(users),
+  db.select().from(users).limit(LIMIT).offset(0)
+])
 ---
 
 <DashboardLayout

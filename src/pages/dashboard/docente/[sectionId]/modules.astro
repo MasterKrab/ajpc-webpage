@@ -16,15 +16,12 @@ if (!isTeacher(user)) return Astro.redirect('/dashboard')
 
 const { sectionId } = Astro.params
 
-// Load section + course
-const sectionRow = await getSectionData(sectionId!)
+const [sectionRow, hasAccess] = await Promise.all([
+  getSectionData(sectionId!),
+  verifyTeacherAccess(user, sectionId!)
+])
 
-if (!sectionRow) return Astro.redirect('/dashboard/docente')
-
-// Access check
-if (!(await verifyTeacherAccess(user, sectionId!))) {
-  return Astro.redirect('/dashboard/docente')
-}
+if (!sectionRow || !hasAccess) return Astro.redirect('/dashboard/docente')
 
 // SSR modules
 const rawModules = await db
