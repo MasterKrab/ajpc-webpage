@@ -216,7 +216,7 @@
 
   let exportingCsv = $state(false)
   let isExportModalOpen = $state(false)
-  
+
   const exportCsv = async () => {
     isExportModalOpen = false
     exportingCsv = true
@@ -231,7 +231,9 @@
         const schedules = (item.enrollment.selectedSchedules || []) as string[]
         const readableSchedules = schedules
           .map((id) => {
-            const found = availableSchedules.find((schedule) => s.id === id)
+            const found = availableSchedules.find(
+              (schedule) => schedule.id === id,
+            )
             return found ? `${found.day} ${found.timeRange}` : id
           })
           .join('; ')
