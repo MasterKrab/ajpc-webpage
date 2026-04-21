@@ -224,3 +224,126 @@ export const updateMemberNickname = async (
 
   return { success: true }
 }
+
+export interface DiscordRole {
+  id: string
+  name: string
+  color: number
+  hoist: boolean
+  position: number
+  permissions: string
+  managed: boolean
+  mentionable: boolean
+}
+
+export const getGuildRoles = async (
+  guildId: string,
+): Promise<DiscordRole[]> => {
+  guildId = guildId.trim()
+  const botToken = import.meta.env.DISCORD_BOT_TOKEN
+  
+  if (!botToken) {
+    console.warn('DISCORD_BOT_TOKEN is not set')
+    return []
+  }
+
+  const response = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/roles`,
+    {
+      headers: {
+        Authorization: `Bot ${botToken}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    console.error(`Failed to fetch roles for guild ${guildId}:`, errorBody)
+    return []
+  }
+
+  return response.json()
+}
+
+export const createGuildRole = async (
+  guildId: string,
+  name: string,
+): Promise<{ success: boolean; role?: DiscordRole; error?: string }> => {
+  guildId = guildId.trim()
+  const botToken = import.meta.env.DISCORD_BOT_TOKEN
+  if (!botToken) {
+    console.warn('DISCORD_BOT_TOKEN is not set')
+    return { success: false, error: 'DISCORD_BOT_TOKEN no configurado' }
+  }
+
+  const response = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/roles`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${botToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        mentionable: true,
+      }),
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ message: 'Error desconocido' }))
+    console.error(`Failed to create role ${name} in guild ${guildId}:`, errorBody)
+    
+    if (response.status === 403) {
+      return { success: false, error: 'El bot no tiene permisos para crear roles.' }
+    }
+    
+    return { success: false, error: errorBody.message || 'Error al crear rol' }
+  }
+
+  const role = await response.json()
+  return { success: true, role }
+}
+
+export const addRoleToMember = async (
+  guildId: string,
+  userId: string,
+  roleId: string,
+): Promise<{ success: boolean; error?: string }> => {
+  guildId = guildId.trim()
+  userId = userId.trim()
+  roleId = roleId.trim()
+  const botToken = import.meta.env.DISCORD_BOT_TOKEN
+  if (!botToken) {
+    console.warn('DISCORD_BOT_TOKEN is not set')
+    return { success: false, error: 'DISCORD_BOT_TOKEN no configurado' }
+  }
+
+  const response = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bot ${botToken}`,
+      },
+    },
+  )
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ message: 'Error desconocido' }))
+    console.error(`Failed to add role ${roleId} to user ${userId} in guild ${guildId}:`, errorBody)
+    
+    if (response.status === 403) {
+      return { success: false, error: 'El bot no tiene permisos o el rol es superior a él.' }
+    }
+    
+    return { success: false, error: errorBody.message || 'Error al asignar rol' }
+  }
+
+  return { success: true }
+}

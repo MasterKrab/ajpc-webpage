@@ -22,6 +22,9 @@
     currentNickname: string | null
     needsNicknameUpdate: boolean
     hasRole: boolean
+    hasParallelRole: boolean
+    needsParallelRole: boolean
+    parallelName: string | null
   }
 
   interface DiscordSyncResponse {
@@ -112,6 +115,34 @@
     toast.success('Proceso de sincronización de apodos completado')
   }
 
+  const syncParallel = async (student: StudentSyncData) => {
+    actionLoading = `sync-parallel-${student.enrollmentId}`
+    try {
+      await trpcClient.admin.discord.syncParallelRole.mutate({ enrollmentId: student.enrollmentId })
+      toast.success(`Rol del paralelo asignado a ${student.fullName}`)
+      await loadSyncData()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al asignar rol de paralelo')
+    } finally {
+      actionLoading = null
+    }
+  }
+
+  const bulkSyncParallels = async () => {
+    if (!syncData) return
+    const toSync = syncData.students.filter((student) => student.inGuild && student.needsParallelRole)
+    if (toSync.length === 0) return
+
+    bulkProgress = { current: 0, total: toSync.length, active: true }
+    for (const student of toSync) {
+      await syncParallel(student)
+      bulkProgress.current++
+    }
+    bulkProgress.active = false
+    toast.success('Proceso de sincronización de paralelos completado')
+  }
+
   onMount(() => {
     loadSyncData()
   })
@@ -147,6 +178,13 @@
             disabled={loading || bulkProgress.active || !syncData.students.some((student) => student.inGuild && student.needsNicknameUpdate)}
           >
             Sincronizar Apodos
+          </Button>
+          <Button 
+            variant="secondary" 
+            onclick={bulkSyncParallels} 
+            disabled={loading || bulkProgress.active || !syncData.students.some((student) => student.inGuild && student.needsParallelRole)}
+          >
+            Sincronizar Paralelos
           </Button>
         {/if}
       </div>
@@ -207,6 +245,15 @@
                     <span aria-hidden="true">⚠️</span> Apodo desactualizado
                   </span>
                 {/if}
+                {#if student.needsParallelRole}
+                  <span 
+                    class="status-badge status-badge--warning" 
+                    title="Falta rol de paralelo ({student.parallelName})"
+                    role="status"
+                  >
+                    <span aria-hidden="true">⚠️</span> Falta Rol ({student.parallelName})
+                  </span>
+                {/if}
               {:else}
                 <span class="status-badge status-badge--pending">
                   <span aria-hidden="true">❌</span> No unido
@@ -214,39 +261,55 @@
               {/if}
             </TableCell>
             <TableCell>
-              {#if !student.inGuild}
-                {#if student.hasToken}
-                  <Button 
-                    size="sm" 
-                    onclick={() => joinDiscord(student)} 
-                    loading={actionLoading === `join-${student.enrollmentId}`}
-                    ariaLabel="Añadir a {student.fullName} al servidor de Discord"
-                  >
-                    Añadir
-                  </Button>
+              <div class="action-buttons">
+                {#if !student.inGuild}
+                  {#if student.hasToken}
+                    <Button 
+                      size="sm" 
+                      onclick={() => joinDiscord(student)} 
+                      loading={actionLoading === `join-${student.enrollmentId}`}
+                      ariaLabel="Añadir a {student.fullName} al servidor de Discord"
+                    >
+                      Añadir
+                    </Button>
+                  {:else}
+                    <span 
+                      class="token-warning" 
+                      title="El alumno debe volver a iniciar sesión para otorgar permisos"
+                      role="status"
+                    >
+                      Faltan permisos
+                    </span>
+                  {/if}
                 {:else}
-                  <span 
-                    class="token-warning" 
-                    title="El alumno debe volver a iniciar sesión para otorgar permisos"
-                    role="status"
-                  >
-                    Faltan permisos
-                  </span>
+                  {#if student.needsNicknameUpdate}
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onclick={() => syncNickname(student)} 
+                      loading={actionLoading === `sync-${student.enrollmentId}`}
+                      ariaLabel="Sincronizar apodo de {student.fullName}"
+                    >
+                      Sincronizar Apodo
+                    </Button>
+                  {/if}
+                  {#if student.needsParallelRole}
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onclick={() => syncParallel(student)} 
+                      loading={actionLoading === `sync-parallel-${student.enrollmentId}`}
+                      ariaLabel="Sincronizar paralelo de {student.fullName}"
+                    >
+                      Sincronizar Paralelo
+                    </Button>
+                  {/if}
+                  {#if !student.needsNicknameUpdate && !student.needsParallelRole}
+                    <span class="text-muted" aria-hidden="true">—</span>
+                    <span class="sr-only">Sin acciones disponibles</span>
+                  {/if}
                 {/if}
-              {:else if student.needsNicknameUpdate}
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  onclick={() => syncNickname(student)} 
-                  loading={actionLoading === `sync-${student.enrollmentId}`}
-                  ariaLabel="Sincronizar apodo de {student.fullName}"
-                >
-                  Sincronizar Apodo
-                </Button>
-              {:else}
-                <span class="text-muted" aria-hidden="true">—</span>
-                <span class="sr-only">Sin acciones disponibles</span>
-              {/if}
+              </div>
             </TableCell>
           </TableRow>
         {/each}
@@ -274,6 +337,12 @@
   .header-actions {
     display: flex;
     gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
 

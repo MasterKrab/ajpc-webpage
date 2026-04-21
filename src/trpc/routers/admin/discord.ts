@@ -1,12 +1,15 @@
 import { z } from 'zod'
 import { router, adminProcedure } from '../../trpc'
-import { courses, enrollments, users } from '@db/schema'
+import { courses, enrollments, users, sections } from '@db/schema'
 import { eq } from 'drizzle-orm'
 import {
   addMemberToGuild,
   isMemberInGuild,
   getGuildMembers,
   updateMemberNickname,
+  getGuildRoles,
+  createGuildRole,
+  addRoleToMember,
   type DiscordGuildMember,
 } from '@lib/discord'
 import { TRPCError } from '@trpc/server'
@@ -159,9 +162,14 @@ export const adminDiscordRouter = router({
         })
 
       const approvedEnrollments = await ctx.database
-        .select({ enrollment: enrollments, user: users })
+        .select({
+          enrollment: enrollments,
+          user: users,
+          section: sections,
+        })
         .from(enrollments)
         .innerJoin(users, eq(enrollments.userId, users.id))
+        .leftJoin(sections, eq(enrollments.sectionId, sections.id))
         .where(eq(enrollments.courseId, input.courseId))
 
       console.log(
@@ -172,13 +180,30 @@ export const adminDiscordRouter = router({
         `[Discord Sync] Found ${guildMembers.length} members in Discord.`,
       )
 
+      const guildRoles = await getGuildRoles(course.discordGuildId)
+
       const guildMembersMap = new Map<string, DiscordGuildMember>(
         guildMembers.map((member) => [member.user.id, member]),
       )
 
       const synchronizationData = approvedEnrollments.map(
-        ({ enrollment, user }) => {
+        ({ enrollment, user, section }) => {
           const guildMember = guildMembersMap.get(user.discordId)
+
+          let hasParallelRole = false
+          let needsParallelRole = false
+          let parallelName = section?.name || null
+
+          if (section?.name && guildMember) {
+            const roleForSection = guildRoles.find(
+              (role) => role.name === section.name,
+            )
+
+            if (roleForSection)
+              hasParallelRole = guildMember.roles.includes(roleForSection.id)
+
+            needsParallelRole = !hasParallelRole
+          }
 
           return {
             enrollmentId: enrollment.id,
@@ -195,6 +220,9 @@ export const adminDiscordRouter = router({
               guildMember && course.discordRoleId
                 ? guildMember.roles.includes(course.discordRoleId)
                 : false,
+            hasParallelRole,
+            needsParallelRole,
+            parallelName,
           }
         },
       )
@@ -260,6 +288,102 @@ export const adminDiscordRouter = router({
           message:
             nicknameResponse.error ||
             'Error al actualizar el apodo. Revisa los permisos del bot.',
+        })
+
+      return { success: true }
+    }),
+
+  /**
+   * Syncs the parallel (section) role for an enrolled student.
+   * Creates the role if it doesn't exist, and assigns it to the user.
+   */
+  syncParallelRole: adminProcedure
+    .input(z.object({ enrollmentId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const [enrollment] = await ctx.database
+        .select()
+        .from(enrollments)
+        .where(eq(enrollments.id, input.enrollmentId))
+
+      if (!enrollment)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Inscripción no encontrada.',
+        })
+
+      if (!enrollment.sectionId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'El alumno no tiene un paralelo asignado.',
+        })
+      }
+
+      const [course] = await ctx.database
+        .select()
+        .from(courses)
+        .where(eq(courses.id, enrollment.courseId))
+
+      if (!course?.discordGuildId)
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'El curso no tiene un servidor de Discord configurado.',
+        })
+
+      const [section] = await ctx.database
+        .select()
+        .from(sections)
+        .where(eq(sections.id, enrollment.sectionId))
+
+      if (!section) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Paralelo no encontrado.',
+        })
+      }
+
+      const [studentUser] = await ctx.database
+        .select()
+        .from(users)
+        .where(eq(users.id, enrollment.userId))
+
+      if (!studentUser) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Usuario no encontrado.',
+        })
+      }
+
+      const guildRoles = await getGuildRoles(course.discordGuildId)
+      let sectionRole = guildRoles.find((r) => r.name === section.name)
+
+      if (!sectionRole) {
+        const createRes = await createGuildRole(
+          course.discordGuildId,
+          section.name,
+        )
+        if (!createRes.success || !createRes.role) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message:
+              createRes.error ||
+              'Error al crear el rol del paralelo en Discord',
+          })
+        }
+        sectionRole = createRes.role
+      }
+
+      const addResponse = await addRoleToMember(
+        course.discordGuildId,
+        studentUser.discordId,
+        sectionRole.id,
+      )
+
+      if (!addResponse.success)
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message:
+            addResponse.error ||
+            'Error al asignar el rol del paralelo. Revisa los permisos del bot.',
         })
 
       return { success: true }
