@@ -226,6 +226,25 @@
         courseId,
         search: studentSearch || undefined,
       })
+
+      const mappedEnrollments = result.enrollments.map((item) => {
+        const schedules = (item.enrollment.selectedSchedules || []) as string[]
+        const readableSchedules = schedules
+          .map((id) => {
+            const found = availableSchedules.find((schedule) => s.id === id)
+            return found ? `${found.day} ${found.timeRange}` : id
+          })
+          .join('; ')
+
+        return {
+          ...item,
+          enrollment: {
+            ...item.enrollment,
+            selectedSchedulesFormatted: readableSchedules,
+          },
+        }
+      })
+
       const headers = [
         { key: 'enrollment.id', label: 'ID Inscripción' },
         { key: 'enrollment.fullName', label: 'Nombre' },
@@ -240,13 +259,16 @@
         { key: 'enrollment.commune', label: 'Comuna' },
         { key: 'enrollment.previousExperience', label: 'Experiencia Previa' },
         { key: 'enrollment.motivation', label: 'Motivación' },
-        { key: 'enrollment.selectedSchedules', label: 'Horarios Seleccionados' },
+        {
+          key: 'enrollment.selectedSchedulesFormatted',
+          label: 'Horarios Seleccionados',
+        },
         { key: 'enrollment.status', label: 'Estado' },
         { key: 'enrollment.adminNotes', label: 'Notas Admin' },
         { key: 'enrollment.feedback', label: 'Feedback' },
         { key: 'enrollment.createdAt', label: 'Fecha de Inscripción' },
       ]
-      const csvStr = generateCSV(result.enrollments, headers)
+      const csvStr = generateCSV(mappedEnrollments, headers)
       await downloadCSV('inscripciones.csv', csvStr)
       toast.success('CSV descargado correctamente', { id: toastId })
     } catch (error) {
