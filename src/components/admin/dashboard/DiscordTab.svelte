@@ -143,6 +143,26 @@
     toast.success('Proceso de sincronización de paralelos completado')
   }
 
+  let creatingBaseRoles = $state(false)
+
+  const createBaseRoles = async () => {
+    creatingBaseRoles = true
+    try {
+      const result = await trpcClient.admin.discord.createParallelRolesBase.mutate({ courseId })
+      if (result.count > 0) {
+        toast.success(`Se crearon ${result.count} roles de paralelos base exitosamente.`)
+      } else {
+        toast.success('Todos los roles base de los paralelos ya existían.')
+      }
+      await loadSyncData()
+    } catch (error: unknown) {
+      const trpcError = error as { message?: string }
+      toast.error(trpcError?.message || 'Error al crear roles base')
+    } finally {
+      creatingBaseRoles = false
+    }
+  }
+
   onMount(() => {
     loadSyncData()
   })
@@ -185,6 +205,13 @@
             disabled={loading || bulkProgress.active || !syncData.students.some((student) => student.inGuild && student.needsParallelRole)}
           >
             Sincronizar Paralelos
+          </Button>
+          <Button 
+            variant="secondary" 
+            onclick={createBaseRoles} 
+            disabled={loading || bulkProgress.active || creatingBaseRoles}
+          >
+            {creatingBaseRoles ? 'Creando roles...' : 'Crear Roles Base'}
           </Button>
         {/if}
       </div>

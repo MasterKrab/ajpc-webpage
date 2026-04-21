@@ -388,4 +388,58 @@ export const adminDiscordRouter = router({
 
       return { success: true }
     }),
+
+  /**
+   * Creates the base roles for all sections of a course in Discord, if they do not exist.
+   */
+  createParallelRolesBase: adminProcedure
+    .input(z.object({ courseId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const [course] = await ctx.database
+        .select()
+        .from(courses)
+        .where(eq(courses.id, input.courseId))
+
+      if (!course)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Curso no encontrado.',
+        })
+
+      if (!course.discordGuildId)
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'El curso no tiene un servidor de Discord configurado.',
+        })
+
+      const courseSections = await ctx.database
+        .select()
+        .from(sections)
+        .where(eq(sections.courseId, input.courseId))
+
+      if (courseSections.length === 0) {
+        return { success: true, count: 0 }
+      }
+
+      const guildRoles = await getGuildRoles(course.discordGuildId)
+      let createdCount = 0
+
+      for (const section of courseSections) {
+        const exists = guildRoles.some((r) => r.name === section.name)
+        if (!exists) {
+          const createResponse = await createGuildRole(
+            course.discordGuildId,
+            section.name,
+          )
+          
+          if (!createResponse.success) {
+            console.error(`Error creating role for section ${section.name}`, createResponse.error)
+          } else {
+            createdCount++
+          }
+        }
+      }
+
+      return { success: true, count: createdCount }
+    }),
 })
