@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { router, adminProcedure } from '../../trpc'
 import { courses, enrollments, users, sections } from '@db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import {
   addMemberToGuild,
   isMemberInGuild,
@@ -11,6 +11,7 @@ import {
   createGuildRole,
   addRoleToMember,
   refreshDiscordToken,
+  removeMemberFromGuild,
   type DiscordGuildMember,
 } from '@lib/discord'
 import { TRPCError } from '@trpc/server'
@@ -88,6 +89,13 @@ export const adminDiscordRouter = router({
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Inscripción no encontrada.',
+        })
+
+      if (enrollment.status !== 'approved')
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'La inscripción debe estar aprobada para añadir al alumno a Discord.',
         })
 
       const [course] = await ctx.database
@@ -221,8 +229,8 @@ export const adminDiscordRouter = router({
         guildMembers.map((member) => [member.user.id, member]),
       )
 
-      const synchronizationData = approvedEnrollments.map(
-        ({ enrollment, user, section }) => {
+      const synchronizationData = approvedEnrollments
+        .map(({ enrollment, user, section }) => {
           const guildMember = guildMembersMap.get(user.discordId)
 
           let hasParallelRole = false
@@ -258,9 +266,10 @@ export const adminDiscordRouter = router({
             hasParallelRole,
             needsParallelRole,
             parallelName,
+            status: enrollment.status,
           }
-        },
-      )
+        })
+        .filter((student) => student.status === 'approved' || student.inGuild)
 
       return {
         courseName: course.name,
@@ -286,6 +295,13 @@ export const adminDiscordRouter = router({
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Inscripción no encontrada.',
+        })
+
+      if (enrollment.status !== 'approved')
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'La inscripción debe estar aprobada para sincronizar el apodo.',
         })
 
       const [course] = await ctx.database
@@ -344,6 +360,13 @@ export const adminDiscordRouter = router({
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Inscripción no encontrada.',
+        })
+
+      if (enrollment.status !== 'approved')
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message:
+            'La inscripción debe estar aprobada para sincronizar el rol.',
         })
 
       if (!enrollment.sectionId) {
@@ -476,5 +499,62 @@ export const adminDiscordRouter = router({
       }
 
       return { success: true, count: createdCount }
+    }),
+
+  /**
+   * Kicks a member from the Discord guild.
+   * Useful for removing students whose enrollment was rejected or cancelled.
+   */
+  kickMember: adminProcedure
+    .input(z.object({ enrollmentId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const [enrollment] = await ctx.database
+        .select()
+        .from(enrollments)
+        .where(eq(enrollments.id, input.enrollmentId))
+
+      if (!enrollment)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Inscripción no encontrada.',
+        })
+
+      const [course] = await ctx.database
+        .select()
+        .from(courses)
+        .where(eq(courses.id, enrollment.courseId))
+
+      if (!course?.discordGuildId)
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'El curso no tiene un servidor de Discord configurado.',
+        })
+
+      const [enrolledUser] = await ctx.database
+        .select()
+        .from(users)
+        .where(eq(users.id, enrollment.userId))
+
+      if (!enrolledUser)
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Usuario no encontrado.',
+        })
+
+      const kickResponse = await removeMemberFromGuild(
+        course.discordGuildId,
+        enrolledUser.discordId,
+      )
+
+      if (!kickResponse.success) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message:
+            kickResponse.error ||
+            'Error al expulsar del servidor. Revisa los permisos del bot.',
+        })
+      }
+
+      return { success: true }
     }),
 })

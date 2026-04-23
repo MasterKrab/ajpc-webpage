@@ -67,7 +67,7 @@ export const addMemberToGuild = async (
     access_token: userAccessToken,
   }
 
-  if (nickname) payload.nick = nickname
+  if (nickname) payload.nick = nickname.substring(0, 32)
 
   if (roleId) payload.roles = [roleId]
 
@@ -97,6 +97,14 @@ export const addMemberToGuild = async (
       }
     }
 
+    if (errorBody.code === 30001) {
+      return {
+        success: false,
+        error:
+          'El alumno ha alcanzado el límite de 100 servidores en Discord. Debe salir de algún servidor para unirse.',
+      }
+    }
+
     if (response.status === 403) {
       return {
         success: false,
@@ -108,6 +116,52 @@ export const addMemberToGuild = async (
     return {
       success: false,
       error: errorBody.message || 'Error al añadir al servidor',
+    }
+  }
+
+  return { success: true }
+}
+
+export const removeMemberFromGuild = async (
+  guildId: string,
+  userId: string,
+): Promise<{ success: boolean; error?: string }> => {
+  guildId = guildId.trim()
+  userId = userId.trim()
+
+  const botToken = import.meta.env.DISCORD_BOT_TOKEN
+  if (!botToken) {
+    console.warn('DISCORD_BOT_TOKEN is not set')
+    return { success: false, error: 'DISCORD_BOT_TOKEN no configurado' }
+  }
+
+  const response = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members/${userId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bot ${botToken}`,
+      },
+    },
+  )
+
+  if (!response.ok && response.status !== 404) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ message: 'Error desconocido' }))
+    console.error(`Failed to remove member from guild ${guildId}:`, errorBody)
+
+    if (response.status === 403) {
+      return {
+        success: false,
+        error:
+          'Permiso denegado (403). El bot no tiene permiso para expulsar miembros.',
+      }
+    }
+
+    return {
+      success: false,
+      error: errorBody.message || 'Error al expulsar del servidor',
     }
   }
 
@@ -202,7 +256,7 @@ export const updateMemberNickname = async (
         Authorization: `Bot ${botToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ nick: nickname }),
+      body: JSON.stringify({ nick: nickname.substring(0, 32) }),
     },
   )
 
