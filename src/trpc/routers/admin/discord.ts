@@ -10,6 +10,7 @@ import {
   getGuildRoles,
   createGuildRole,
   addRoleToMember,
+  refreshDiscordToken,
   type DiscordGuildMember,
 } from '@lib/discord'
 import { TRPCError } from '@trpc/server'
@@ -111,17 +112,51 @@ export const adminDiscordRouter = router({
           message: 'Usuario no encontrado.',
         })
 
-      if (!studentUser.discordAccessToken)
+      let accessToken = studentUser.discordAccessToken
+
+      // Check if token is expired or missing, and refresh if possible
+      const isExpired =
+        studentUser.discordTokenExpiresAt &&
+        new Date() > studentUser.discordTokenExpiresAt
+
+      if ((!accessToken || isExpired) && studentUser.discordRefreshToken) {
+        try {
+          console.log(`[Discord] Refreshing token for user ${studentUser.id}`)
+          const tokens = await refreshDiscordToken(
+            studentUser.discordRefreshToken,
+          )
+          accessToken = tokens.accessToken()
+
+          // Update user tokens in database
+          await ctx.database
+            .update(users)
+            .set({
+              discordAccessToken: accessToken,
+              discordRefreshToken: tokens.refreshToken(),
+              discordTokenExpiresAt: tokens.accessTokenExpiresAt(),
+              updatedAt: new Date(),
+            })
+            .where(eq(users.id, studentUser.id))
+        } catch (refreshError) {
+          console.error(
+            `[Discord] Failed to refresh token for user ${studentUser.id}:`,
+            refreshError,
+          )
+          // Fallback to existing token, addMemberToGuild will handle failure
+        }
+      }
+
+      if (!accessToken)
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message:
-            'El alumno no ha otorgado permisos de Discord. Debe cerrar sesión y volver a entrar.',
+            'El alumno no ha otorgado permisos de Discord o el token ha expirado. Debe volver a iniciar sesión.',
         })
 
       const joinResponse = await addMemberToGuild(
         course.discordGuildId,
         studentUser.discordId,
-        studentUser.discordAccessToken,
+        accessToken,
         enrollment.fullName,
         course.discordRoleId || undefined,
       )

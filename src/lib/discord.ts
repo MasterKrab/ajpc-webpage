@@ -35,6 +35,10 @@ export const getDiscordUser = async (
   return response.json()
 }
 
+export const refreshDiscordToken = async (refreshToken: string) => {
+  return await discord.refreshAccessToken(refreshToken)
+}
+
 export const DISCORD_SCOPES = ['identify', 'email', 'guilds.join']
 
 export const addMemberToGuild = async (
@@ -85,19 +89,19 @@ export const addMemberToGuild = async (
       .catch(() => ({ message: 'Error desconocido' }))
     console.error(`Failed to add member to guild ${guildId}:`, errorBody)
 
+    if (errorBody.code === 50025) {
+      return {
+        success: false,
+        error:
+          'El token del alumno es inválido o ha expirado. El alumno debe volver a iniciar sesión.',
+      }
+    }
+
     if (response.status === 403) {
       return {
         success: false,
         error:
           'Permiso denegado (403). El bot no tiene permiso para invitar o el rol que intenta asignar es igual o superior al suyo.',
-      }
-    }
-
-    if (errorBody.code === 50025) {
-      return {
-        success: false,
-        error:
-          'El token del alumno no tiene el permiso guilds.join. El alumno debe cerrar sesión y volver a entrar.',
       }
     }
 
