@@ -91,7 +91,7 @@
         moduleId: selectedModule.id,
         sectionId,
         page: 1,
-        limit: STUDENTS_PER_PAGE,
+        limit: 500,
       })
       attendanceList = result.attendance as unknown as Attendance[]
     } finally {
@@ -107,7 +107,7 @@
   async function saveAttendance(studentId: string, status: string) {
     if (!selectedModule) return
     try {
-      await trpcClient.docente.attendance.save.mutate({
+      await trpcClient.docente.attendance.upsert.mutate({
         moduleId: selectedModule.id,
         sectionId,
         studentId,
@@ -140,16 +140,6 @@
   const getAttendanceClass = (status: string | undefined) =>
     status ? `attendance-select--${status}` : ''
 
-  let lastSearch = ''
-  $effect(() => {
-    if (studentSearchQuery === lastSearch) return
-    const timer = setTimeout(() => {
-      lastSearch = studentSearchQuery
-      fetchStudents(1)
-    }, 400)
-    return () => clearTimeout(timer)
-  })
-
   onMount(() => {
     if (initialModules.length === 0) fetchModules()
     if (initialStudents.length === 0) fetchStudents(1)
@@ -171,6 +161,7 @@
       <SearchBox
         bind:value={studentSearchQuery}
         placeholder="Filtrar por nombre..."
+        onSearch={() => fetchStudents(1)}
       />
     {/snippet}
   </SubHeader>
