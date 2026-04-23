@@ -86,7 +86,7 @@
     if (!newMaterial.title.trim() || !newMaterial.url.trim() || !selectedModule)
       return
     try {
-      await trpcClient.docente.modules.addMaterial.mutate({
+      await trpcClient.docente.modules.createMaterial.mutate({
         moduleId: selectedModule.id,
         ...newMaterial,
       })
