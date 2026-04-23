@@ -54,6 +54,7 @@
     if (isEditing) {
       const result = await trpcClient.docente.modules.update.mutate({
         id: editingModuleId!,
+        courseId,
         ...newModule,
       })
       if (!result) return

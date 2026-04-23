@@ -63,6 +63,7 @@
     try {
       await trpcClient.docente.modules.update.mutate({
         id: editingModuleId,
+        courseId,
         title: newModule.title,
         description: newModule.description,
       })
