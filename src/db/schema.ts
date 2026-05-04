@@ -22,6 +22,9 @@ export const users = sqliteTable('users', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
+  codeforcesHandle: text('codeforces_handle').unique(),
+  codeforcesRating: integer('codeforces_rating'),
+  codeforcesLastSync: integer('codeforces_last_sync'),
 })
 
 export const courses = sqliteTable('courses', {
@@ -47,6 +50,10 @@ export const courses = sqliteTable('courses', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
+  codeforcesGroupId: text('codeforces_group_id'),
+  codeforcesLastRankingSync: integer('codeforces_last_ranking_sync', {
+    mode: 'timestamp',
+  }),
 })
 
 export const sections = sqliteTable('sections', {
@@ -222,6 +229,51 @@ export const inviteUsages = sqliteTable('invite_usages', {
   usedAt: integer('used_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 })
 
+export const codeforcesContests = sqliteTable('codeforces_contests', {
+  id: text('id').primaryKey(),
+  courseId: text('course_id')
+    .notNull()
+    .references(() => courses.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  startTimeSeconds: integer('start_time_seconds'),
+  durationSeconds: integer('duration_seconds'),
+  pointsPerProblem: text('points_per_problem').default('{}'),
+  scoreAccepted: integer('score_accepted').default(100).notNull(),
+  countedForGlobal: integer('counted_for_global', { mode: 'boolean' })
+    .default(false)
+    .notNull(),
+  lastSync: integer('last_sync', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
+export const codeforcesSubmissions = sqliteTable('codeforces_submissions', {
+  id: text('id').primaryKey(),
+  contestId: text('contest_id')
+    .notNull()
+    .references(() => codeforcesContests.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  problemId: text('problem_id').notNull(),
+  verdict: text('verdict').notNull(),
+  passedTestCount: integer('passed_test_count').default(0).notNull(),
+  timeConsumedMillis: integer('time_consumed_millis').notNull(),
+  creationTimeSeconds: integer('creation_time_seconds').notNull(),
+  points: integer('points').default(0).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Course = typeof courses.$inferSelect
@@ -246,6 +298,11 @@ export type InviteCode = typeof inviteCodes.$inferSelect
 export type NewInviteCode = typeof inviteCodes.$inferInsert
 export type InviteUsage = typeof inviteUsages.$inferSelect
 export type NewInviteUsage = typeof inviteUsages.$inferInsert
+export type CodeforcesContest = typeof codeforcesContests.$inferSelect
+export type NewCodeforcesContest = typeof codeforcesContests.$inferInsert
+export type CodeforcesSubmission = typeof codeforcesSubmissions.$inferSelect
+export type NewCodeforcesSubmission = typeof codeforcesSubmissions.$inferInsert
+
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(), // JSON string or simple value

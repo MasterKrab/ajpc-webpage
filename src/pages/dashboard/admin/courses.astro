@@ -60,7 +60,7 @@ const levelLabel = (level: string) => {
                 {levelLabel(course.level)} · {course.year}
                 {course.maxStudents ? ` · Máx: ${course.maxStudents}` : ''}
               </p>
-              <a href={`/admin/cursos/${course.id}`} class="course-card__link">
+              <a href={`/dashboard/admin/cursos/${course.id}`} class="course-card__link">
                 Gestionar curso →
               </a>
             </article>

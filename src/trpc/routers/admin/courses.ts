@@ -36,6 +36,7 @@ const courseInputSchema = z.object({
     .regex(/^\d+$/, 'ID de rol inválido (debe ser numérico)')
     .optional()
     .nullable(),
+  codeforcesGroupId: z.string().max(30).trim().optional().nullable(),
 })
 
 const courseListInputSchema = z.object({
@@ -51,40 +52,44 @@ export const adminCoursesRouter = router({
   /**
    * Returns a paginated list of all courses.
    */
-  list: adminProcedure.input(courseListInputSchema).query(async ({ ctx, input }) => {
-    const offset = (input.page - 1) * input.limit
+  list: adminProcedure
+    .input(courseListInputSchema)
+    .query(async ({ ctx, input }) => {
+      const offset = (input.page - 1) * input.limit
 
-    const [totalCountRow] = await ctx.database
-      .select({ count: sql<number>`count(*)` })
-      .from(courses)
+      const [totalCountRow] = await ctx.database
+        .select({ count: sql<number>`count(*)` })
+        .from(courses)
 
-    const courseList = await ctx.database
-      .select()
-      .from(courses)
-      .limit(input.limit)
-      .offset(offset)
+      const courseList = await ctx.database
+        .select()
+        .from(courses)
+        .limit(input.limit)
+        .offset(offset)
 
-    return {
-      courses: courseList,
-      total: totalCountRow.count,
-      page: input.page,
-      limit: input.limit,
-    }
-  }),
+      return {
+        courses: courseList,
+        total: totalCountRow.count,
+        page: input.page,
+        limit: input.limit,
+      }
+    }),
 
   /**
    * Creates a new course and returns its generated ID.
    */
-  create: adminProcedure.input(courseInputSchema).mutation(async ({ ctx, input }) => {
-    const newCourseId = generateId()
-    await ctx.database.insert(courses).values({
-      id: newCourseId,
-      ...input,
-      maxStudents: input.maxStudents ?? null,
-      status: input.status ?? 'closed',
-    })
-    return { id: newCourseId }
-  }),
+  create: adminProcedure
+    .input(courseInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const newCourseId = generateId()
+      await ctx.database.insert(courses).values({
+        id: newCourseId,
+        ...input,
+        maxStudents: input.maxStudents ?? null,
+        status: input.status ?? 'closed',
+      })
+      return { id: newCourseId }
+    }),
 
   /**
    * Updates an existing course's fields.
@@ -106,6 +111,20 @@ export const adminCoursesRouter = router({
         })
       }
 
+      // If Codeforces Group ID changed, delete previous contests and submissions for this course
+      if (
+        updateFields.codeforcesGroupId !== undefined &&
+        updateFields.codeforcesGroupId !== existingCourse.codeforcesGroupId
+      ) {
+        // Cascade delete will handle submissions if configured,
+        // but we delete them manually just in case or to be explicit
+        const { codeforcesContests } = await import('@db/schema')
+
+        await ctx.database
+          .delete(codeforcesContests)
+          .where(eq(codeforcesContests.courseId, id))
+      }
+
       await ctx.database
         .update(courses)
         .set({
@@ -113,6 +132,7 @@ export const adminCoursesRouter = router({
           maxStudents: updateFields.maxStudents ?? null,
           discordGuildId: updateFields.discordGuildId ?? null,
           discordRoleId: updateFields.discordRoleId ?? null,
+          codeforcesGroupId: updateFields.codeforcesGroupId ?? null,
         })
         .where(eq(courses.id, id))
 

@@ -1,6 +1,5 @@
 ---
 import PanelHeader from '@components/ui/PanelHeader.svelte'
-import Tabs from '@components/ui/Tabs.svelte'
 
 interface Props {
   course: {
@@ -10,7 +9,13 @@ interface Props {
     year: number
     status: string
   }
-  activeTab: 'enrollments' | 'sections' | 'modules' | 'settings'
+  activeTab:
+    | 'enrollments'
+    | 'sections'
+    | 'modules'
+    | 'settings'
+    | 'codeforces'
+    | 'discord'
   enrollmentTotal?: number
 }
 
@@ -21,27 +26,32 @@ const tabs = [
     id: 'enrollments',
     label: 'Inscripciones',
     count: enrollmentTotal,
-    href: `/admin/cursos/${course.id}/inscripciones`,
+    href: `/dashboard/admin/cursos/${course.id}/inscripciones`,
   },
   {
     id: 'sections',
     label: 'Paralelos',
-    href: `/admin/cursos/${course.id}/paralelos`,
+    href: `/dashboard/admin/cursos/${course.id}/paralelos`,
   },
   {
     id: 'modules',
     label: 'Módulos',
-    href: `/admin/cursos/${course.id}/modulos`,
+    href: `/dashboard/admin/cursos/${course.id}/modulos`,
+  },
+  {
+    id: 'codeforces',
+    label: 'Codeforces',
+    href: `/dashboard/admin/cursos/${course.id}/codeforces`,
   },
   {
     id: 'discord',
     label: 'Discord',
-    href: `/admin/cursos/${course.id}/discord`,
+    href: `/dashboard/admin/cursos/${course.id}/discord`,
   },
   {
     id: 'settings',
     label: 'Configuración',
-    href: `/admin/cursos/${course.id}/configuracion`,
+    href: `/dashboard/admin/cursos/${course.id}/configuracion`,
   },
 ]
 

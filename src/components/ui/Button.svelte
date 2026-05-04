@@ -18,6 +18,7 @@
     loadingText?: string
     disabled?: boolean
     type?: 'button' | 'submit' | 'reset'
+    href?: string
     onclick?: (e: MouseEvent) => void
     color?: string
     textColor?: string
@@ -36,6 +37,7 @@
     loadingText = 'Cargando...',
     disabled = false,
     type = 'button',
+    href,
     onclick,
     color,
     textColor,
@@ -69,16 +71,32 @@
   )
 </script>
 
-<button
-  {type}
-  class={classes}
-  style={inlineStyle || undefined}
-  disabled={isDisabled}
-  aria-disabled={isDisabled}
-  aria-busy={loading}
-  aria-label={iconOnly ? ariaLabel : undefined}
-  {onclick}
->
+{#if href}
+  <a
+    {href}
+    class={classes}
+    style={inlineStyle || undefined}
+    aria-label={iconOnly ? ariaLabel : undefined}
+    {onclick}
+  >
+    {@render content()}
+  </a>
+{:else}
+  <button
+    {type}
+    class={classes}
+    style={inlineStyle || undefined}
+    disabled={isDisabled}
+    aria-disabled={isDisabled}
+    aria-busy={loading}
+    aria-label={iconOnly ? ariaLabel : undefined}
+    {onclick}
+  >
+    {@render content()}
+  </button>
+{/if}
+
+{#snippet content()}
   {#if loading}
     <span class="button__spinner" aria-hidden="true">
       <svg
@@ -103,7 +121,7 @@
       <span class="button__label">{@render children()}</span>
     {/if}
   {/if}
-</button>
+{/snippet}
 
 <style>
   .button {

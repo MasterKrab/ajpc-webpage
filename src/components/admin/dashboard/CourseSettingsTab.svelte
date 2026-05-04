@@ -24,6 +24,7 @@
     availableSchedules?: Schedule[]
     discordGuildId: string | null
     discordRoleId: string | null
+    codeforcesGroupId: string | null
   }
 
   interface Props {
@@ -48,6 +49,7 @@
       : ([] as Schedule[]),
     discordGuildId: course?.discordGuildId || '',
     discordRoleId: course?.discordRoleId || '',
+    codeforcesGroupId: course?.codeforcesGroupId || '',
   })
 
   const updateCourse = async () => {
@@ -64,6 +66,7 @@
         availableSchedules: editForm.availableSchedules,
         discordGuildId: editForm.discordGuildId || null,
         discordRoleId: editForm.discordRoleId || null,
+        codeforcesGroupId: editForm.codeforcesGroupId || null,
       })
       course = {
         ...course,
@@ -253,6 +256,23 @@
         <p id="{formId}-discord-help" class="form-help-text" style="font-size: 0.8rem; color: var(--text-color-secondary); margin-top: 0.5rem;">
           Los alumnos serán agregados automáticamente a este servidor con este rol cuando su inscripción sea aprobada.
         </p>
+      </fieldset>
+
+      <fieldset class="form-group" style="padding: 0; margin: 0; border: none;">
+        <legend class="form-label" style="font-weight: 500;">Configuración de Codeforces</legend>
+        <div class="form-group">
+          <label class="form-group__label" for="{formId}-codeforcesGroupId">ID de Grupo de Codeforces</label>
+          <input
+            id="{formId}-codeforcesGroupId"
+            class="form-input"
+            placeholder="Ej: 123456"
+            bind:value={editForm.codeforcesGroupId}
+            aria-describedby="{formId}-codeforces-help"
+          />
+          <p id="{formId}-codeforces-help" class="form-help-text" style="font-size: 0.8rem; color: var(--text-color-secondary); margin-top: 0.5rem;">
+            ID del grupo en Codeforces para asociar concursos a este curso.
+          </p>
+        </div>
       </fieldset>
 
       <Button

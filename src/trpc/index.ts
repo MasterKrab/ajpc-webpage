@@ -16,6 +16,7 @@ import { docenteStudentsRouter } from './routers/docente/students'
 import { docenteModulesRouter } from './routers/docente/modules'
 import { docenteAttendanceRouter } from './routers/docente/attendance'
 import { docenteObservationsRouter } from './routers/docente/observations'
+import { codeforcesRouter } from './routers/codeforces'
 
 /**
  * The root application router for tRPC.
@@ -24,6 +25,7 @@ import { docenteObservationsRouter } from './routers/docente/observations'
 export const appRouter = router({
   user: userRouter,
   enrollment: enrollmentRouter,
+  codeforces: codeforcesRouter,
 
   admin: router({
     courses: adminCoursesRouter,

@@ -262,7 +262,7 @@
   title="Eliminar invitación"
   message="¿Estás seguro de que quieres eliminar esta invitación? Esta acción no se puede deshacer."
   confirmText="Eliminar"
-  type="danger"
+  variant="danger"
   onConfirm={deleteInvite}
   onCancel={() => {
     isDeleteModalOpen = false

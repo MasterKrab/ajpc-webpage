@@ -240,7 +240,7 @@
   isOpen={confirmModal.open}
   title={confirmModal.title}
   message={confirmModal.message}
-  type={confirmModal.type}
+  variant={confirmModal.type}
   onConfirm={confirmModal.onConfirm}
   onCancel={() => (confirmModal.open = false)}
 />

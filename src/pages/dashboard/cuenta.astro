@@ -4,17 +4,18 @@ import { db } from '@db/index'
 import { users, settings } from '@db/schema'
 import { eq } from 'drizzle-orm'
 import UserSettings from '@components/profile/UserSettings.svelte'
+import CodeforcesConnection from '@components/profile/CodeforcesConnection.svelte'
 import DeleteAccountButton from '@components/profile/DeleteAccountButton.svelte'
 import { isTeacher, isAdmin } from '@lib/auth'
+import discordLogo from '@assets/discord-color-logo.svg'
 
 const user = Astro.locals.user!
 
 const [[fullUser], [accountDeletionSetting]] = await Promise.all([
   db.select().from(users).where(eq(users.id, user.id)),
-  db.select().from(settings).where(eq(settings.key, 'allow_account_deletion'))
+  db.select().from(settings).where(eq(settings.key, 'allow_account_deletion')),
 ])
 const canDeleteAccount = accountDeletionSetting?.value === 'true'
-
 ---
 
 <DashboardLayout
@@ -41,8 +42,18 @@ const canDeleteAccount = accountDeletionSetting?.value === 'true'
       isAdminUser={isAdmin(user)}
     />
 
+    <CodeforcesConnection
+      client:load
+      initialHandle={fullUser.codeforcesHandle}
+      initialRating={fullUser.codeforcesRating}
+      lastSync={fullUser.codeforcesLastSync}
+    />
+
     <section class="settings__card">
-      <h2 class="settings__card-title">Perfil de Discord</h2>
+      <h2 class="settings__card-title">
+        <img src={discordLogo.src} alt="" class="settings__card-icon" />
+        Perfil de Discord
+      </h2>
       <div class="settings__profile">
         {
           fullUser.discordAvatar && (
@@ -134,6 +145,13 @@ const canDeleteAccount = accountDeletionSetting?.value === 'true'
     font-size: 1.125rem;
     font-weight: 700;
     margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .settings__card-icon {
+    width: 2rem;
   }
 
   .settings__profile {
@@ -203,7 +221,7 @@ const canDeleteAccount = accountDeletionSetting?.value === 'true'
   .settings__danger-button {
     display: inline-block;
     padding: 0.5rem 1.25rem;
-    background-color: #dc3545;
+    background-color: var(--color-danger);
     color: #fff;
     border-radius: 0.5rem;
     font-size: 0.875rem;
@@ -215,11 +233,11 @@ const canDeleteAccount = accountDeletionSetting?.value === 'true'
   }
 
   .settings__danger-button:hover {
-    background-color: #c82333;
+    background-color: var(--color-danger);
     transform: translateY(-1px);
   }
 
-  @media screen and (max-width: 600px) {
+  @media screen and (max-width: 37.5rem) {
     .settings__profile {
       flex-direction: column;
       align-items: center;

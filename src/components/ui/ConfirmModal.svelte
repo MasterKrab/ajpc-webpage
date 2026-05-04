@@ -10,7 +10,8 @@
     cancelText?: string
     onConfirm: () => void
     onCancel: () => void
-    type?: 'primary' | 'danger'
+    variant?: 'primary' | 'danger' | 'success' | 'warning'
+    loading?: boolean
   }
 
   let {
@@ -21,7 +22,8 @@
     cancelText = 'Cancelar',
     onConfirm,
     onCancel,
-    type = 'primary',
+    variant = 'primary',
+    loading = false,
   }: Props = $props()
 </script>
 
@@ -30,8 +32,10 @@
     <p class="confirm-modal__message">{message}</p>
 
     <div class="confirm-modal__actions">
-      <Button variant="secondary" onclick={onCancel}>{cancelText}</Button>
-      <Button variant={type} onclick={onConfirm}>{confirmText}</Button>
+      <Button variant="secondary" onclick={onCancel} disabled={loading}
+        >{cancelText}</Button
+      >
+      <Button {variant} onclick={onConfirm} {loading}>{confirmText}</Button>
     </div>
   </div>
 </Modal>

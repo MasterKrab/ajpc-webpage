@@ -78,6 +78,31 @@ const user = Astro.locals.user
           }
 
           {
+            user && (
+              <li class="menu__item">
+                <a
+                  data-astro-prefetch
+                  class:list={[
+                    'menu__link',
+                    {
+                      'menu__link--active':
+                        Astro.url.pathname.startsWith('/dashboard/ranking'),
+                    },
+                  ]}
+                  href="/dashboard/ranking"
+                  aria-current={
+                    Astro.url.pathname.startsWith('/dashboard/ranking')
+                      ? 'page'
+                      : undefined
+                  }
+                >
+                  Ranking
+                </a>
+              </li>
+            )
+          }
+
+          {
             user && isTeacher(user) && (
               <li class="menu__item">
                 <a
