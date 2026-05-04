@@ -8,6 +8,8 @@ export interface UserDisplayData {
   discordAvatar: string | null
   email?: string | null
   role?: User['role']
+  codeforcesHandle?: string | null
+  codeforcesRating?: number | null
   createdAt?: Date | null
   updatedAt?: Date | null
 }

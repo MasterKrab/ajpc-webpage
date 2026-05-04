@@ -18,6 +18,8 @@
     name: string | null
     email: string | null
     role: 'student' | 'docente' | 'admin' | 'sudo'
+    codeforcesHandle: string | null
+    codeforcesRating: number | null
   }
 
   interface Props {
@@ -112,6 +114,8 @@
         { key: 'discordUsername', label: 'Discord Username' },
         { key: 'name', label: 'Name' },
         { key: 'email', label: 'Email' },
+        { key: 'codeforcesHandle', label: 'Codeforces Handle' },
+        { key: 'codeforcesRating', label: 'Codeforces Rating' },
         { key: 'role', label: 'Role' },
       ]
 
@@ -159,6 +163,7 @@
     loading={usersLoading}
     showEmail
     showRole
+    showCodeforces
     currentPage={usersPage}
     totalItems={usersTotal}
     {totalPages}

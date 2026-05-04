@@ -50,6 +50,7 @@ export const docenteStudentsRouter = router({
           discordUsername: users.discordUsername,
           discordId: users.discordId,
           discordAvatar: users.discordAvatar,
+          codeforcesHandle: users.codeforcesHandle,
           enrollmentId: enrollments.id,
         })
         .from(enrollments)

@@ -141,6 +141,7 @@
   <UserTable
     users={studentsList}
     loading={studentsLoading}
+    showCodeforces
     hasMore={hasMoreStudents}
     onLoadMore={() => fetchStudents(studentsPage + 1, true)}
   >

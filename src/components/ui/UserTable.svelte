@@ -24,6 +24,7 @@
     onLoadMore?: () => void
     showEmail?: boolean
     showRole?: boolean
+    showCodeforces?: boolean
     actions?: Snippet<[T]>
     emptyMessage?: string
     ariaLabel?: string
@@ -43,6 +44,7 @@
     onLoadMore,
     showEmail = false,
     showRole = false,
+    showCodeforces = false,
     actions,
     emptyMessage = 'No se encontraron usuarios.',
     ariaLabel = 'Tabla de usuarios',
@@ -95,6 +97,9 @@
           {#if showEmail}
             <TableHeader>Email</TableHeader>
           {/if}
+          {#if showCodeforces}
+            <TableHeader>Codeforces</TableHeader>
+          {/if}
           {#if showRole}
             <TableHeader>Rol</TableHeader>
           {/if}
@@ -121,6 +126,9 @@
           <TableHeader>Nombre</TableHeader>
           {#if showEmail}
             <TableHeader>Email</TableHeader>
+          {/if}
+          {#if showCodeforces}
+            <TableHeader>Codeforces</TableHeader>
           {/if}
           {#if showRole}
             <TableHeader>Rol</TableHeader>
@@ -165,6 +173,22 @@
               {#if showEmail}
                 <TableCell>
                   <span class="user-email">{user.email || '—'}</span>
+                </TableCell>
+              {/if}
+              {#if showCodeforces}
+                <TableCell>
+                  {#if user.codeforcesHandle}
+                    <a
+                      href="https://codeforces.com/profile/{user.codeforcesHandle}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="user-table__codeforces-link"
+                    >
+                      {user.codeforcesHandle}
+                    </a>
+                  {:else}
+                    <span class="user-table__codeforces-none">—</span>
+                  {/if}
                 </TableCell>
               {/if}
               {#if showRole}
@@ -248,6 +272,24 @@
 
   .user-email {
     color: var(--text-color-secondary);
+  }
+
+  .user-table__codeforces-link {
+    color: var(--brand-primary);
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .user-table__codeforces-link:hover {
+    text-decoration: underline;
+  }
+
+  .user-table__codeforces-none {
+    color: var(--text-color-secondary);
+    opacity: 0.5;
   }
 
   .empty-state {
