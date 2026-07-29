@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
   import { toast } from 'svelte-sonner'
   import Select from '@components/ui/Select.svelte'
   import Button from '@components/ui/Button.svelte'
@@ -53,6 +52,12 @@
       loading = false
     }
   }
+
+  $effect(() => {
+    if (selectedCourseId) {
+      fetchRanking()
+    }
+  })
 
   const syncRanking = async () => {
     if (!selectedCourseId) return
